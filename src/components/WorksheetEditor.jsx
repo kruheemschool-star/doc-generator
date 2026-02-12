@@ -531,19 +531,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleManualSave}
-                            disabled={!hasUnsavedChanges}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${hasUnsavedChanges
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                }`}
-                        >
-                            <Save size={16} />
-                            บันทึก
-                        </button>
-                        {saveStatus === 'saving' && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-bold animate-pulse uppercase tracking-wider">Saving...</span>}
-                        {saveStatus === 'saved' && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold uppercase tracking-wider">Saved</span>}
+                        {/* Save button removed from here and moved to floating toolbar */}
                     </div>
                 </div>
             </header>
@@ -663,6 +651,27 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <button onClick={() => handleDeleteQuestion(selectedItemId)} className="p-3 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-all" title="Delete"><Trash2 size={20} /></button>
                             </>
                         )}
+
+                        <div className="w-px h-8 bg-gray-100 mx-1"></div>
+
+                        <div className="flex items-center gap-2 pr-1">
+                            <button
+                                onClick={handleManualSave}
+                                disabled={!hasUnsavedChanges}
+                                className={`h-11 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 ${hasUnsavedChanges
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    }`}
+                                title="บันทึกการเปลี่ยนแปลง"
+                            >
+                                <Save size={18} />
+                                บันทึก
+                            </button>
+                            <div className="flex flex-col min-w-[50px]">
+                                {saveStatus === 'saving' && <span className="text-[9px] text-yellow-600 font-bold animate-pulse uppercase tracking-tighter">Saving...</span>}
+                                {saveStatus === 'saved' && <span className="text-[9px] text-green-600 font-bold uppercase tracking-tighter">Saved</span>}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
