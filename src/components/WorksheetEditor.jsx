@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical } from 'lucide-react';
+import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 import kruheemLogo from '../assets/kruheem-logo.png';
 import TextItem from './TextItem';
@@ -276,6 +276,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         const sectionMap = {
             content: { icon: '📖', label: 'บทเรียน' },
             practice: { icon: '✏️', label: 'แบบฝึกหัด' },
+            exam: { icon: '📝', label: 'แนวข้อสอบ' },
             summary: { icon: '⚡', label: 'สรุปสูตร' },
             analysis: { icon: '🔍', label: 'วิเคราะห์' }
         };
@@ -463,11 +464,35 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             </ErrorBoundary>
         );
 
-        const qCountBefore = pages.slice(0, pageIndex).reduce((acc, p) => acc + (p.questions || []).filter(i => !['text', 'image', 'spacer', 'markdown'].includes(i.type)).length, 0);
-        const qCountOnPageBefore = (pages[pageIndex]?.questions || []).slice(0, index).filter(i => !['text', 'image', 'spacer', 'markdown'].includes(i.type)).length;
+        // Smart numbering reset logic: Reset counter to 1 if we find a header like "แบบฝึกหัด" or "แนวข้อสอบ"
+        const allItemsUpToMe = [];
+        for (let i = 0; i <= pageIndex; i++) {
+            const pageQuestions = pages[i]?.questions || [];
+            if (i < pageIndex) {
+                allItemsUpToMe.push(...pageQuestions);
+            } else {
+                allItemsUpToMe.push(...pageQuestions.slice(0, index));
+            }
+        }
+
+        const resetKeywords = ['แบบฝึกหัด', 'แนวข้อสอบ', 'ข้อสอบ'];
+        let lastResetIdx = -1;
+        for (let i = allItemsUpToMe.length - 1; i >= 0; i--) {
+            const item = allItemsUpToMe[i];
+            if (item.type === 'markdown' && resetKeywords.some(kw => (item.content || '').includes(kw))) {
+                lastResetIdx = i;
+                break;
+            }
+        }
+
+        const qCountSinceReset = allItemsUpToMe
+            .slice(Math.max(0, lastResetIdx))
+            .filter(i => !['text', 'image', 'spacer', 'markdown'].includes(i.type))
+            .length;
+
         return (
             <ErrorBoundary key={q.id}>
-                <QuestionItem {...commonProps} no={qCountBefore + qCountOnPageBefore + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} spaceNeeded={q.spaceNeeded} fontSize={globalFontSize} showSolution={showSolution} />
+                <QuestionItem {...commonProps} no={qCountSinceReset + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} spaceNeeded={q.spaceNeeded} fontSize={globalFontSize} showSolution={showSolution} />
             </ErrorBoundary>
         );
     };
@@ -701,6 +726,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                     {[
                                         { id: 'content', icon: BookOpen, label: 'บทเรียน' },
                                         { id: 'practice', icon: PenTool, label: 'แบบฝึกหัด' },
+                                        { id: 'exam', icon: FileQuestion, label: 'ข้อสอบ' },
                                         { id: 'summary', icon: Zap, label: 'สรุปสูตร' },
                                         { id: 'analysis', icon: Search, label: 'วิเคราะห์' },
                                     ].map(s => {
