@@ -81,7 +81,7 @@ const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate
                 <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    className={`group relative mb-4 transition-all ${snapshot.isDragging ? 'z-50 opacity-90' : ''
+                    className={`group relative mb-2 transition-all ${snapshot.isDragging ? 'z-50 opacity-90' : ''
                         } ${isEditing ? 'z-20' : ''}`}
                     onClick={(e) => {
                         e.stopPropagation();

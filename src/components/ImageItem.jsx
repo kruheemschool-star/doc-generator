@@ -35,7 +35,7 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                 <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    className={`group relative mb-4 transition-all flex flex-col items-center ${snapshot.isDragging ? 'z-50 opacity-90' : ''
+                    className={`group relative mb-2 transition-all flex flex-col items-center ${snapshot.isDragging ? 'z-50 opacity-90' : ''
                         }`}
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
