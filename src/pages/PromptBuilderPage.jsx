@@ -128,7 +128,7 @@ const PromptBuilderPage = () => {
         const isDetailed = formData.contentLength === 'very_long';
         const solutionTypeDesc = isDetailed
             ? "เฉลยแบบละเอียด: ต้องมีส่วนประกอบ 1) **หลักการคิด (Principle)** 2) **วิธีทำอย่างละเอียดเป็นขั้นตอน** 3) **สรุปจุดที่ควรระวัง (Precautions)** และ 4) **Danger Zone (จุดที่ผิดบ่อย)**"
-            : "เฉลยแบบสั้น: เน้นคำตอบและความกระชับสั้นๆ ง่ายๆ";
+            : "เฉลยแบบสั้น: ให้เน้นการเฉลยอย่างเดียว ไม่ต้องพูดถึงหลักการคิดหรือข้อควรระวัง โดยให้ความยาวของการเฉลยประมาณ 3-4 บรรทัด";
 
         if (mode === 'exam' || mode === 'practice') {
             if (formData.questionType === 'subjective') {
