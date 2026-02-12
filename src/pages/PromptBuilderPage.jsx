@@ -125,6 +125,11 @@ const PromptBuilderPage = () => {
 
         promptText += `\n**สิ่งที่ต้องส่งกลับมา (Output Requirements):**\n`;
 
+        const isDetailed = formData.contentLength === 'very_long';
+        const solutionTypeDesc = isDetailed
+            ? "เฉลยแบบละเอียด: ต้องมีส่วนประกอบ 1) **หลักการคิด (Principle)** 2) **วิธีทำอย่างละเอียดเป็นขั้นตอน** 3) **สรุปจุดที่ควรระวัง (Precautions)** และ 4) **Danger Zone (จุดที่ผิดบ่อย)**"
+            : "เฉลยแบบสั้น: เน้นคำตอบและความกระชับสั้นๆ ง่ายๆ";
+
         if (mode === 'exam' || mode === 'practice') {
             if (formData.questionType === 'subjective') {
                 promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
@@ -132,7 +137,7 @@ const PromptBuilderPage = () => {
   {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
     "answer": "คำตอบที่ถูกต้อง",
-    "solution": "เฉลยละเอียดพร้อมแสดงวิธีทำทุกขั้นตอน (ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)",
+    "solution": "${solutionTypeDesc} (ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)",
     "space": "large" (เว้นที่ว่างสำหรับเขียนวิธีทำ: small/medium/large)
   }
 ]
@@ -144,7 +149,7 @@ const PromptBuilderPage = () => {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
     "options": ["ตัวเลือก ก.", "ตัวเลือก ข.", "ตัวเลือก ค.", "ตัวเลือก ง."],
     "answer": "คำตอบที่ถูกต้อง",
-    "solution": "เฉลยละเอียด (ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)",
+    "solution": "${solutionTypeDesc} (ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)",
     "space": "medium" (เว้นที่ว่าง: small/medium/large)
   }
 ]
@@ -565,12 +570,22 @@ const PromptBuilderPage = () => {
                         {/* Complexity Toggle */}
                         <div className="mt-8">
                             <label className="block text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest pl-1">
-                                ระดับความลึกของเนื้อหา
+                                {(['practice', 'exam', 'summary', 'mistake'].includes(formData.mode))
+                                    ? 'ระดับความละเอียดของเฉลย'
+                                    : 'ระดับความลึกของเนื้อหา'}
                             </label>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { id: 'long', label: 'Standard Depth', desc: 'ครอบคลุมทุกจุดสำคัญ (PDF 1-3 หน้า)' },
-                                    { id: 'very_long', label: 'Ultimate Master', desc: 'เจาะลึกทุกรายละเอียด (PDF 4+ หน้า)' },
+                                    {
+                                        id: 'long',
+                                        label: (['practice', 'exam', 'summary', 'mistake'].includes(formData.mode)) ? 'เฉลยแบบสั้น (Short Solution)' : 'Standard Depth',
+                                        desc: (['practice', 'exam', 'summary', 'mistake'].includes(formData.mode)) ? 'เน้นการเฉลยที่สั้น กระชับ และเข้าใจง่าย' : 'ครอบคลุมทุกจุดสำคัญ (PDF 1-3 หน้า)'
+                                    },
+                                    {
+                                        id: 'very_long',
+                                        label: (['practice', 'exam', 'summary', 'mistake'].includes(formData.mode)) ? 'เฉลยแบบละเอียด (Detailed Solution)' : 'Ultimate Master',
+                                        desc: (['practice', 'exam', 'summary', 'mistake'].includes(formData.mode)) ? 'เฉลยละเอียด มีหลักการคิด วิธีทำ และสรุปจุดที่ควรระวัง' : 'เจาะลึกทุกรายละเอียด (PDF 4+ หน้า)'
+                                    },
                                 ].map(len => (
                                     <button
                                         key={len.id}

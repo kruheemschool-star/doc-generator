@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
 import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical } from 'lucide-react';
@@ -14,6 +15,7 @@ import useAutoPagination from '../hooks/useAutoPagination';
 import useHistory from '../hooks/useHistory';
 
 const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
+    const navigate = useNavigate();
     // --- History State Management ---
     const {
         state: pages,
@@ -37,19 +39,34 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             ]
     );
 
-    // --- Auto-Save Effect ---
+    // --- Manual Save State ---
     const [saveStatus, setSaveStatus] = useState('saved');
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+    // Track unsaved changes
     useEffect(() => {
-        if (onSave && pages && pages.length > 0) {
+        setHasUnsavedChanges(true);
+        setSaveStatus('unsaved');
+    }, [pages]);
+
+    const handleManualSave = () => {
+        if (onSave && pages) {
             setSaveStatus('saving');
-            const timer = setTimeout(() => {
-                onSave(pages);
-                setSaveStatus('saved');
-            }, 1000); // 1s debounce
-            return () => clearTimeout(timer);
+            onSave(pages);
+            setSaveStatus('saved');
+            setHasUnsavedChanges(false);
         }
-    }, [pages, onSave]);
+    };
+
+    const handleBackWithConfirmation = () => {
+        if (hasUnsavedChanges) {
+            if (window.confirm('คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก ต้องการออกโดยไม่บันทึกหรือไม่?')) {
+                onBack();
+            }
+        } else {
+            onBack();
+        }
+    };
 
     // View Mode & Zoom
     const [showSolution, setShowSolution] = useState(true);
@@ -506,13 +523,25 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             <header className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40 h-16 shadow-sm print:hidden">
                 <div className="max-w-[1600px] mx-auto px-6 h-full flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                        <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"><ArrowLeft size={20} /></button>
+                        <button onClick={handleBackWithConfirmation} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"><ArrowLeft size={20} /></button>
                         <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2 font-outfit">
                             <Layout size={18} className="text-blue-600" />
                             {activeDocument?.title || 'Untitled'}
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button 
+                            onClick={handleManualSave}
+                            disabled={!hasUnsavedChanges}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                                hasUnsavedChanges 
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            }`}
+                        >
+                            <Save size={16} />
+                            บันทึก
+                        </button>
                         {saveStatus === 'saving' && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-bold animate-pulse uppercase tracking-wider">Saving...</span>}
                         {saveStatus === 'saved' && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold uppercase tracking-wider">Saved</span>}
                     </div>
