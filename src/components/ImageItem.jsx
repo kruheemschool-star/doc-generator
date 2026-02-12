@@ -1,20 +1,82 @@
 import React, { memo, useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { Trash2, GripVertical, Image as ImageIcon, Upload, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, GripVertical, Image as ImageIcon, Upload, ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
 
 const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown }) => {
     // content can be used for caption if needed, src is the image source
     const [isHovered, setIsHovered] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
 
-    const handleImageUpload = (e) => {
+    // Compress image before converting to base64
+    const compressImage = (file, maxWidth = 800, quality = 0.7) => {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = () => {
+                // Calculate new dimensions
+                let { width, height } = img;
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw and compress
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(resolve, 'image/jpeg', quality);
+            };
+            
+            img.src = URL.createObjectURL(file);
+        });
+    };
+
+    const handleImageUpload = async (e) => {
         const file = e.target.files[0];
-        if (file) {
+        if (!file) return;
+        
+        // Check file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            setUploadError('รูปภาพใหญ่เกินไป (สูงสุด 5MB)');
+            return;
+        }
+        
+        setIsUploading(true);
+        setUploadError('');
+        
+        try {
+            // Compress image
+            const compressedBlob = await compressImage(file);
+            
+            // Convert to base64
             const reader = new FileReader();
             reader.onloadend = () => {
-                onUpdate(id, { src: reader.result }); // Save base64 for now (or URL if persistence allowed)
+                const base64 = reader.result;
+                
+                // Check base64 size (Firestore limit ~1MB per document)
+                if (base64.length > 800000) {
+                    setUploadError('รูปภาพยังใหญ่เกินไปหลังบีบอัด ลองใช้รูปที่เล็กกว่า');
+                    setIsUploading(false);
+                    return;
+                }
+                
+                onUpdate(id, { src: base64 });
+                setIsUploading(false);
+                setUploadError('');
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(compressedBlob);
+        } catch (error) {
+            console.error('Image compression error:', error);
+            setUploadError('ไม่สามารถประมวลผลรูปภาพได้');
+            setIsUploading(false);
         }
+        
+        // Reset file input
+        e.target.value = '';
     };
 
     const handleResize = (newSize) => {
@@ -94,15 +156,34 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-8 text-gray-400 cursor-pointer" onClick={() => document.getElementById(`upload-${id}`).click()}>
-                                <Upload size={32} className="mb-2" />
-                                <span className="text-sm font-medium">Click to upload image</span>
+                                {isUploading ? (
+                                    <>
+                                        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                                        <span className="text-sm font-medium">กำลังประมวลผล...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload size={32} className="mb-2" />
+                                        <span className="text-sm font-medium">คลิกอัปโหลดรูปภาพ</span>
+                                        <span className="text-xs text-gray-400 mt-1">(สูงสุด 5MB)</span>
+                                    </>
+                                )}
                                 <input
                                     id={`upload-${id}`}
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
                                     onChange={handleImageUpload}
+                                    disabled={isUploading}
                                 />
+                            </div>
+                        )}
+                        
+                        {/* Error Message */}
+                        {uploadError && (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600 text-sm">
+                                <AlertCircle size={14} />
+                                <span>{uploadError}</span>
                             </div>
                         )}
                     </div>
