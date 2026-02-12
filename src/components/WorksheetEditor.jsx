@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles } from 'lucide-react';
+import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 import kruheemLogo from '../assets/kruheem-logo.png';
 import TextItem from './TextItem';
@@ -622,6 +622,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 </button>
 
                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
+
+                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'spacer', height: 100 })} className="p-3 hover:bg-amber-50 text-gray-500 hover:text-amber-600 rounded-xl transition-all" title="แทรกช่องว่าง"><MoveVertical size={20} /></button>
 
                                 <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 hover:text-purple-600 rounded-xl transition-all" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
 

@@ -46,7 +46,7 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
             e.stopPropagation();
             onSelect && onSelect(id);
           }}
-          className={`group relative border rounded-xl p-6 mb-2 transition-all bg-white break-inside-avoid print:border-transparent print:shadow-none print:ring-0
+          className={`group relative border rounded-xl p-6 mb-1 transition-all bg-white break-inside-avoid print:border-transparent print:shadow-none print:ring-0
             ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500 z-10 border-transparent' : ''}
             ${isSelected ? 'border-blue-400 ring-2 ring-blue-50 bg-blue-50/5' : 'border-gray-200 hover:border-blue-400 hover:shadow-md'}
           `}
