@@ -128,7 +128,11 @@ const PromptBuilderPage = () => {
         const isDetailed = formData.contentLength === 'very_long';
         const solutionTypeDesc = isDetailed
             ? "เฉลยแบบละเอียด: ต้องมีส่วนประกอบ 1) **หลักการคิด (Principle)** 2) **วิธีทำอย่างละเอียดเป็นขั้นตอน** 3) **สรุปจุดที่ควรระวัง (Precautions)** และ 4) **Danger Zone (จุดที่ผิดบ่อย)**"
-            : "เฉลยแบบสั้น: ให้เน้นการเฉลยอย่างเดียว ไม่ต้องพูดถึงหลักการคิดหรือข้อควรระวัง โดยให้ความยาวของการเฉลยประมาณ 3-4 บรรทัด";
+            : "เฉลยแบบสั้น: ให้เน้นการเฉลยแสดงวิธีทำอย่างเดียว ไม่ต้องพูดถึงหลักการคิดหรือข้อควรระวัง โดยให้ความยาวของการเฉลยประมาณ 3-4 บรรทัด";
+
+        const solutionTemplateSuffix = isDetailed
+            ? "(ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)"
+            : "(ใช้ Markdown ตาม Style Guide ด้านบน โดยแสดงวิธีทำสั้นๆ กระชับ)";
 
         if (mode === 'exam' || mode === 'practice') {
             if (formData.questionType === 'subjective') {
@@ -137,7 +141,7 @@ const PromptBuilderPage = () => {
   {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
     "answer": "คำตอบที่ถูกต้อง",
-    "solution": "${solutionTypeDesc} (ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)",
+    "solution": "${solutionTypeDesc} ${solutionTemplateSuffix}",
     "space": "large" (เว้นที่ว่างสำหรับเขียนวิธีทำ: small/medium/large)
   }
 ]
@@ -149,7 +153,7 @@ const PromptBuilderPage = () => {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
     "options": ["ตัวเลือก ก.", "ตัวเลือก ข.", "ตัวเลือก ค.", "ตัวเลือก ง."],
     "answer": "คำตอบที่ถูกต้อง",
-    "solution": "${solutionTypeDesc} (ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)",
+    "solution": "${solutionTypeDesc} ${solutionTemplateSuffix}",
     "space": "medium" (เว้นที่ว่าง: small/medium/large)
   }
 ]
