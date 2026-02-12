@@ -20,6 +20,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const {
         state: pages,
         set: setPages,
+        replace: replacePages,
         undo,
         redo,
         canUndo,
@@ -88,11 +89,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [importQuestionType, setImportQuestionType] = useState('objective');
 
     // --- Pagination Hook ---
-    const { pageRefs } = useAutoPagination(pages, setPages);
+    const { pageRefs } = useAutoPagination(pages, setPages, replacePages);
 
     // --- State Cleanup & Recovery ---
     const handleTrimEmptyPages = useCallback(() => {
-        setPages(prev => {
+        replacePages(prev => {
             if (!Array.isArray(prev)) return prev;
             // Keep pages that HAVE questions, or the VERY FIRST page
             const cleaned = prev.filter((p, idx) => p.questions.length > 0 || idx === 0);
@@ -100,7 +101,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             if (cleaned.length === 0) return [{ id: uuidv4(), questions: [] }];
             return cleaned;
         });
-    }, [setPages]);
+    }, [replacePages]);
 
     const handleFactoryReset = useCallback(() => {
         if (window.confirm("⚠️ คำเตือน: ระบบจะลบข้อมูลทั้งหมดในเอกสารนี้และกู้คืนค่าเริ่มต้น (Factory Reset)\n\nคุณแน่ใจใช่หรือไม่?")) {
@@ -530,14 +531,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button 
+                        <button
                             onClick={handleManualSave}
                             disabled={!hasUnsavedChanges}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                                hasUnsavedChanges 
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${hasUnsavedChanges
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
                                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            }`}
+                                }`}
                         >
                             <Save size={16} />
                             บันทึก
@@ -619,7 +619,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <div className="relative group/font">
                                     <button className="p-3 hover:bg-gray-100 text-gray-500 rounded-xl transition-all" title="ขนาดฟอนต์"><ALargeSmall size={20} /></button>
                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/font:flex flex-col bg-white border border-gray-200 rounded-xl shadow-xl p-1 min-w-[120px]">
-                                        {[{label: 'เล็ก', value: 'small'}, {label: 'ปกติ', value: 'medium'}, {label: 'ใหญ่', value: 'large'}, {label: 'ใหญ่มาก', value: 'xl'}].map(f => (
+                                        {[{ label: 'เล็ก', value: 'small' }, { label: 'ปกติ', value: 'medium' }, { label: 'ใหญ่', value: 'large' }, { label: 'ใหญ่มาก', value: 'xl' }].map(f => (
                                             <button key={f.value} onClick={() => setGlobalFontSize(f.value)} className={`text-left px-3 py-1.5 rounded-lg text-sm transition-all ${globalFontSize === f.value ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>{f.label}</button>
                                         ))}
                                     </div>

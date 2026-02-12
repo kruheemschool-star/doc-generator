@@ -79,6 +79,27 @@ const useHistory = (initialState) => {
     }, []);
 
     /**
+     * Update the current state without adding to the history (silent update)
+     * @param {any|Function} newPresentOrFn - The new state value or a function receiving prev state
+     */
+    const replace = useCallback((newPresentOrFn) => {
+        setHistory((currentState) => {
+            const { present } = currentState;
+
+            const newPresent = typeof newPresentOrFn === 'function'
+                ? newPresentOrFn(present)
+                : newPresentOrFn;
+
+            if (newPresent === present) return currentState;
+
+            return {
+                ...currentState,
+                present: newPresent
+            };
+        });
+    }, []);
+
+    /**
      * Reset the history entirely
      * @param {any} newInitialState - Optional new initial state
      */
@@ -93,6 +114,7 @@ const useHistory = (initialState) => {
     return {
         state: present,
         set,
+        replace,
         undo,
         redo,
         canUndo,

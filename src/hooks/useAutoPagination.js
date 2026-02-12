@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 const A4_HEIGHT_THRESHOLD = 1135;
 const MAX_PAGES_SAFETY = 50; // Prevention against runaway loops
 
-const useAutoPagination = (pages, setPages) => {
+const useAutoPagination = (pages, setPages, replacePages) => {
     const pageRefs = useRef({});
     const [isChecking, setIsChecking] = useState(false);
 
@@ -57,13 +57,14 @@ const useAutoPagination = (pages, setPages) => {
 
         if (hasOverflow) {
             setIsChecking(true);
-            setPages(newPages);
+            const updater = replacePages || setPages;
+            updater(newPages);
             setTimeout(() => {
                 setIsChecking(false);
             }, 100);
         }
 
-    }, [pages, isChecking, setPages]);
+    }, [pages, isChecking, setPages, replacePages]);
 
     return { pageRefs };
 };
