@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import PromptBuilderPage from './pages/PromptBuilderPage';
 import WorksheetEditor from './components/WorksheetEditor';
 import ErrorBoundary from './components/ErrorBoundary';
 import { v4 as uuidv4 } from 'uuid';
+import { saveDocument, loadDocuments, deleteDocument as fbDeleteDocument, saveFolders, loadFolders, saveActiveDocId, loadActiveDocId } from './firebase';
 
 // --- Mock Initial Documents (Fallback) ---
 const MOCK_DOCS = [
@@ -22,55 +23,47 @@ const App = () => {
     const [folders, setFolders] = useState([]);
     const [activeDocumentId, setActiveDocumentId] = useState(null);
 
-    // --- Load Data on Startup ---
+    const [isLoading, setIsLoading] = useState(true);
+    const isInitialLoad = useRef(true);
+
+    // --- Load Data from Firestore on Startup ---
     useEffect(() => {
-        const savedDocs = localStorage.getItem('kruheem_documents');
-        const savedFolders = localStorage.getItem('kruheem_folders');
-        const savedActiveId = localStorage.getItem('kruheem_active_doc');
-
-        if (savedDocs) {
+        const loadData = async () => {
             try {
-                setDocuments(JSON.parse(savedDocs));
-            } catch (e) {
-                console.error("Failed to parse documents", e);
+                const [docs, flds, activeId] = await Promise.all([
+                    loadDocuments(),
+                    loadFolders(),
+                    loadActiveDocId()
+                ]);
+                setDocuments(docs.length > 0 ? docs : MOCK_DOCS);
+                setFolders(flds || []);
+                if (activeId) setActiveDocumentId(activeId);
+            } catch (error) {
+                console.error('Failed to load from Firestore:', error);
                 setDocuments(MOCK_DOCS);
+            } finally {
+                setIsLoading(false);
+                setTimeout(() => { isInitialLoad.current = false; }, 500);
             }
-        } else {
-            setDocuments(MOCK_DOCS);
-        }
-
-        if (savedFolders) {
-            try {
-                setFolders(JSON.parse(savedFolders));
-            } catch (e) {
-                console.error("Failed to parse folders", e);
-                setFolders([]);
-            }
-        }
-
-        if (savedActiveId) {
-            setActiveDocumentId(savedActiveId);
-        }
+        };
+        loadData();
     }, []);
 
-    // --- Auto-Save Effect ---
+    // --- Auto-Save to Firestore ---
     useEffect(() => {
-        if (documents.length > 0) {
-            localStorage.setItem('kruheem_documents', JSON.stringify(documents));
-        }
-    }, [documents]);
+        if (isInitialLoad.current || isLoading) return;
+        documents.forEach(doc => saveDocument(doc));
+    }, [documents, isLoading]);
 
     useEffect(() => {
-        localStorage.setItem('kruheem_folders', JSON.stringify(folders));
-    }, [folders]);
+        if (isInitialLoad.current || isLoading) return;
+        saveFolders(folders);
+    }, [folders, isLoading]);
 
     useEffect(() => {
-        if (activeDocumentId) {
-            localStorage.setItem('kruheem_active_doc', activeDocumentId);
-        } else {
-            localStorage.removeItem('kruheem_active_doc');
-        }
-    }, [activeDocumentId]);
+        if (isInitialLoad.current || isLoading) return;
+        saveActiveDocId(activeDocumentId);
+    }, [activeDocumentId, isLoading]);
 
     // Derived State
     const activeDocument = documents.find(d => d.id === activeDocumentId) || null;
@@ -102,9 +95,10 @@ const App = () => {
         setCurrentView('editor');
     };
 
-    const handleDeleteDocument = (docId) => {
+    const handleDeleteDocument = async (docId) => {
         if (window.confirm("Are you sure you want to delete this document?")) {
             setDocuments(prev => prev.filter(d => d.id !== docId));
+            await fbDeleteDocument(docId);
             if (activeDocumentId === docId) {
                 setActiveDocumentId(null);
                 setCurrentView('dashboard');
@@ -167,6 +161,17 @@ const App = () => {
     const handleBackToDashboard = () => {
         handleViewChange('dashboard');
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-500 text-sm font-medium">กำลังโหลดข้อมูล...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">

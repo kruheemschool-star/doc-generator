@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { savePromptSettings, loadPromptSettings } from '../firebase';
 import {
     Sparkles, Copy, Check, Terminal, Zap, FileText,
     BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar
@@ -29,23 +30,27 @@ const DEFAULT_FORM_DATA = {
 };
 
 const PromptBuilderPage = () => {
-    const [formData, setFormData] = useState(() => {
-        try {
-            const saved = localStorage.getItem('kruheem_prompt_settings');
-            return saved ? JSON.parse(saved) : DEFAULT_FORM_DATA;
-        } catch (error) {
-            console.error("Failed to load prompt settings:", error);
-            return DEFAULT_FORM_DATA;
-        }
-    });
-
+    const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
     const [availableChapters, setAvailableChapters] = useState([]);
     const [availableTopics, setAvailableTopics] = useState([]);
     const [generatedPrompt, setGeneratedPrompt] = useState('');
     const [isCopied, setIsCopied] = useState(false);
+    const isInitialLoad = useRef(true);
 
+    // Load from Firestore on mount
     useEffect(() => {
-        localStorage.setItem('kruheem_prompt_settings', JSON.stringify(formData));
+        const load = async () => {
+            const saved = await loadPromptSettings();
+            if (saved) setFormData(saved);
+            setTimeout(() => { isInitialLoad.current = false; }, 500);
+        };
+        load();
+    }, []);
+
+    // Auto-save to Firestore
+    useEffect(() => {
+        if (isInitialLoad.current) return;
+        savePromptSettings(formData);
     }, [formData]);
 
     useEffect(() => {
@@ -171,7 +176,7 @@ const PromptBuilderPage = () => {
         if (window.confirm("คุณต้องการล้างการตั้งค่าทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่?")) {
             setFormData(DEFAULT_FORM_DATA);
             setGeneratedPrompt('');
-            localStorage.removeItem('kruheem_prompt_settings');
+            savePromptSettings(DEFAULT_FORM_DATA);
         }
     };
 

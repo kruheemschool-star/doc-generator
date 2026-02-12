@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useCallback } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye } from 'lucide-react';
+import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 
 // Safe wrapper to prevent MarkdownRenderer crash from taking down the whole component
@@ -27,7 +27,18 @@ class SafeMarkdownPreview extends React.Component {
     }
 }
 
-const MarkdownItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown }) => {
+const splitAnswerContent = (content) => {
+    if (!content) return { mainContent: content, answerContent: null };
+    const lines = content.split('\n');
+    const answerIdx = lines.findIndex(line => /^\s*\d+\.\s*\*{0,2}ตอบ/.test(line) || /^\s*\*{0,2}ตอบ/.test(line));
+    if (answerIdx === -1) return { mainContent: content, answerContent: null };
+    return {
+        mainContent: lines.slice(0, answerIdx).join('\n'),
+        answerContent: lines.slice(answerIdx).join('\n')
+    };
+};
+
+const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [showPreview, setShowPreview] = useState(false);
@@ -168,11 +179,26 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', onDelete, onUp
                                     </button>
                                 </div>
                             </div>
-                        ) : (
-                            <div className={`prose max-w-none ${getSizeClass()}`}>
-                                <SafeMarkdownPreview content={text || '> *Empty Markdown Content*'} getSizeClass={getSizeClass} />
-                            </div>
-                        )}
+                        ) : (() => {
+                            const { mainContent, answerContent } = splitAnswerContent(text);
+                            return (
+                                <div className={`prose max-w-none ${getSizeClass()}`}>
+                                    <SafeMarkdownPreview content={mainContent || '> *Empty Markdown Content*'} getSizeClass={getSizeClass} />
+                                    {answerContent && (
+                                        <div className={`relative transition-all ${showSolution ? '' : 'mt-2'}`}>
+                                            {showSolution ? (
+                                                <SafeMarkdownPreview content={answerContent} getSizeClass={getSizeClass} />
+                                            ) : (
+                                                <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 text-sm">
+                                                    <EyeOff size={14} />
+                                                    <span>เฉลยถูกซ่อนอยู่</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
 
                         {/* Edit Button Overlay */}
                         {!isEditing && (

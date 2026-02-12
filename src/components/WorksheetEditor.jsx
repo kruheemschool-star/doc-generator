@@ -431,7 +431,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         );
         if (q.type === 'markdown') return (
             <ErrorBoundary key={q.id}>
-                <MarkdownItem {...commonProps} content={q.content} size={q.size || globalFontSize} />
+                <MarkdownItem {...commonProps} content={q.content} size={q.size || globalFontSize} showSolution={showSolution} />
             </ErrorBoundary>
         );
         if (q.type === 'image') return (
