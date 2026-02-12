@@ -1,0 +1,661 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Sparkles, Copy, Check, Terminal, Zap, FileText,
+    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar
+} from 'lucide-react';
+import { IPST_CURRICULUM, getChapters, getChapterObject } from '../data/thaiMathCurriculum';
+
+const DEFAULT_FORM_DATA = {
+    mode: 'content',
+    grade: 'M1',
+    term: '1',
+    subjectType: 'Basic',
+    source: 'ai-free',
+    chapter: '',
+    selectedTopic: '',
+    customTopic: '',
+    tone: 'friendly',
+    difficulty: 'medium',
+    components: {
+        formula: true,
+        mistake: false,
+        shortcut: false,
+        trivia: false,
+        vocab: false
+    },
+    contentLength: 'long',
+    questionCount: 10,
+    questionType: 'objective'
+};
+
+const PromptBuilderPage = () => {
+    const [formData, setFormData] = useState(() => {
+        try {
+            const saved = localStorage.getItem('kruheem_prompt_settings');
+            return saved ? JSON.parse(saved) : DEFAULT_FORM_DATA;
+        } catch (error) {
+            console.error("Failed to load prompt settings:", error);
+            return DEFAULT_FORM_DATA;
+        }
+    });
+
+    const [availableChapters, setAvailableChapters] = useState([]);
+    const [availableTopics, setAvailableTopics] = useState([]);
+    const [generatedPrompt, setGeneratedPrompt] = useState('');
+    const [isCopied, setIsCopied] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('kruheem_prompt_settings', JSON.stringify(formData));
+    }, [formData]);
+
+    useEffect(() => {
+        const chapters = getChapters(formData.grade, formData.term, formData.subjectType);
+        setAvailableChapters(chapters);
+    }, [formData.grade, formData.term, formData.subjectType]);
+
+    useEffect(() => {
+        if (formData.chapter && formData.chapter !== 'custom') {
+            const chapterObj = getChapterObject(formData.grade, formData.term, formData.chapter, formData.subjectType);
+            if (chapterObj && chapterObj.topics) {
+                setAvailableTopics(chapterObj.topics);
+            } else {
+                setAvailableTopics([]);
+            }
+        } else {
+            setAvailableTopics([]);
+        }
+    }, [formData.chapter, formData.grade, formData.term, formData.subjectType]);
+
+    useEffect(() => {
+        const topic = formData.selectedTopic === 'custom' ? formData.customTopic : formData.selectedTopic;
+        const mode = formData.mode;
+
+        const toneMap = {
+            friendly: 'พูดจาเป็นกันเอง อบอุ่น ใจดี ให้กำลังใจนักเรียน',
+            academic: 'ใช้ภาษาวิชาการ เน้นความถูกต้องและเป็นระบบ',
+            fun: 'สนุกสนาน เปรียบเทียบกับชีวิตจริง มีมุกตลกแทรก',
+            detailed: 'อธิบายละเอียดทุกขั้นตอน เน้นให้เข้าใจลึกซึ้ง'
+        };
+        const toneDesc = toneMap[formData.tone] || toneMap.friendly;
+
+        let promptText = `รับบทเป็น "ครูฮีม" ครูสอนคณิตศาสตร์ที่${toneDesc} `;
+        promptText += `แทนตัวเองว่า "ครูฮีม" เวลาพูดกับนักเรียน `;
+        promptText += `ช่วยสร้างเนื้อหาการสอนวิชาคณิตศาสตร์ `;
+        promptText += `เรื่อง "${formData.chapter}" `;
+        if (topic) promptText += `หัวข้อเจาะจง "${topic}" `;
+        promptText += `สำหรับนักเรียนชั้น ${formData.grade} (หลักสูตร สสวท.)\n\n`;
+
+        const qType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
+
+        if (mode === 'exam') {
+            promptText += `เป้าหมาย: ออกข้อสอบแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
+        } else if (mode === 'practice') {
+            promptText += `เป้าหมาย: สร้างแบบฝึกหัดแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
+        } else {
+            promptText += `เป้าหมาย: สรุปเนื้อหาและสอนวิธีทำอย่างละเอียด\n`;
+        }
+
+        promptText += `
+---
+**รูปแบบการเขียน (STYLE GUIDE) - สำคัญมาก:**
+เพื่อให้เอกสารอ่านง่ายและสวยงาม ต้องใช้สัญลักษณ์ Markdown ดังนี้เท่านั้น:
+
+1. **โครงสร้าง:**
+   - หัวข้อหลัก (Title): ใช้ # (เช่น # จำนวนเต็ม)
+   - หัวข้อย่อย (Sub-topic): ใช้ ## (เช่น ## 1. การบวก)
+   - รายการ: ใช้ - หรือ 1.
+
+2. **กล่องข้อความพิเศษ (Callout Blocks):**
+   *ต้องขึ้นต้นบรรทัดด้วยสัญลักษณ์นี้เป๊ะๆ เพื่อให้ระบบแปลงเป็นกล่องสวยงาม:*
+   - **นิยาม/สูตร:** ใช้ "> 📘 **นิยาม:** ..."
+   - **ข้อควรระวัง:** ใช้ "> ⚠️ **ข้อควรระวัง:** ..."
+   - **เทคนิค/สูตรลัด:** ใช้ "> 💡 **เทคนิค:** ..."
+   - **ตัวอย่าง:** ใช้ "> 📝 **ตัวอย่าง:** ..."
+
+3. **คณิตศาสตร์:**
+   - ใช้ LaTeX ในเครื่องหมาย $$ เสมอ (เช่น $$x = \\frac{-b}{2a}$$)
+   - ตัวเลขหรือตัวแปรในประโยค ให้ทำตัวหนา (เช่น **x** หรือ **5**)
+---
+`;
+
+        promptText += `\n**สิ่งที่ต้องส่งกลับมา (Output Requirements):**\n`;
+
+        if (mode === 'exam' || mode === 'practice') {
+            if (formData.questionType === 'subjective') {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
+    "answer": "คำตอบที่ถูกต้อง",
+    "solution": "เฉลยละเอียดพร้อมแสดงวิธีทำทุกขั้นตอน (ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)",
+    "space": "large" (เว้นที่ว่างสำหรับเขียนวิธีทำ: small/medium/large)
+  }
+]
+**สำคัญ:** ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย (แสดงวิธีทำ) ไม่มีตัวเลือก`;
+            } else {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
+    "options": ["ตัวเลือก ก.", "ตัวเลือก ข.", "ตัวเลือก ค.", "ตัวเลือก ง."],
+    "answer": "คำตอบที่ถูกต้อง",
+    "solution": "เฉลยละเอียด (ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)",
+    "space": "medium" (เว้นที่ว่าง: small/medium/large)
+  }
+]
+**สำคัญ:** ต้องมี "options" ครบ 4 ตัวเลือกเสมอ (ก. ข. ค. ง.) เพราะเป็นข้อสอบปรนัย`;
+            }
+        } else {
+            promptText += `ส่งผลลัพธ์เป็น **JSON Object** เพียงก้อนเดียวเท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) โดยมีโครงสร้างดังนี้:
+
+{
+  "type": "lesson",
+  "title": "ชื่อหัวข้อเรื่อง",
+  "blocks": [
+    { "type": "header", "content": "# หัวข้อหลัก" },
+    { "type": "text", "content": "เนื้อหาอธิบายอย่างละเอียด (ใส่ Markdown ได้ตาม Style Guide)..." },
+    { "type": "callout", "style": "warning", "content": "> ⚠️ **ข้อควรระวัง:** ..." },
+    { "type": "header", "content": "## หัวข้อย่อย" },
+    { "type": "text", "content": "คำอธิบายส่วนถัดไป..." },
+    { "type": "example", "content": "> 📝 **ตัวอย่าง:** ..." }
+  ]
+}
+
+**สำคัญ:** ห้ามรวมเนื้อหาทั้งหมดเป็น String เดียว ให้แบ่งเป็น Blocks ย่อยๆ ตามหัวข้อ เพื่อให้ระบบสามารถจัดหน้ากระดาษ (Pagination) ได้อย่างสวยงาม`;
+        }
+
+        setGeneratedPrompt(promptText);
+    }, [formData]);
+
+    const handleReset = () => {
+        if (window.confirm("คุณต้องการล้างการตั้งค่าทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่?")) {
+            setFormData(DEFAULT_FORM_DATA);
+            setGeneratedPrompt('');
+            localStorage.removeItem('kruheem_prompt_settings');
+        }
+    };
+
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleComponentChange = (comp) => {
+        setFormData(prev => ({
+            ...prev,
+            components: { ...prev.components, [comp]: !prev.components[comp] }
+        }));
+    };
+
+    const handleCopy = () => {
+        if (!generatedPrompt) return;
+        navigator.clipboard.writeText(generatedPrompt);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    };
+
+    const handleOpenGemini = () => {
+        window.open('https://gemini.google.com/app', '_blank');
+    };
+
+    const SelectWrapper = ({ label, value, onChange, options, disabled = false, icon: Icon }) => (
+        <div className="relative group transition-all duration-300">
+            <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+                {label}
+            </label>
+            <div className={`relative rounded-xl transition-all duration-300 ${disabled ? 'opacity-50' : 'hover:shadow-lg hover:shadow-blue-500/5'}`}>
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors">
+                    {Icon ? <Icon size={16} strokeWidth={2.5} /> : <Layers size={16} strokeWidth={2.5} />}
+                </div>
+                <select
+                    className={`w-full p-3 pl-11 pr-10 bg-white border border-slate-200 rounded-xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold text-slate-700 text-sm shadow-sm
+                    ${disabled ? 'cursor-not-allowed bg-slate-50' : 'hover:border-blue-300 cursor-pointer'} `}
+                    value={value}
+                    onChange={onChange}
+                    disabled={disabled}
+                >
+                    {options.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                </select>
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-hover:text-blue-500 transition-colors">
+                    <ChevronDown size={18} strokeWidth={3} />
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#F1F5F9] font-sans selection:bg-blue-600 selection:text-white">
+            {/* --- Left Panel --- */}
+            <div className="w-[62%] h-full overflow-y-auto p-6 lg:p-10 custom-scrollbar relative z-0">
+                <div className="max-w-4xl mx-auto space-y-10 pb-32">
+
+                    {/* Glass Header */}
+                    <div className="relative">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="space-y-2">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/10 rounded-full text-blue-600 font-bold uppercase tracking-tighter text-[10px] animate-in slide-in-from-left duration-700">
+                                    <Sparkles size={12} fill="currentColor" />
+                                    <span>Advanced AI Prompt Architecture</span>
+                                </div>
+                                <h1 className="text-4xl font-extrabold text-slate-900 leading-[1.1] font-outfit tracking-tight">
+                                    MathCraft <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500">AI</span>
+                                </h1>
+                            </div>
+                            <button
+                                onClick={handleReset}
+                                className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm active:scale-95"
+                            >
+                                <Undo2 size={14} className="group-hover:-rotate-45 transition-transform" />
+                                RESET
+                            </button>
+                        </div>
+                        <p className="text-slate-500 max-w-xl text-[15px] font-medium leading-relaxed">
+                            สร้างคำสั่งที่ทรงพลังเพื่อเปลี่ยน AI ให้เป็นผู้ช่วยเตรียมเนื้อหาและข้อสอบตามหลักสูตร สสวท. อย่างมืออาชีพ
+                        </p>
+                    </div>
+
+                    {/* Section 1: Core Configuration */}
+                    <section className="bg-white/80 backdrop-blur-2xl p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white transition-all hover:shadow-[0_20px_50px_rgba(59,130,246,0.08)] group/card">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30 group-hover/card:scale-110 transition-transform duration-500">
+                                <Layers size={22} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-extrabold text-slate-800 font-outfit tracking-tight">Core Context</h2>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-0.5">ข้อมูลพื้นฐานของเอกสาร</p>
+                            </div>
+                        </div>
+
+                        {/* Mode Switcher */}
+                        <div className="flex flex-wrap gap-2.5 mb-8 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
+                            {[
+                                { id: 'content', label: 'บทเรียน', icon: <BookOpen size={16} />, color: 'blue' },
+                                { id: 'practice', label: 'แบบฝึกหัด', icon: <PenTool size={16} />, color: 'teal' },
+                                { id: 'exam', label: 'ข้อสอบ', icon: <FileText size={16} />, color: 'indigo' },
+                                { id: 'summary', label: 'สรุปสูตร', icon: <Zap size={16} />, color: 'amber' },
+                                { id: 'mistake', label: 'วิเคราะห์', icon: <Brain size={16} />, color: 'rose' },
+                            ].map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => handleChange('mode', item.id)}
+                                    className={`flex-1 min-w-[100px] py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2.5 
+                                    ${formData.mode === item.id
+                                            ? `bg-slate-900 text-white shadow-xl shadow-slate-900/20 scale-[1.03]`
+                                            : 'text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-md'
+                                        } `}
+                                >
+                                    <span className={`transition-transform duration-300 ${formData.mode === item.id ? 'scale-110 text-blue-400' : 'text-slate-400'} `}>
+                                        {item.icon}
+                                    </span>
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Main Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <SelectWrapper
+                                label="ระดับชั้น"
+                                icon={Type}
+                                value={formData.grade}
+                                onChange={(e) => handleChange('grade', e.target.value)}
+                                options={['M1', 'M2', 'M3', 'M4', 'M5', 'M6'].map(g => ({ value: g, label: g.replace('M', 'มัธยมศึกษาปีที่ ') }))}
+                            />
+                            <SelectWrapper
+                                label="ภาคเรียน"
+                                icon={Calendar}
+                                value={formData.term}
+                                onChange={(e) => handleChange('term', e.target.value)}
+                                options={[{ value: '1', label: 'เทอม 1' }, { value: '2', label: 'เทอม 2' }]}
+                            />
+                            <SelectWrapper
+                                label="ประเภทวิชา"
+                                icon={Settings}
+                                value={formData.subjectType}
+                                onChange={(e) => handleChange('subjectType', e.target.value)}
+                                disabled={['M1', 'M2', 'M3'].includes(formData.grade)}
+                                options={[{ value: 'Basic', label: 'พื้นฐาน' }, { value: 'Additional', label: 'เพิ่มเติม' }]}
+                            />
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="relative group">
+                                <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+                                    บทเรียน (Chapter)
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-focus-within:text-blue-500">
+                                        <BookOpen size={18} strokeWidth={2.5} />
+                                    </div>
+                                    <select
+                                        className="w-full p-4 pl-12 pr-10 bg-white border border-slate-200 rounded-2xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-base font-bold text-slate-800 shadow-sm hover:border-blue-300 cursor-pointer"
+                                        value={formData.chapter}
+                                        onChange={(e) => handleChange('chapter', e.target.value)}
+                                    >
+                                        <option value="">-- เลือกบทเรียน --</option>
+                                        {availableChapters.map((chapter, idx) => (
+                                            <option key={idx} value={chapter}>{chapter}</option>
+                                        ))}
+                                        <option value="custom" className="text-blue-600 font-bold">+ ระบุบทเรียนเอง</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={20} strokeWidth={3} />
+                                </div>
+                            </div>
+
+                            {formData.chapter && formData.chapter !== 'custom' && (
+                                <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+                                        เจาะจงเนื้อหา (Sub-Topic)
+                                        <span className="ml-2 text-slate-300 font-medium normal-case">(ทางเลือก)</span>
+                                    </label>
+                                    <div className="relative group">
+                                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                                            <List size={18} strokeWidth={2.5} />
+                                        </div>
+                                        <select
+                                            className="w-full p-3.5 pl-12 pr-10 bg-slate-50/50 border border-slate-200 rounded-2xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-semibold text-slate-600 hover:border-blue-300 cursor-pointer"
+                                            value={formData.selectedTopic}
+                                            onChange={(e) => handleChange('selectedTopic', e.target.value)}
+                                        >
+                                            <option value="">-- ทุกหัวข้อในบทนี้ --</option>
+                                            {availableTopics.map((topic, idx) => (
+                                                <option key={idx} value={topic}>{topic}</option>
+                                            ))}
+                                            <option value="custom" className="text-blue-600">+ กำหนดเอง</option>
+                                        </select>
+                                        <ChevronDown size={16} strokeWidth={3} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                    </div>
+                                </div>
+                            )}
+
+                            {(formData.chapter === 'custom' || formData.selectedTopic === 'custom') && (
+                                <div className="animate-in zoom-in-95 duration-300">
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 bg-blue-50/30 border-2 border-dashed border-blue-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white outline-none transition-all placeholder:text-blue-300 text-blue-900 font-bold"
+                                        placeholder="ระบุหัวข้อที่ต้องการ เช่น เลขยกกำลังที่มีฐานเป็นลบ..."
+                                        value={formData.customTopic}
+                                        onChange={(e) => handleChange('customTopic', e.target.value)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    {/* Section 2: Smart Selection Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Source Card */}
+                        <section className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card h-full flex flex-col">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-pink-500/20">
+                                    <Paperclip size={18} strokeWidth={2.5} />
+                                </div>
+                                <h2 className="text-lg font-bold text-slate-800 font-outfit">แหล่งข้อมูล</h2>
+                            </div>
+                            <div className="space-y-3 flex-1">
+                                {[
+                                    { id: 'ai-free', label: 'AI Knowledge', icon: <Sparkles size={16} />, color: 'blue' },
+                                    { id: 'attachment', label: 'My Documents', icon: <Paperclip size={16} />, color: 'pink' },
+                                ].map(src => (
+                                    <button
+                                        key={src.id}
+                                        onClick={() => handleChange('source', src.id)}
+                                        className={`w-full p-4 rounded-2xl border-2 text-left transition-all flex items-center justify-between group/btn
+                                        ${formData.source === src.id
+                                                ? 'border-blue-600 bg-blue-50/20 ring-4 ring-blue-500/5'
+                                                : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200'
+                                            } `}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${formData.source === src.id ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400 group-hover/btn:bg-slate-300'} `}>
+                                                {src.icon}
+                                            </div>
+                                            <span className={`font-bold text-xs ${formData.source === src.id ? 'text-slate-900' : 'text-slate-500'} `}>{src.label}</span>
+                                        </div>
+                                        {formData.source === src.id && <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Tone Card */}
+                        <section className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card h-full flex flex-col">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                                    <Type size={18} strokeWidth={2.5} />
+                                </div>
+                                <h2 className="text-lg font-bold text-slate-800 font-outfit">น้ำเสียง</h2>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 flex-1">
+                                {[
+                                    { id: 'friendly', label: 'ครูฮีม ใจดี', icon: '😊' },
+                                    { id: 'academic', label: 'ครูฮีม วิชาการ', icon: '🎓' },
+                                    { id: 'fun', label: 'ครูฮีม สนุก', icon: '🤘' },
+                                    { id: 'detailed', label: 'ครูฮีม ละเอียด', icon: '🧐' },
+                                ].map(t => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => handleChange('tone', t.id)}
+                                        className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-1.5
+                                        ${formData.tone === t.id
+                                                ? 'border-indigo-600 bg-indigo-50/20 shadow-sm'
+                                                : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200'
+                                            } `}
+                                    >
+                                        <span className="text-xl">{t.icon}</span>
+                                        <span className="font-bold text-[10px] uppercase tracking-tighter">{t.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+                    </div>
+
+                    {/* Section 3: Fine-Tuning */}
+                    <section className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl -mr-16 -mt-16 rounded-full" />
+
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-slate-900/20 group-hover/card:rotate-12 transition-transform duration-500">
+                                <Sliders size={22} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-extrabold text-slate-800 font-outfit tracking-tight">Advanced Config</h2>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-0.5">ปรับแต่งระดับความยากและส่วนประกอบ</p>
+                            </div>
+                        </div>
+
+                        {/* Slider */}
+                        <div className="mb-10">
+                            <div className="flex justify-between items-end mb-4 px-1">
+                                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">ระดับความยาก (Difficulty)</label>
+                                <span className={`text-xs font-black uppercase px-2.5 py-1 rounded-md tracking-tighter
+                                    ${formData.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' : ''}
+                                    ${formData.difficulty === 'medium' ? 'bg-blue-100 text-blue-700' : ''}
+                                    ${formData.difficulty === 'hard' ? 'bg-orange-100 text-orange-700' : ''}
+                                    ${formData.difficulty === 'exam' ? 'bg-rose-600 text-white shadow-lg shadow-rose-200' : ''}
+                                `}>
+                                    {formData.difficulty === 'exam' ? 'Exam Mode' : formData.difficulty}
+                                </span>
+                            </div>
+                            <div className="relative h-6 flex items-center">
+                                <input
+                                    type="range"
+                                    min="0" max="3" step="1"
+                                    className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-slate-900"
+                                    value={['easy', 'medium', 'hard', 'exam'].indexOf(formData.difficulty)}
+                                    onChange={(e) => handleChange('difficulty', ['easy', 'medium', 'hard', 'exam'][e.target.value])}
+                                />
+                                <div className="absolute top-0 left-0 w-full flex justify-between pointer-events-none px-1">
+                                    {[0, 1, 2, 3].map(i => (
+                                        <div key={i} className={`w-1.5 h-1.5 rounded-full mt-2.5 ${i <= ['easy', 'medium', 'hard', 'exam'].indexOf(formData.difficulty) ? 'bg-slate-900' : 'bg-slate-200'} `} />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Components Chip Set */}
+                        <div className="mb-10">
+                            <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
+                                เลือกออปชันเสริม
+                            </label>
+                            <div className="flex flex-wrap gap-2.5">
+                                {[
+                                    { id: 'formula', label: 'สรุปสูตร', color: 'blue' },
+                                    { id: 'shortcut', label: 'เทคนิคลัด', color: 'indigo' },
+                                    { id: 'trivia', label: 'เกร็ดความรู้', color: 'amber' },
+                                    { id: 'vocab', label: 'ศัพท์เทคนิค', color: 'emerald' },
+                                    { id: 'mistake', label: 'จุดที่มักผิด', color: 'rose' },
+                                ].map(comp => (
+                                    <button
+                                        key={comp.id}
+                                        onClick={() => handleComponentChange(comp.id)}
+                                        className={`px-4 py-2.5 rounded-2xl border-2 font-bold text-xs transition-all flex items-center gap-2.5 active:scale-95
+                                        ${formData.components[comp.id]
+                                                ? `border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/10`
+                                                : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+                                            } `}
+                                    >
+                                        <Check size={14} strokeWidth={4} className={`transition-all duration-300 ${formData.components[comp.id] ? 'scale-100 opacity-100' : 'scale-0 opacity-0 w-0'} `} />
+                                        {comp.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Quantities for Practice/Exam */}
+                        {['practice', 'exam'].includes(formData.mode) && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 bg-slate-50/80 rounded-3xl border border-slate-100 animate-in zoom-in-95 duration-500">
+                                <div className="space-y-3">
+                                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">จำนวนข้อสอบ</label>
+                                    <div className="flex items-center gap-4">
+                                        <input
+                                            type="number"
+                                            className="w-24 p-4 bg-white border-2 border-slate-200 rounded-2xl text-2xl font-black text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
+                                            value={formData.questionCount}
+                                            onChange={(e) => handleChange('questionCount', e.target.value)}
+                                        />
+                                        <span className="font-bold text-slate-400">ITEMS</span>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 p-1.5 bg-white rounded-2xl border border-slate-100">
+                                    <button
+                                        onClick={() => handleChange('questionType', 'objective')}
+                                        className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'objective' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'} `}
+                                    >
+                                        <div>ปรนัย</div>
+                                        <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'objective' ? 'text-slate-400' : 'text-slate-300'}`}>ตัวเลือก 4 ข้อ</div>
+                                    </button>
+                                    <button
+                                        onClick={() => handleChange('questionType', 'subjective')}
+                                        className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'subjective' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'} `}
+                                    >
+                                        <div>อัตนัย</div>
+                                        <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'subjective' ? 'text-slate-400' : 'text-slate-300'}`}>แสดงวิธีทำ</div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Complexity Toggle */}
+                        <div className="mt-8">
+                            <label className="block text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest pl-1">
+                                ระดับความลึกของเนื้อหา
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { id: 'long', label: 'Standard Depth', desc: 'ครอบคลุมทุกจุดสำคัญ (PDF 1-3 หน้า)' },
+                                    { id: 'very_long', label: 'Ultimate Master', desc: 'เจาะลึกทุกรายละเอียด (PDF 4+ หน้า)' },
+                                ].map(len => (
+                                    <button
+                                        key={len.id}
+                                        onClick={() => handleChange('contentLength', len.id)}
+                                        className={`p-5 rounded-2xl border-2 text-left transition-all h-full
+                                        ${formData.contentLength === len.id
+                                                ? 'border-blue-600 bg-blue-50/10 ring-4 ring-blue-500/5'
+                                                : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200 hover:bg-white'
+                                            } `}
+                                    >
+                                        <div className={`font-black text-xs mb-1 uppercase tracking-tight ${formData.contentLength === len.id ? 'text-blue-600' : 'text-slate-800'} `}>{len.label}</div>
+                                        <div className="text-[10px] font-bold text-slate-400 leading-tight">{len.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            {/* --- Right Panel --- */}
+            <div className="w-[38%] bg-[#0B0F19] flex flex-col shadow-[inset_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden relative border-l border-slate-800/50">
+                {/* Visual Glow */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[150px] -mr-80 -mt-80 rounded-full" />
+
+                {/* Header Section */}
+                <div className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-black/20 backdrop-blur-md relative z-10">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 text-emerald-400">
+                            <Terminal size={14} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black font-outfit text-xs tracking-widest leading-none">PREVIEW</h3>
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter mt-1 block">Live AI Instruction</span>
+                        </div>
+                    </div>
+                    <div className="flex gap-2.5">
+                        <button
+                            onClick={handleOpenGemini}
+                            className="h-10 px-4 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all flex items-center gap-2 text-[11px] font-bold uppercase border border-white/10 hover:border-white/20 active:scale-95 tracking-wider"
+                        >
+                            <ExternalLink size={14} strokeWidth={2.5} />
+                            Open Gemini
+                        </button>
+                        <button
+                            onClick={handleCopy}
+                            disabled={!generatedPrompt}
+                            className={`h-10 px-5 rounded-xl font-bold text-[11px] transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-blue-600/20 tracking-wider
+                            ${isCopied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50'} `}
+                        >
+                            {isCopied ? <Check size={14} strokeWidth={3} /> : <Sparkles size={14} fill="currentColor" />}
+                            {isCopied ? 'COPIED' : 'GENERATE & COPY'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Editor Content */}
+                <div className="flex-1 overflow-auto p-4 md:p-8 custom-scrollbar relative z-10">
+                    {generatedPrompt ? (
+                        <div className="bg-[#131926] rounded-3xl p-8 border border-white/5 shadow-2xl animate-in fade-in zoom-in-95 duration-700 min-h-full">
+                            <div className="flex gap-2 mb-6 opacity-30">
+                                <div className="w-3 h-3 rounded-full bg-rose-500" />
+                                <div className="w-3 h-3 rounded-full bg-amber-500" />
+                                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                            </div>
+                            <div className="font-mono text-[13px] leading-relaxed text-slate-300 whitespace-pre-wrap selection:bg-blue-500/30">
+                                {generatedPrompt}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-700 gap-6 opacity-30 select-none">
+                            <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center animate-[spin_10s_linear_infinite]">
+                                <Terminal size={32} />
+                            </div>
+                            <p className="text-center text-[10px] font-black tracking-[0.2em] uppercase">Ready to generate your command</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Status Bar */}
+                <div className="p-4 bg-black/40 backdrop-blur-xl text-[9px] font-bold text-slate-500 flex justify-between px-8 border-t border-white/5 relative z-10">
+                    <div className="flex gap-6">
+                        <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> ENGINE: GPT-4/GEMINI READY</span>
+                        <span>LENGTH: ~{generatedPrompt.length} chars</span>
+                    </div>
+                    <span>LOCALE: TH_TH / EN_US</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default PromptBuilderPage;

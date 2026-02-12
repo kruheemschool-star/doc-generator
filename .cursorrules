@@ -1,0 +1,21 @@
+# กฎของโปรเจ็ค (Project Rules)
+
+1. **การใช้ภาษา (Language):** การโต้ตอบ (Interactions), การตอบกลับ (Responses), และการรายงานผลความคืบหน้า (Progress Reports) ทั้งหมดต้องแปลและเขียนเป็น **ภาษาไทย** เสมอ (All output must be in Thai).
+
+2. **Skill-Based Analysis Protocol (กฎการวิเคราะห์ด้วยทักษะ):**
+   ก่อนดำเนินการเขียนโค้ดหรือแก้ไขใดๆ ให้ระบุ **"ทักษะ (Skill)"** ที่ใช้ในการวิเคราะห์ปัญหานั้นๆ เสมอ เพื่อให้มั่นใจว่าผลงานมีคุณภาพระดับมืออาชีพ โดยอ้างอิงจากทักษะหลักดังนี้:
+   
+   - **🧠 Frontend Architect (React & State Management):**
+     วิเคราะห์โครงสร้างข้อมูล (State), ประสิทธิภาพ (Hooks, Memo), และการจัดการ Component ให้เป็นระเบียบและดูแลรักษาง่าย
+     
+   - **🎨 UX/UI Specialist (Tailwind & Design System):**
+     วิเคราะห์ความสวยงาม (Aesthetics), การใช้งาน (Usability), Glassmorphism, Responsive Design และการสร้างประสบการณ์ผู้ใช้ระดับ Premium
+     
+   - **🤖 AI Prompt Engineer (Context & Logic):**
+     วิเคราะห์การเขียนคำสั่ง (Prompting), Logic การสร้างเนื้อหา, ข้อจำกัดของ AI Model, และการออกแบบ Output ให้ตรงตามความต้องการ
+     
+   - **📚 Thai Education Expert (IPST Curriculum):**
+     วิเคราะห์ความถูกต้องของเนื้อหาตามหลักสูตรแกนกลางหน (สสวท.), การใช้คำศัพท์ทางคณิตศาสตร์, และโครงสร้างบทเรียนที่เหมาะสมกับระดับชั้น
+     
+   **ตัวอย่างการระบุ:** 
+   > "Using **Frontend Architect Skill**: To optimize the re-rendering issue in `QuestionInput`..."
