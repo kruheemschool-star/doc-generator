@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion } from 'lucide-react';
+import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 import kruheemLogo from '../assets/kruheem-logo.png';
 import TextItem from './TextItem';
@@ -89,7 +89,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [importQuestionType, setImportQuestionType] = useState('objective');
 
     // --- Pagination Hook ---
-    const { pageRefs } = useAutoPagination(pages, setPages, replacePages);
+    const { pageRefs, overflowPages, isPageOverflow } = useAutoPagination(pages, setPages, replacePages);
 
     // --- State Cleanup & Recovery ---
     const handleTrimEmptyPages = useCallback(() => {
@@ -568,6 +568,20 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
                                 <div key={page.id} ref={el => pageRefs.current[page.id] = el} className="w-[210mm] min-h-[297mm] bg-white shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden">
                                     <div className="absolute top-4 left-4 text-[10px] text-gray-300 font-bold print:hidden">PAGE {pIdx + 1}</div>
+                                    {/* A4 Boundary Guide Line - visual indicator of printable area */}
+                                    <div className="absolute left-0 right-0 pointer-events-none print:hidden" style={{ top: '277mm' }}>
+                                        <div className="border-t-2 border-dashed border-rose-300/50 mx-[10mm]" />
+                                        <span className="absolute right-[12mm] -top-[14px] text-[9px] text-rose-400/70 font-medium select-none bg-white px-1">ขอบ A4 ↓</span>
+                                    </div>
+                                    {/* Overflow Warning Badge */}
+                                    {isPageOverflow(page.id) && (
+                                        <div className="absolute top-4 right-4 z-20 print:hidden">
+                                            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-1.5 shadow-sm">
+                                                <AlertTriangle size={13} />
+                                                <span className="text-[10px] font-semibold">เนื้อหาเกินหน้า A4</span>
+                                            </div>
+                                        </div>
+                                    )}
                                     {/* Page Header - คณิตครูฮีม */}
                                     <div className="absolute top-[8mm] left-[20mm] right-[20mm] flex items-center justify-between pointer-events-none select-none">
                                         <div className="flex items-center gap-2">
@@ -590,7 +604,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             <span className="text-[9px] text-black/40 font-medium select-none">{pIdx + 1}</span>
                                         </div>
                                     </div>
-                                    <div className="p-[20mm] pt-[16mm]">
+                                    <div className="p-[20mm] pt-[16mm]" data-page-content>
                                         <Droppable droppableId={page.id}>
                                             {(provided, snapshot) => (
                                                 <div {...provided.droppableProps} ref={provided.innerRef} className={`min-h-[200px] rounded-xl transition-all ${snapshot.isDraggingOver ? 'bg-blue-50/50 ring-2 ring-blue-200 ring-dashed' : ''}`}>

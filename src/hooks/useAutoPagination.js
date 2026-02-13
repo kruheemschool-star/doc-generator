@@ -1,14 +1,56 @@
-import { useRef, useLayoutEffect, useState } from 'react';
+import { useRef, useLayoutEffect, useEffect, useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-// A4 Height at 96dpi is approx 1123px (297mm).
-const A4_HEIGHT_THRESHOLD = 1135;
-const MAX_PAGES_SAFETY = 50; // Prevention against runaway loops
+// A4 page dimensions at 96dpi:
+// Full A4 height = 297mm ≈ 1123px
+// Content wrapper has pt-16mm + pb-20mm = 36mm padding
+// Boundary line at 277mm → content wrapper scrollHeight at boundary = 297mm ≈ 1123px
+// Threshold at ~1100px triggers pagination ~7mm before the visual boundary line
+const A4_CONTENT_HEIGHT = 1100;
+const MAX_PAGES_SAFETY = 100;
+const RECHECK_DELAY = 120;
 
 const useAutoPagination = (pages, setPages, replacePages) => {
     const pageRefs = useRef({});
     const [isChecking, setIsChecking] = useState(false);
+    const [overflowPages, setOverflowPages] = useState(new Set());
+    const [resizeTick, setResizeTick] = useState(0); // Increments when any page content resizes
+    const resizeTimerRef = useRef(null);
+    const observerRef = useRef(null);
 
+    // --- ResizeObserver: detects async content expansion (image loads, KaTeX rendering, etc.) ---
+    useEffect(() => {
+        // Debounced handler for resize events
+        const handleResize = () => {
+            if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current);
+            resizeTimerRef.current = setTimeout(() => {
+                setResizeTick(t => t + 1);
+            }, 150); // Debounce 150ms to batch rapid changes
+        };
+
+        // Create a single observer that watches all page content divs
+        observerRef.current = new ResizeObserver(handleResize);
+
+        // Observe all current page content divs
+        Object.values(pageRefs.current).forEach(pageEl => {
+            if (!pageEl) return;
+            const contentEl = pageEl.querySelector('[data-page-content]');
+            if (contentEl) {
+                observerRef.current.observe(contentEl);
+            }
+        });
+
+        return () => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+            }
+            if (resizeTimerRef.current) {
+                clearTimeout(resizeTimerRef.current);
+            }
+        };
+    }, [pages]); // Re-setup observer when pages array changes
+
+    // --- Core pagination logic: runs on pages change, isChecking change, or resize tick ---
     useLayoutEffect(() => {
         if (isChecking) return;
         if (pages.length > MAX_PAGES_SAFETY) {
@@ -18,6 +60,7 @@ const useAutoPagination = (pages, setPages, replacePages) => {
 
         let hasOverflow = false;
         let newPages = [...pages];
+        const newOverflowPages = new Set();
 
         for (let i = 0; i < newPages.length; i++) {
             const pageId = newPages[i].id;
@@ -25,35 +68,48 @@ const useAutoPagination = (pages, setPages, replacePages) => {
 
             if (!pageEl) continue;
 
-            // CRITICAL FIX: Only paginate if the page overflows AND there's more than one item.
-            // If there's only one item and it's too big, we MUST let it stay or it will hop pages forever.
-            if (pageEl.clientHeight > A4_HEIGHT_THRESHOLD && newPages[i].questions.length > 1) {
-                hasOverflow = true;
+            const contentEl = pageEl.querySelector('[data-page-content]');
+            const contentHeight = contentEl ? contentEl.scrollHeight : pageEl.scrollHeight;
 
-                const questions = [...newPages[i].questions];
-                const questionToMove = questions.pop(); // Take the last one
+            if (contentHeight > A4_CONTENT_HEIGHT) {
+                if (newPages[i].questions.length > 1) {
+                    // Multi-item page: move last item to next page
+                    hasOverflow = true;
 
-                // Update current page
-                newPages[i] = {
-                    ...newPages[i],
-                    questions: questions
-                };
+                    const questions = [...newPages[i].questions];
+                    const questionToMove = questions.pop();
 
-                // Move to next page
-                if (i + 1 < newPages.length) {
-                    newPages[i + 1] = {
-                        ...newPages[i + 1],
-                        questions: [questionToMove, ...newPages[i + 1].questions]
+                    newPages[i] = {
+                        ...newPages[i],
+                        questions: questions
                     };
+
+                    if (i + 1 < newPages.length) {
+                        newPages[i + 1] = {
+                            ...newPages[i + 1],
+                            questions: [questionToMove, ...newPages[i + 1].questions]
+                        };
+                    } else {
+                        newPages.push({
+                            id: uuidv4(),
+                            questions: [questionToMove]
+                        });
+                    }
+                    break; // Re-check from scratch after move
                 } else {
-                    newPages.push({
-                        id: uuidv4(),
-                        questions: [questionToMove]
-                    });
+                    // Single-item page that overflows: mark as overflow warning
+                    newOverflowPages.add(pageId);
                 }
-                break;
             }
         }
+
+        // Update overflow warning state
+        setOverflowPages(prev => {
+            const prevArr = Array.from(prev).sort().join(',');
+            const newArr = Array.from(newOverflowPages).sort().join(',');
+            if (prevArr !== newArr) return newOverflowPages;
+            return prev;
+        });
 
         if (hasOverflow) {
             setIsChecking(true);
@@ -61,12 +117,17 @@ const useAutoPagination = (pages, setPages, replacePages) => {
             updater(newPages);
             setTimeout(() => {
                 setIsChecking(false);
-            }, 100);
+            }, RECHECK_DELAY);
         }
 
-    }, [pages, isChecking, setPages, replacePages]);
+    }, [pages, isChecking, resizeTick, setPages, replacePages]);
 
-    return { pageRefs };
+    // Helper to check if a specific page is overflowing
+    const isPageOverflow = useCallback((pageId) => {
+        return overflowPages.has(pageId);
+    }, [overflowPages]);
+
+    return { pageRefs, overflowPages, isPageOverflow };
 };
 
 export default useAutoPagination;
