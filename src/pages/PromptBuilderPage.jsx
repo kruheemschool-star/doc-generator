@@ -22,7 +22,8 @@ const DEFAULT_FORM_DATA = {
         mistake: false,
         shortcut: false,
         trivia: false,
-        vocab: false
+        vocab: false,
+        problemSolving: false
     },
     contentLength: 'long',
     questionCount: 10,
@@ -99,6 +100,20 @@ const PromptBuilderPage = () => {
         } else {
             promptText += `เป้าหมาย: สรุปเนื้อหาและสอนวิธีทำอย่างละเอียด\n`;
         }
+
+        // --- Logic for Extra Options (Components) ---
+        const activeComponents = [];
+        if (formData.components.formula) activeComponents.push('สรุปสูตรสำคัญ (Formula)');
+        if (formData.components.shortcut) activeComponents.push('เทคนิคลัด (Shortcuts & Tricks)');
+        if (formData.components.trivia) activeComponents.push('เกร็ดความรู้ (Trivia)');
+        if (formData.components.vocab) activeComponents.push('คำศัพท์เทคนิค (Technical Terms)');
+        if (formData.components.mistake) activeComponents.push('จุดที่มักผิด (Common Mistakes)');
+        if (formData.components.problemSolving) activeComponents.push('โจทย์ปัญหาและการแก้ปัญหา (Word Problems)');
+
+        if (activeComponents.length > 0) {
+            promptText += `\n**องค์ประกอบเพิ่มเติมที่ต้องมี (Requirements):**\nช่วยเน้นหรือแทรกเนื้อหาเกี่ยวกับ: ${activeComponents.join(', ')} ให้เหมาะสมกับบทเรียน\n`;
+        }
+        // ------------------------------------------
 
         promptText += `
 ---
@@ -524,6 +539,7 @@ const PromptBuilderPage = () => {
                                     { id: 'trivia', label: 'เกร็ดความรู้', color: 'amber' },
                                     { id: 'vocab', label: 'ศัพท์เทคนิค', color: 'emerald' },
                                     { id: 'mistake', label: 'จุดที่มักผิด', color: 'rose' },
+                                    { id: 'problemSolving', label: 'โจทย์ปัญหา', color: 'purple' },
                                 ].map(comp => (
                                     <button
                                         key={comp.id}
