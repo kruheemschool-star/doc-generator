@@ -27,7 +27,8 @@ const DEFAULT_FORM_DATA = {
     },
     contentLength: 'long',
     questionCount: 10,
-    questionType: 'objective'
+    questionType: 'objective',
+    wordProblemType: 'objective'
 };
 
 const PromptBuilderPage = () => {
@@ -91,7 +92,14 @@ const PromptBuilderPage = () => {
         if (topic) promptText += `หัวข้อเจาะจง "${topic}" `;
         promptText += `สำหรับนักเรียนชั้น ${formData.grade} (หลักสูตร สสวท.)\n\n`;
 
-        const qType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
+        let qType = '';
+        if (formData.questionType === 'word_problem') {
+            qType = formData.wordProblemType === 'subjective'
+                ? 'โจทย์ปัญหาแสดงวิธีทำ (Word Problem - Subjective)'
+                : 'โจทย์ปัญหาแบบตัวเลือก (Word Problem - Objective)';
+        } else {
+            qType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
+        }
 
         if (mode === 'exam') {
             promptText += `เป้าหมาย: ออกข้อสอบแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
@@ -154,7 +162,9 @@ const PromptBuilderPage = () => {
             : "(ใช้ Markdown ตาม Style Guide ด้านบน โดยแสดงวิธีทำสั้นๆ กระชับ)";
 
         if (mode === 'exam' || mode === 'practice') {
-            if (formData.questionType === 'subjective') {
+            const isSubjective = formData.questionType === 'subjective' || (formData.questionType === 'word_problem' && formData.wordProblemType === 'subjective');
+
+            if (isSubjective) {
                 promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
 [
   {
@@ -587,7 +597,31 @@ const PromptBuilderPage = () => {
                                         <div>อัตนัย</div>
                                         <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'subjective' ? 'text-slate-400' : 'text-slate-300'}`}>แสดงวิธีทำ</div>
                                     </button>
+                                    <button
+                                        onClick={() => handleChange('questionType', 'word_problem')}
+                                        className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'word_problem' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'} `}
+                                    >
+                                        <div>โจทย์ปัญหา</div>
+                                        <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'word_problem' ? 'text-slate-400' : 'text-slate-300'}`}>เน้นวิเคราะห์</div>
+                                    </button>
                                 </div>
+                                {formData.questionType === 'word_problem' && (
+                                    <div className="md:col-span-2 flex gap-3 p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 animate-in slide-in-from-top-2">
+                                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest self-center px-2">รูปแบบโจทย์ปัญหา:</span>
+                                        <button
+                                            onClick={() => handleChange('wordProblemType', 'objective')}
+                                            className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all ${formData.wordProblemType === 'objective' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-500 hover:text-indigo-600'} `}
+                                        >
+                                            ปรนัย (มีตัวเลือก)
+                                        </button>
+                                        <button
+                                            onClick={() => handleChange('wordProblemType', 'subjective')}
+                                            className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all ${formData.wordProblemType === 'subjective' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-500 hover:text-indigo-600'} `}
+                                        >
+                                            อัตนัย (แสดงวิธีทำ)
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -628,15 +662,15 @@ const PromptBuilderPage = () => {
                         </div>
                     </section>
                 </div>
-            </div>
+            </div >
 
             {/* --- Right Panel --- */}
-            <div className="w-[38%] bg-[#0B0F19] flex flex-col shadow-[inset_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden relative border-l border-slate-800/50">
+            < div className="w-[38%] bg-[#0B0F19] flex flex-col shadow-[inset_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden relative border-l border-slate-800/50" >
                 {/* Visual Glow */}
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[150px] -mr-80 -mt-80 rounded-full" />
+                < div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[150px] -mr-80 -mt-80 rounded-full" />
 
                 {/* Header Section */}
-                <div className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-black/20 backdrop-blur-md relative z-10">
+                < div className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-black/20 backdrop-blur-md relative z-10" >
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 text-emerald-400">
                             <Terminal size={14} strokeWidth={2.5} />
@@ -664,41 +698,42 @@ const PromptBuilderPage = () => {
                             {isCopied ? 'COPIED' : 'GENERATE & COPY'}
                         </button>
                     </div>
-                </div>
+                </div >
 
                 {/* Editor Content */}
-                <div className="flex-1 overflow-auto p-4 md:p-8 custom-scrollbar relative z-10">
-                    {generatedPrompt ? (
-                        <div className="bg-[#131926] rounded-3xl p-8 border border-white/5 shadow-2xl animate-in fade-in zoom-in-95 duration-700 min-h-full">
-                            <div className="flex gap-2 mb-6 opacity-30">
-                                <div className="w-3 h-3 rounded-full bg-rose-500" />
-                                <div className="w-3 h-3 rounded-full bg-amber-500" />
-                                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                < div className="flex-1 overflow-auto p-4 md:p-8 custom-scrollbar relative z-10" >
+                    {
+                        generatedPrompt ? (
+                            <div className="bg-[#131926] rounded-3xl p-8 border border-white/5 shadow-2xl animate-in fade-in zoom-in-95 duration-700 min-h-full" >
+                                <div className="flex gap-2 mb-6 opacity-30">
+                                    <div className="w-3 h-3 rounded-full bg-rose-500" />
+                                    <div className="w-3 h-3 rounded-full bg-amber-500" />
+                                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                                </div>
+                                <div className="font-mono text-[13px] leading-relaxed text-slate-300 whitespace-pre-wrap selection:bg-blue-500/30">
+                                    {generatedPrompt}
+                                </div>
                             </div>
-                            <div className="font-mono text-[13px] leading-relaxed text-slate-300 whitespace-pre-wrap selection:bg-blue-500/30">
-                                {generatedPrompt}
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-700 gap-6 opacity-30 select-none">
+                                <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center animate-[spin_10s_linear_infinite]">
+                                    <Terminal size={32} />
+                                </div>
+                                <p className="text-center text-[10px] font-black tracking-[0.2em] uppercase">Ready to generate your command</p>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-700 gap-6 opacity-30 select-none">
-                            <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center animate-[spin_10s_linear_infinite]">
-                                <Terminal size={32} />
-                            </div>
-                            <p className="text-center text-[10px] font-black tracking-[0.2em] uppercase">Ready to generate your command</p>
-                        </div>
-                    )}
-                </div>
+                        )}
+                </div >
 
                 {/* Status Bar */}
-                <div className="p-4 bg-black/40 backdrop-blur-xl text-[9px] font-bold text-slate-500 flex justify-between px-8 border-t border-white/5 relative z-10">
+                < div className="p-4 bg-black/40 backdrop-blur-xl text-[9px] font-bold text-slate-500 flex justify-between px-8 border-t border-white/5 relative z-10" >
                     <div className="flex gap-6">
                         <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> ENGINE: GPT-4/GEMINI READY</span>
                         <span>LENGTH: ~{generatedPrompt.length} chars</span>
                     </div>
                     <span>LOCALE: TH_TH / EN_US</span>
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     );
 };
 
