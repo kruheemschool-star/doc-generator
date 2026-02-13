@@ -5,7 +5,7 @@ import PromptBuilderPage from './pages/PromptBuilderPage';
 import WorksheetEditor from './components/WorksheetEditor';
 import ErrorBoundary from './components/ErrorBoundary';
 import { v4 as uuidv4 } from 'uuid';
-import { saveDocument, loadDocuments, deleteDocument as fbDeleteDocument, saveFolders, loadFolders, saveActiveDocId, loadActiveDocId } from './firebase';
+import { saveDocument, loadDocuments, deleteDocument as fbDeleteDocument, saveFolders, loadFolders, saveActiveDocId, loadActiveDocId, saveTrash, loadTrash } from './firebase';
 
 // --- Mock Initial Documents (Fallback) ---
 const MOCK_DOCS = [
@@ -21,6 +21,7 @@ const App = () => {
     // --- Data Persistence State ---
     const [documents, setDocuments] = useState([]);
     const [folders, setFolders] = useState([]);
+    const [trashedDocs, setTrashedDocs] = useState([]);
     const [activeDocumentId, setActiveDocumentId] = useState(null);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -30,13 +31,15 @@ const App = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [docs, flds, activeId] = await Promise.all([
+                const [docs, flds, activeId, trash] = await Promise.all([
                     loadDocuments(),
                     loadFolders(),
-                    loadActiveDocId()
+                    loadActiveDocId(),
+                    loadTrash()
                 ]);
                 setDocuments(docs.length > 0 ? docs : MOCK_DOCS);
                 setFolders(flds || []);
+                setTrashedDocs(trash || []);
                 if (activeId) setActiveDocumentId(activeId);
             } catch (error) {
                 console.error('Failed to load from Firestore:', error);
@@ -59,6 +62,11 @@ const App = () => {
         if (isInitialLoad.current || isLoading) return;
         saveFolders(folders);
     }, [folders, isLoading]);
+
+    useEffect(() => {
+        if (isInitialLoad.current || isLoading) return;
+        saveTrash(trashedDocs);
+    }, [trashedDocs, isLoading]);
 
     useEffect(() => {
         if (isInitialLoad.current || isLoading) return;
@@ -95,15 +103,45 @@ const App = () => {
         setCurrentView('editor');
     };
 
-    const handleDeleteDocument = async (docId) => {
-        if (window.confirm("Are you sure you want to delete this document?")) {
-            setDocuments(prev => prev.filter(d => d.id !== docId));
-            await fbDeleteDocument(docId);
-            if (activeDocumentId === docId) {
-                setActiveDocumentId(null);
-                setCurrentView('dashboard');
-            }
+    const handleUpdateDocument = (docId, updates) => {
+        setDocuments(prev => prev.map(d => d.id === docId ? { ...d, ...updates } : d));
+    };
+
+    const handleDeleteDocument = (docId) => {
+        const doc = documents.find(d => d.id === docId);
+        if (!doc) return;
+        setTrashedDocs(prev => [{ ...doc, deletedAt: new Date().toISOString() }, ...prev]);
+        setDocuments(prev => prev.filter(d => d.id !== docId));
+        if (activeDocumentId === docId) {
+            setActiveDocumentId(null);
+            setCurrentView('dashboard');
         }
+    };
+
+    const handleBatchDelete = (docIds) => {
+        const docsToTrash = documents.filter(d => docIds.includes(d.id));
+        setTrashedDocs(prev => [...docsToTrash.map(d => ({ ...d, deletedAt: new Date().toISOString() })), ...prev]);
+        setDocuments(prev => prev.filter(d => !docIds.includes(d.id)));
+    };
+
+    const handleRestoreDocument = (docId) => {
+        const doc = trashedDocs.find(d => d.id === docId);
+        if (!doc) return;
+        const { deletedAt, ...restoredDoc } = doc;
+        setDocuments(prev => [restoredDoc, ...prev]);
+        setTrashedDocs(prev => prev.filter(d => d.id !== docId));
+    };
+
+    const handlePermanentDelete = async (docId) => {
+        setTrashedDocs(prev => prev.filter(d => d.id !== docId));
+        await fbDeleteDocument(docId);
+    };
+
+    const handleEmptyTrash = async () => {
+        for (const doc of trashedDocs) {
+            await fbDeleteDocument(doc.id);
+        }
+        setTrashedDocs([]);
     };
 
     // --- Folder Handlers ---
@@ -186,9 +224,15 @@ const App = () => {
                     <Dashboard
                         documents={documents}
                         folders={folders}
+                        trashedDocs={trashedDocs}
                         onOpenDocument={handleOpenDocument}
                         onCreateDocument={handleCreateDocument}
                         onDeleteDocument={handleDeleteDocument}
+                        onUpdateDocument={handleUpdateDocument}
+                        onBatchDelete={handleBatchDelete}
+                        onRestoreDocument={handleRestoreDocument}
+                        onPermanentDelete={handlePermanentDelete}
+                        onEmptyTrash={handleEmptyTrash}
                         onCreateFolder={handleCreateFolder}
                         onUpdateFolder={handleUpdateFolder}
                         onDeleteFolder={handleDeleteFolder}

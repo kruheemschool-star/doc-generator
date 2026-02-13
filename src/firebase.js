@@ -81,6 +81,25 @@ export const loadActiveDocId = async () => {
   }
 };
 
+// --- Trash ---
+export const saveTrash = async (trashedDocs) => {
+  try {
+    await setDoc(doc(db, "settings", "trash"), { data: trashedDocs });
+  } catch (error) {
+    console.error("Error saving trash:", error);
+  }
+};
+
+export const loadTrash = async () => {
+  try {
+    const snap = await getDoc(doc(db, "settings", "trash"));
+    return snap.exists() ? snap.data().data : [];
+  } catch (error) {
+    console.error("Error loading trash:", error);
+    return [];
+  }
+};
+
 // --- Prompt Settings ---
 export const savePromptSettings = async (settings) => {
   try {
