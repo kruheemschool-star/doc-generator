@@ -185,12 +185,12 @@ const App = () => {
         setDocuments(prev => [copy, ...prev]);
     };
 
-    const handleSaveDocument = (updatedPages) => {
+    const handleSaveDocument = (updatedPages, subtitle) => {
         if (!activeDocumentId) return;
 
         setDocuments(prev => prev.map(doc => {
             if (doc.id === activeDocumentId) {
-                return { ...doc, pages: updatedPages };
+                return { ...doc, pages: updatedPages, subtitle: subtitle || '' };
             }
             return doc;
         }));
