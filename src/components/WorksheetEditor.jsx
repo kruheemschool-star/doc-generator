@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -262,6 +262,35 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             return newPages;
         });
     }, []);
+
+    const handleDuplicateItem = useCallback((itemId) => {
+        setPages(prevPages => {
+            const newPages = prevPages.map(p => ({ ...p, questions: [...p.questions] }));
+            let found = false;
+            let newItemId = null;
+
+            for (let i = 0; i < newPages.length; i++) {
+                const qIdx = newPages[i].questions.findIndex(q => q.id === itemId);
+                if (qIdx !== -1) {
+                    const originalItem = newPages[i].questions[qIdx];
+                    const newItem = {
+                        ...originalItem,
+                        id: uuidv4()
+                    };
+                    // Insert immediately after
+                    newPages[i].questions.splice(qIdx + 1, 0, newItem);
+                    newItemId = newItem.id;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found && newItemId) {
+                setTimeout(() => setSelectedItemId(newItemId), 50);
+            }
+            return newPages;
+        });
+    }, [setPages]);
 
     const handleDeleteQuestion = (questionId) => {
         setPages((prevPages) => prevPages.map(page => ({
@@ -684,6 +713,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 hover:text-purple-600 rounded-xl transition-all" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
 
                                 <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" title="แทรกเนื้อหาตรงนี้"><Plus size={20} /></button>
+
+                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
+
+                                <button onClick={() => handleDuplicateItem(selectedItemId)} className="p-3 hover:bg-gray-100 text-gray-500 hover:text-gray-700 rounded-xl transition-all" title="ทำสำเนา (Duplicate)"><Copy size={20} /></button>
 
                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
 

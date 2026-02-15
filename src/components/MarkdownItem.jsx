@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useCallback } from 'react';
+import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
@@ -42,6 +42,33 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [showPreview, setShowPreview] = useState(false);
+    const textAreaRef = useRef(null);
+
+    const EDUCATION_ICONS = [
+        '📚', '📖', '✏️', '📝', '📐', '📏', '🎒', '🎓', '💡', '🧠',
+        '🔢', '✖️', '➗', '🧩', '🏫', '🖍️', '🖌️', '🔍', '🔬', '🧪',
+        '⭐', '🌟', '🔥', '✅', '❌', '❓', '❗', '💯', '🏆', '🥇'
+    ];
+
+    const handleInsertIcon = (icon) => {
+        const textarea = textAreaRef.current;
+        if (!textarea) {
+            setText(prev => prev + icon);
+            return;
+        }
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const newText = text.substring(0, start) + icon + text.substring(end);
+
+        setText(newText);
+
+        // Restore focus and cursor position
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + icon.length, start + icon.length);
+        }, 0);
+    };
 
     // Sync with external content updates (Crucial for Import)
     useEffect(() => {
@@ -146,13 +173,29 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
                                     </button>
                                 </div>
                                 <div className={showPreview ? 'grid grid-cols-2 gap-3' : ''}>
-                                    <textarea
-                                        className="w-full min-h-[200px] p-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y"
-                                        value={text}
-                                        onChange={(e) => setText(e.target.value)}
-                                        placeholder="พิมพ์เนื้อหา Markdown ที่นี่..."
-                                        autoFocus
-                                    />
+                                    <div className="flex flex-col gap-2">
+                                        {/* Icon Toolbar */}
+                                        <div className="flex flex-wrap gap-1 p-2 bg-gray-50 rounded-lg border border-gray-200 shadow-inner max-h-[100px] overflow-y-auto custom-scrollbar">
+                                            {EDUCATION_ICONS.map((icon, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={(e) => { e.stopPropagation(); handleInsertIcon(icon); }}
+                                                    className="w-7 h-7 flex items-center justify-center text-lg hover:bg-white hover:scale-110 hover:shadow-sm rounded transition-all cursor-pointer select-none"
+                                                    title="แทรกไอคอน"
+                                                >
+                                                    {icon}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <textarea
+                                            ref={textAreaRef}
+                                            className="w-full min-h-[200px] p-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y"
+                                            value={text}
+                                            onChange={(e) => setText(e.target.value)}
+                                            placeholder="พิมพ์เนื้อหา Markdown ที่นี่..."
+                                            autoFocus
+                                        />
+                                    </div>
                                     {showPreview && (
                                         <div className="border border-gray-200 rounded-lg p-3 overflow-auto min-h-[200px] bg-gray-50/50">
                                             <div className="text-[10px] uppercase font-bold text-gray-400 mb-2">ตัวอย่าง</div>
