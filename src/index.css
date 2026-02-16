@@ -59,6 +59,16 @@
   }
 }
 
+/* When grid overlay is active, make content item backgrounds transparent */
+.grid-active [data-rfd-draggable-id] {
+  background-color: transparent !important;
+}
+
+.grid-active [data-rfd-draggable-id] .bg-green-50\/50,
+.grid-active [data-rfd-draggable-id] .bg-gray-50\/30 {
+  background-color: transparent !important;
+}
+
 @media print {
   @page {
     size: A4;
@@ -122,5 +132,13 @@
   /* Preserve grid layout exactly as on screen */
   .grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Grid overlay for writing guides */
+  .grid-overlay {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    width: 210mm !important;
+    height: 297mm !important;
   }
 }

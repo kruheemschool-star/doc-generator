@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy } from 'lucide-react';
+import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3 } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -74,6 +74,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [zoomLevel, setZoomLevel] = useState(100);
     const [globalFontSize, setGlobalFontSize] = useState('medium');
     const [showDebug, setShowDebug] = useState(false);
+    const [showGrid, setShowGrid] = useState(false);
+    const [gridSize, setGridSize] = useState('medium'); // 'small' | 'medium' | 'large'
+    const [gridOpacity, setGridOpacity] = useState(30); // 0-100
+    const [showGridMenu, setShowGridMenu] = useState(false);
 
     // --- Selection & Editing State ---
     const [selectedItemId, setSelectedItemId] = useState(null);
@@ -595,7 +599,20 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
-                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className="w-[210mm] min-h-[297mm] bg-white shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden">
+                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`w-[210mm] min-h-[297mm] bg-white shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden ${showGrid ? 'grid-active' : ''}`}>
+                                    {/* Grid Overlay */}
+                                    {showGrid && (
+                                        <div
+                                            className="absolute inset-0 pointer-events-none z-0 grid-overlay"
+                                            style={{
+                                                backgroundImage: `
+                                                    linear-gradient(to right, rgba(0,0,0,${gridOpacity / 100}) 1px, transparent 1px),
+                                                    linear-gradient(to bottom, rgba(0,0,0,${gridOpacity / 100}) 1px, transparent 1px)
+                                                `,
+                                                backgroundSize: `${{ small: '5mm 5mm', medium: '8mm 8mm', large: '12mm 12mm' }[gridSize]}`,
+                                            }}
+                                        />
+                                    )}
                                     <div className="absolute top-4 left-4 text-[10px] text-gray-300 font-bold print:hidden">PAGE {pIdx + 1}</div>
                                     {/* A4 Boundary Guide Line - visual indicator of printable area */}
                                     <div className="absolute left-0 right-0 pointer-events-none print:hidden" style={{ top: '287mm' }}>
@@ -682,6 +699,24 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 </div>
                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
                                 <button onClick={() => setShowSolution(!showSolution)} className={`p-3 rounded-xl transition-all ${showSolution ? 'bg-blue-50 text-blue-600' : 'text-gray-400'}`} title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={20} /> : <EyeOff size={20} />}</button>
+                                <div className="relative">
+                                    <button onClick={() => { if (!showGrid) { setShowGrid(true); } setShowGridMenu(!showGridMenu); }} className={`p-3 rounded-xl transition-all ${showGrid ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:bg-gray-100'}`} title="เปิด/ปิดตารางกริด"><Grid3X3 size={20} /></button>
+                                    {showGridMenu && (
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col bg-white border border-gray-200 rounded-xl shadow-xl p-2 min-w-[180px]" onClick={e => e.stopPropagation()}>
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider px-2 mb-1">ขนาดช่อง</span>
+                                            {[{ label: 'เล็ก (5mm)', value: 'small' }, { label: 'กลาง (8mm)', value: 'medium' }, { label: 'ใหญ่ (12mm)', value: 'large' }].map(g => (
+                                                <button key={g.value} onClick={() => setGridSize(g.value)} className={`text-left px-3 py-1.5 rounded-lg text-sm transition-all ${gridSize === g.value ? 'bg-emerald-50 text-emerald-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>{g.label}</button>
+                                            ))}
+                                            <div className="border-t border-gray-100 mt-1.5 pt-1.5">
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider px-2">ความเข้ม ({gridOpacity}%)</span>
+                                                <div className="px-2 pt-1 pb-1">
+                                                    <input type="range" min="5" max="80" value={gridOpacity} onChange={e => setGridOpacity(Number(e.target.value))} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
+                                                </div>
+                                            </div>
+                                            <button onClick={() => { setShowGrid(false); setShowGridMenu(false); }} className="mt-1 text-left px-3 py-1.5 rounded-lg text-sm text-red-400 hover:bg-red-50 transition-all">ปิดกริด</button>
+                                        </div>
+                                    )}
+                                </div>
                                 <button onClick={() => window.print()} className="p-3 hover:bg-gray-100 text-gray-400 rounded-xl" title="พิมพ์"><Printer size={20} /></button>
                             </>
                         ) : (
