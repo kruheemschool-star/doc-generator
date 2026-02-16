@@ -305,6 +305,20 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         if (selectedItemId === questionId) setSelectedItemId(null);
     };
 
+    const handleDeletePage = useCallback((pageIndex) => {
+        if (!window.confirm("คุณแน่ใจหรือไม่ที่จะลบหน้านี้? การกระทำนี้ไม่สามารถย้อนกลับได้")) return;
+
+        setPages(prevPages => {
+            const newPages = [...prevPages];
+            newPages.splice(pageIndex, 1);
+            // Ensure at least one page remains
+            if (newPages.length === 0) {
+                return [{ id: uuidv4(), questions: [] }];
+            }
+            return newPages;
+        });
+    }, [setPages]);
+
     // --- Build Section Header Markdown ---
     const buildSectionHeader = (sectionType, questionType) => {
         const sectionMap = {
@@ -649,6 +663,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             />
                                             <span className="text-[9px] text-black/30 font-medium select-none">|</span>
                                             <span className="text-[9px] text-black/40 font-medium select-none">{pIdx + 1}</span>
+                                            <button
+                                                onClick={() => handleDeletePage(pIdx)}
+                                                className="ml-1 p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors print:hidden"
+                                                title="ลบหน้านี้"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="px-[20mm] pt-[16mm] pb-[10mm]" data-page-content>
