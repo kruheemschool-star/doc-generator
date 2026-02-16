@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3 } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3 } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -78,6 +78,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [gridSize, setGridSize] = useState('medium'); // 'small' | 'medium' | 'large'
     const [gridOpacity, setGridOpacity] = useState(30); // 0-100
     const [showGridMenu, setShowGridMenu] = useState(false);
+    const gridMenuTimeoutRef = useRef(null);
 
     // --- Selection & Editing State ---
     const [selectedItemId, setSelectedItemId] = useState(null);
@@ -595,7 +596,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             </header>
 
             <div className="flex h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
-                <main className="flex-1 overflow-y-auto p-12 custom-scrollbar bg-slate-100/50 print:p-0 print:overflow-visible" onClick={() => setSelectedItemId(null)}>
+                <main className="flex-1 overflow-y-auto p-12 custom-scrollbar bg-slate-100/50 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowGridMenu(false); }}>
                     <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
@@ -699,21 +700,43 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 </div>
                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
                                 <button onClick={() => setShowSolution(!showSolution)} className={`p-3 rounded-xl transition-all ${showSolution ? 'bg-blue-50 text-blue-600' : 'text-gray-400'}`} title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={20} /> : <EyeOff size={20} />}</button>
-                                <div className="relative">
-                                    <button onClick={() => { if (!showGrid) { setShowGrid(true); } setShowGridMenu(!showGridMenu); }} className={`p-3 rounded-xl transition-all ${showGrid ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:bg-gray-100'}`} title="เปิด/ปิดตารางกริด"><Grid3X3 size={20} /></button>
+                                <div className="relative" onMouseEnter={() => { if (gridMenuTimeoutRef.current) clearTimeout(gridMenuTimeoutRef.current); setShowGridMenu(true); }} onMouseLeave={() => { gridMenuTimeoutRef.current = setTimeout(() => setShowGridMenu(false), 300); }}>
+                                    <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={`p-3 rounded-xl transition-all ${showGrid ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:bg-gray-100'}`} title="เปิด/ปิดตารางกริด"><Grid3X3 size={20} /></button>
                                     {showGridMenu && (
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col bg-white border border-gray-200 rounded-xl shadow-xl p-2 min-w-[180px]" onClick={e => e.stopPropagation()}>
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider px-2 mb-1">ขนาดช่อง</span>
-                                            {[{ label: 'เล็ก (5mm)', value: 'small' }, { label: 'กลาง (8mm)', value: 'medium' }, { label: 'ใหญ่ (12mm)', value: 'large' }].map(g => (
-                                                <button key={g.value} onClick={() => setGridSize(g.value)} className={`text-left px-3 py-1.5 rounded-lg text-sm transition-all ${gridSize === g.value ? 'bg-emerald-50 text-emerald-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>{g.label}</button>
-                                            ))}
-                                            <div className="border-t border-gray-100 mt-1.5 pt-1.5">
-                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider px-2">ความเข้ม ({gridOpacity}%)</span>
-                                                <div className="px-2 pt-1 pb-1">
-                                                    <input type="range" min="5" max="80" value={gridOpacity} onChange={e => setGridOpacity(Number(e.target.value))} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
+                                        <div className="absolute bottom-full left-1/2 mb-3 flex flex-col bg-white rounded-2xl shadow-2xl p-1.5 min-w-[220px] z-50 animate-fade-in-up ring-1 ring-gray-900/5 origin-bottom" onClick={e => e.stopPropagation()} onMouseEnter={() => { if (gridMenuTimeoutRef.current) clearTimeout(gridMenuTimeoutRef.current); }} onMouseLeave={() => { gridMenuTimeoutRef.current = setTimeout(() => setShowGridMenu(false), 300); }}>
+                                            <div className="px-2 py-1.5 mb-1 border-b border-gray-100 flex justify-between items-center">
+                                                <span className="text-xs font-semibold text-gray-700">ตั้งค่าเส้นกริด</span>
+                                                <button onClick={() => setShowGridMenu(false)} className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0 rounded-full hover:bg-gray-200 transition-colors">ย่อเก็บ</button>
+                                            </div>
+
+                                            <div className="p-1 space-y-0.5">
+                                                {[{ label: 'เล็ก (5mm)', value: 'small' }, { label: 'กลาง (8mm)', value: 'medium' }, { label: 'ใหญ่ (12mm)', value: 'large' }].map(g => (
+                                                    <button key={g.value} onClick={() => setGridSize(g.value)} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all ${gridSize === g.value ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                                                        {g.label}
+                                                        {gridSize === g.value && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <div className="px-3 py-2 mt-1 bg-gray-50/50 rounded-xl mx-1 mb-1 border border-gray-100/50">
+                                                <div className="flex justify-between text-xs text-gray-500 mb-2 font-medium">
+                                                    <span>ความเข้ม</span>
+                                                    <span>{gridOpacity}%</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => setGridOpacity(o => Math.max(5, o - 5))} className="p-1 rounded-full bg-white shadow-sm border border-gray-100 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all text-gray-400"><Minus size={12} /></button>
+                                                    <input
+                                                        type="range"
+                                                        min="5"
+                                                        max="100"
+                                                        step="1"
+                                                        value={gridOpacity}
+                                                        onChange={e => setGridOpacity(Number(e.target.value))}
+                                                        className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer range-slider"
+                                                    />
+                                                    <button onClick={() => setGridOpacity(o => Math.min(100, o + 5))} className="p-1 rounded-full bg-white shadow-sm border border-gray-100 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all text-gray-400"><Plus size={12} /></button>
                                                 </div>
                                             </div>
-                                            <button onClick={() => { setShowGrid(false); setShowGridMenu(false); }} className="mt-1 text-left px-3 py-1.5 rounded-lg text-sm text-red-400 hover:bg-red-50 transition-all">ปิดกริด</button>
                                         </div>
                                     )}
                                 </div>
