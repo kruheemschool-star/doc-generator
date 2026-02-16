@@ -26,7 +26,7 @@ const SpacerItem = memo(({ id, index, height, onDelete, onUpdate, onMove, isSele
                     }}
                 >
                     {/* Hover Controls */}
-                    <div className="absolute right-full top-0 h-full w-10 hidden group-hover:flex flex-col gap-1 items-center pt-2 print:hidden">
+                    <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
                         <div
                             {...provided.dragHandleProps}
                             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"

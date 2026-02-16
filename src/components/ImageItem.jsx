@@ -14,7 +14,7 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
-            
+
             img.onload = () => {
                 // Calculate new dimensions
                 let { width, height } = img;
@@ -22,15 +22,15 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                     height = (height * maxWidth) / width;
                     width = maxWidth;
                 }
-                
+
                 canvas.width = width;
                 canvas.height = height;
-                
+
                 // Draw and compress
                 ctx.drawImage(img, 0, 0, width, height);
                 canvas.toBlob(resolve, 'image/jpeg', quality);
             };
-            
+
             img.src = URL.createObjectURL(file);
         });
     };
@@ -38,32 +38,32 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
+
         // Check file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             setUploadError('รูปภาพใหญ่เกินไป (สูงสุด 5MB)');
             return;
         }
-        
+
         setIsUploading(true);
         setUploadError('');
-        
+
         try {
             // Compress image
             const compressedBlob = await compressImage(file);
-            
+
             // Convert to base64
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64 = reader.result;
-                
+
                 // Check base64 size (Firestore limit ~1MB per document)
                 if (base64.length > 800000) {
                     setUploadError('รูปภาพยังใหญ่เกินไปหลังบีบอัด ลองใช้รูปที่เล็กกว่า');
                     setIsUploading(false);
                     return;
                 }
-                
+
                 onUpdate(id, { src: base64 });
                 setIsUploading(false);
                 setUploadError('');
@@ -74,7 +74,7 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
             setUploadError('ไม่สามารถประมวลผลรูปภาพได้');
             setIsUploading(false);
         }
-        
+
         // Reset file input
         e.target.value = '';
     };
@@ -107,7 +107,7 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                     }}
                 >
                     {/* Hover Controls */}
-                    <div className="absolute right-full top-0 h-full w-10 hidden group-hover:flex flex-col gap-1 items-center pt-2 print:hidden">
+                    <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
                         <div
                             {...provided.dragHandleProps}
                             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
@@ -178,7 +178,7 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                                 />
                             </div>
                         )}
-                        
+
                         {/* Error Message */}
                         {uploadError && (
                             <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600 text-sm">
