@@ -363,53 +363,20 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
         try {
             let jsonString = importText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-            // --- Helper: Sanitize LaTeX in JSON ---
-            // Fixes common issue where users input single backslashes for LaTeX (e.g. \times) 
-            // which get consumed by JSON.parse as escape chars (e.g. \t -> tab).
-            const sanitizeJsonLatex = (str) => {
-                const patterns = [
-                    // \t -> times, theta, tau, tan, text, tiny, top
-                    /(?<!\\)\\(times|theta|tau|tan|text|tiny|top)/g,
-                    // \f -> frac, forall
-                    /(?<!\\)\\(frac|forall)/g,
-                    // \b -> beta, bar, binom, big, bf, bm
-                    /(?<!\\)\\(beta|bar|binom|big|bf|bm)/g,
-                    // \n -> nu, neq, nabla, not, natural, neg
-                    /(?<!\\)\\(nu|neq|nabla|not|natural|neg)/g,
-                    // \r -> rho, right, rightarrow, rangle, rfloor, rceil
-                    /(?<!\\)\\(rho|right|rightarrow|rangle|rfloor|rceil)/g
-                ];
-
-                let result = str;
-                patterns.forEach(regex => {
-                    result = result.replace(regex, (match) => '\\' + match);
-                });
-                return result;
-            };
+            let parsed = null;
 
             try {
-                // Try strictly first
-                const sanitized = sanitizeJsonLatex(jsonString);
-                parsed = JSON.parse(sanitized);
-            } catch (strictErr) {
-                // If strict parse fails, try the loose extraction (with original logic but sanitized)
-                try {
-                    const startArr = jsonString.indexOf('[');
-                    const startObj = jsonString.indexOf('{');
-                    const start = (startArr !== -1 && (startObj === -1 || startArr < startObj)) ? startArr : startObj;
-
-                    const endArr = jsonString.lastIndexOf(']');
-                    const endObj = jsonString.lastIndexOf('}');
-                    const end = (endArr !== -1 && (endObj === -1 || endArr > endObj)) ? endArr : endObj;
-
-                    if (start !== -1 && end !== -1 && end > start) {
-                        const extracted = jsonString.substring(start, end + 1);
-                        parsed = JSON.parse(sanitizeJsonLatex(extracted));
-                    } else {
-                        throw strictErr; // Throw original error if extraction fails
-                    }
-                } catch (e) {
+                parsed = JSON.parse(jsonString);
+            } catch (e) {
+                const startArr = jsonString.indexOf('[');
+                const startObj = jsonString.indexOf('{');
+                const start = startArr !== -1 ? startArr : startObj;
+                const endArr = jsonString.lastIndexOf(']');
+                const endObj = jsonString.lastIndexOf('}');
+                const end = startArr !== -1 ? endArr : endObj;
+                if (start !== -1 && end !== -1 && end > start) {
+                    parsed = JSON.parse(jsonString.substring(start, end + 1));
+                } else {
                     throw e;
                 }
             }
