@@ -48,7 +48,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     useEffect(() => {
         setHasUnsavedChanges(true);
         setSaveStatus('unsaved');
-    }, [pages]);
+    }, [pages, documentTitle]);
 
     const handleManualSave = () => {
         if (onSave && pages) {
