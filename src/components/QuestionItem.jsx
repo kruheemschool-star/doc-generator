@@ -1,7 +1,8 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useRef } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import MarkdownRenderer from './MarkdownRenderer';
-import { Trash2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import SvgRenderer from './SvgRenderer';
+import { Trash2, GripVertical, ChevronUp, ChevronDown, X, ImagePlus } from 'lucide-react';
 
 // Estimate visible character length of an option (strip LaTeX/Markdown markers)
 const estimateVisibleLength = (text) => {
@@ -17,7 +18,39 @@ const estimateVisibleLength = (text) => {
   return stripped.length;
 };
 
-const QuestionItem = memo(({ id, index, no, question, type, options, solution, spaceNeeded, fontSize = 'default', showSolution, onDelete, onMove, isSelected, onSelect, canMoveUp, canMoveDown }) => {
+// Strip duplicate ก./ข./ค./ง. prefix that AI may include
+const stripOptionPrefix = (text) => {
+  if (!text) return text;
+  return text.replace(/^[ก-ง]\.\s*/, '').trim();
+};
+
+// Strip question number prefix and blockquote wrappers that AI may include
+const cleanQuestionText = (text) => {
+  if (!text) return text;
+  let cleaned = text;
+  // Remove leading question numbers: "ข้อที่ 1:", "ข้อ 1:", "ข้อ 1.", "1.", "1)", "1:" at start
+  cleaned = cleaned.replace(/^(ข้อที่\s*\d+\s*[:.]?\s*|ข้อ\s*\d+\s*[:.]?\s*|\d+\s*[.):]?\s*)/, '').trim();
+  // Remove blockquote "โจทย์:" prefix lines: "> 📘 โจทย์:" or "> โจทย์:" etc.
+  cleaned = cleaned.replace(/^>\s*[📘📝🔢]*\s*โจทย์\s*[:：]\s*/gm, '').trim();
+  // Remove remaining empty blockquote markers at start
+  cleaned = cleaned.replace(/^>\s*$/gm, '').trim();
+  return cleaned;
+};
+
+const QuestionItem = memo(({ id, index, no, question, type, options, solution, svg, questionImage, spaceNeeded, fontSize = 'default', showSolution, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown }) => {
+
+  const imageInputRef = useRef(null);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUpdate) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      onUpdate(id, { questionImage: ev.target.result, svg: '' });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   // Helper for font size
   const getSizeClass = () => {
@@ -80,12 +113,87 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
             )}
           </div>
 
+          {/* Hidden file input for image upload */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
+
           {/* Question Content */}
           <div className="mb-4">
             <div className="flex gap-3">
-              <span className={`font-bold min-w-[24px] select-none font-prompt ${getSizeClass()}`}>{no}.</span>
-              <div className={`flex-1 overflow-x-auto ${getSizeClass()}`}>
-                <MarkdownRenderer content={question} />
+              <span className={`font-bold min-w-[24px] flex-shrink-0 select-none font-prompt ${getSizeClass()}`}>{no}.</span>
+              <div className={`flex-1 min-w-0 overflow-hidden ${getSizeClass()}`}>
+                {/* Question text */}
+                <MarkdownRenderer content={cleanQuestionText(question)} />
+
+                {/* SVG Image - below question, above options */}
+                {svg && (
+                  <div className="relative mt-3 mb-3 flex justify-center group/svg">
+                    <div className="border border-gray-100 rounded-lg p-2 bg-white max-w-full print:border-transparent print:p-0">
+                      <SvgRenderer svgString={svg} maxWidth={380} />
+                    </div>
+                    {/* Image action buttons */}
+                    {onUpdate && (
+                      <div className="absolute -top-2 right-0 flex gap-1 opacity-0 group-hover/svg:opacity-100 transition-opacity print:hidden">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
+                          className="w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-blue-600"
+                          title="แทนที่ด้วยรูปภาพ"
+                        >
+                          <ImagePlus size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onUpdate(id, { svg: '' }); }}
+                          className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-600"
+                          title="ลบรูปภาพ"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Custom uploaded image - below question, above options */}
+                {!svg && questionImage && (
+                  <div className="relative mt-3 mb-3 flex justify-center group/img">
+                    <img src={questionImage} alt="รูปประกอบโจทย์" className="max-w-full max-h-[300px] object-contain rounded-lg border border-gray-100" />
+                    {onUpdate && (
+                      <div className="absolute -top-2 right-0 flex gap-1 opacity-0 group-hover/img:opacity-100 transition-opacity print:hidden">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
+                          className="w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-blue-600"
+                          title="เปลี่ยนรูปภาพ"
+                        >
+                          <ImagePlus size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onUpdate(id, { questionImage: '' }); }}
+                          className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-600"
+                          title="ลบรูปภาพ"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Upload image placeholder - when no svg and no image */}
+                {!svg && !questionImage && onUpdate && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
+                    className="mt-2 mb-1 px-3 py-1.5 text-xs text-gray-400 hover:text-blue-500 hover:bg-blue-50 border border-dashed border-gray-200 hover:border-blue-300 rounded-lg flex items-center gap-1.5 transition-colors opacity-0 group-hover:opacity-100 print:hidden"
+                    title="แทรกรูปภาพ"
+                  >
+                    <ImagePlus size={14} />
+                    <span>แทรกรูปภาพ</span>
+                  </button>
+                )}
 
                 {/* Options (if present) */}
                 {options && options.length > 0 && (
@@ -93,8 +201,8 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
                     {options.map((opt, idx) => (
                       <div key={idx} className="flex items-start gap-2 text-gray-700">
                         <span className="font-semibold min-w-[20px]">{['ก.', 'ข.', 'ค.', 'ง.'][idx] || `${idx + 1}.`}</span>
-                        <div className="flex-1">
-                          <MarkdownRenderer content={opt} />
+                        <div className="flex-1 min-w-0">
+                          <MarkdownRenderer content={stripOptionPrefix(opt)} />
                         </div>
                       </div>
                     ))}

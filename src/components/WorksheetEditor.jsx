@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
 import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3 } from 'lucide-react';
@@ -15,7 +14,6 @@ import useAutoPagination from '../hooks/useAutoPagination';
 import useHistory from '../hooks/useHistory';
 
 const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
-    const navigate = useNavigate();
     // --- History State Management ---
     const {
         state: pages,
@@ -400,6 +398,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     options: q.options || [],
                     solution: q.solution || '',
                     answer: q.answer || '',
+                    svg: q.svg || '',
                     spaceNeeded: q.space || 'medium'
                 }));
                 insertItemsIntoPages(itemsToAdd);
@@ -540,7 +539,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
         return (
             <ErrorBoundary key={q.id}>
-                <QuestionItem {...commonProps} no={qCountSinceReset + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} spaceNeeded={q.spaceNeeded} fontSize={globalFontSize} showSolution={showSolution} />
+                <QuestionItem {...commonProps} no={qCountSinceReset + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} svg={q.svg} questionImage={q.questionImage} spaceNeeded={q.spaceNeeded} fontSize={globalFontSize} showSolution={showSolution} />
             </ErrorBoundary>
         );
     };
@@ -594,13 +593,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 </div>
             )}
 
-            <header className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40 h-16 shadow-sm print:hidden">
-                <div className="max-w-[1600px] mx-auto px-6 h-full flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <button onClick={handleBackWithConfirmation} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"><ArrowLeft size={20} /></button>
-                        <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2 font-outfit">
-                            <Layout size={18} className="text-blue-600" />
-                            {activeDocument?.title || 'Untitled'}
+            <header className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40 h-14 sm:h-16 shadow-sm print:hidden">
+                <div className="max-w-[1600px] mx-auto px-3 sm:px-6 h-full flex justify-between items-center">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                        <button onClick={handleBackWithConfirmation} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors flex-shrink-0"><ArrowLeft size={20} /></button>
+                        <h1 className="text-sm sm:text-lg font-bold text-gray-800 flex items-center gap-2 font-outfit truncate">
+                            <Layout size={18} className="text-blue-600 flex-shrink-0" />
+                            <span className="truncate">{activeDocument?.title || 'Untitled'}</span>
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
@@ -609,8 +608,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 </div>
             </header>
 
-            <div className="flex h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
-                <main className="flex-1 overflow-y-auto p-12 custom-scrollbar bg-slate-100/50 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowGridMenu(false); }}>
+            <div className="flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12 custom-scrollbar bg-slate-100/50 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowGridMenu(false); }}>
                     <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (

@@ -26,27 +26,27 @@ const Navbar = ({ currentView, onViewChange }) => {
                     </div>
 
                     {/* Menu Items */}
-                    <div className="flex space-x-2 bg-slate-800/50 p-1 rounded-lg border border-white/5">
+                    <div className="flex space-x-1 sm:space-x-2 bg-slate-800/50 p-1 rounded-lg border border-white/5">
                         <button
                             onClick={() => onViewChange('dashboard')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-all duration-200 ${currentView === 'dashboard' || currentView === 'editor'
+                            className={`px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 transition-all duration-200 ${currentView === 'dashboard' || currentView === 'editor'
                                 ? 'bg-slate-700 text-white shadow-sm'
                                 : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
                                 }`}
                         >
                             <LayoutDashboard size={18} className={currentView === 'dashboard' || currentView === 'editor' ? 'text-blue-400' : ''} />
-                            <span>Dashboard</span>
+                            <span className="hidden sm:inline">Dashboard</span>
                         </button>
 
                         <button
                             onClick={() => onViewChange('prompt-builder')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-all duration-200 ${currentView === 'prompt-builder'
+                            className={`px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 transition-all duration-200 ${currentView === 'prompt-builder'
                                 ? 'bg-slate-700 text-white shadow-sm'
                                 : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
                                 }`}
                         >
                             <Sparkles size={18} className={currentView === 'prompt-builder' ? 'text-purple-400 animate-pulse' : ''} />
-                            <span>Prompt Builder</span>
+                            <span className="hidden sm:inline">Prompt Builder</span>
                         </button>
                     </div>
                 </div>

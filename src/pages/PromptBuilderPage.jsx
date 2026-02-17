@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { savePromptSettings, loadPromptSettings } from '../firebase';
 import {
     Sparkles, Copy, Check, Terminal, Zap, FileText,
-    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar
+    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar, Image as ImageIcon, ScanText
 } from 'lucide-react';
 import { IPST_CURRICULUM, getChapters, getChapterObject } from '../data/thaiMathCurriculum';
 
@@ -25,6 +25,7 @@ const DEFAULT_FORM_DATA = {
         vocab: false,
         problemSolving: false
     },
+    svgImageType: 'geometry',
     contentLength: 'long',
     questionCount: 10,
     questionType: 'objective',
@@ -124,6 +125,62 @@ const PromptBuilderPage = () => {
 **เป้าหมายสูงสุด:** ทำให้นักเรียนอ่านจบใน 5 นาทีแล้วมีความมั่นใจเดินเข้าห้องสอบได้ทันที
 ---
 `;
+        } else if (mode === 'svg_question') {
+            const svgTypeMap = {
+                geometry: 'รูปทรงเรขาคณิต (สามเหลี่ยม สี่เหลี่ยม วงกลม ฯลฯ)',
+                graph: 'กราฟเส้นตรง กราฟพาราโบลา หรือระบบพิกัด',
+                number_line: 'เส้นจำนวน (Number Line)',
+                diagram: 'แผนภาพ (Venn Diagram, Tree Diagram ฯลฯ)',
+                mixed: 'ผสมหลายแบบ (เรขาคณิต, กราฟ, แผนภาพ ตามความเหมาะสมของโจทย์)'
+            };
+            const svgDesc = svgTypeMap[formData.svgImageType] || svgTypeMap.geometry;
+            const svgQType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
+
+            promptText += `เป้าหมาย: สร้างโจทย์คณิตศาสตร์แบบ${svgQType} จำนวน ${formData.questionCount || 5} ข้อ **พร้อมรูปภาพประกอบ (SVG)** (ความยาก: ${formData.difficulty})\n`;
+            promptText += `ประเภทรูปภาพ: ${svgDesc}\n`;
+            promptText += `
+---
+**บทบาทพิเศษ: นักออกแบบโจทย์พร้อมรูปภาพ (Visual Math Question Designer)**
+
+**กฎเหล็กสำหรับ SVG (สำคัญมาก):**
+1. **เส้นสีดำเท่านั้น:** ทุกเส้นใน SVG ต้องใช้ stroke="#000000" เท่านั้น ห้ามใช้สีอื่น
+2. **เส้นหนาและคม:** กำหนด stroke-width="2.5" เป็นอย่างน้อย เพื่อให้มองเห็นชัดเจนเมื่อพิมพ์
+3. **พื้นหลังขาว:** ใช้ fill="none" สำหรับรูปทรง (ยกเว้นพื้นที่แรเงาใช้ fill="#e5e5e5")
+4. **ตัวอักษรกำกับห้ามทับเส้น:** ตัวเลข/ตัวอักษร (เช่น ชื่อจุด A, B, C หรือความยาวด้าน) ต้องมีระยะห่างจากเส้นรูปทรงอย่างน้อย 8px
+5. **ขนาด SVG:** กำหนด viewBox="0 0 300 250" (ปรับตามความเหมาะสม) width="300" height="250"
+6. **ฟอนต์:** ใช้ font-family="sans-serif" font-size="16" font-weight="bold" fill="#000"
+7. **ห้ามใช้ CSS ภายนอก:** ทุก style ต้องเป็น inline attribute ใน SVG element
+8. **SVG ต้องสมบูรณ์:** ต้องขึ้นต้นด้วย <svg และปิดด้วย </svg> เสมอ
+9. **ความสมบูรณ์ของรูปภาพ (สำคัญที่สุด):** รูปภาพต้องวาดครบถ้วนสมบูรณ์ทุกส่วน ห้ามตัดขาด ห้ามวาดไม่จบ ต้องตรวจสอบว่ารูปทรงทุกเส้นเชื่อมต่อกันครบ ทุกจุดยอดมีตัวอักษรกำกับ และทุกมิติที่จำเป็นต้องมีตัวเลขกำกับ
+10. **Margin ภายใน:** ทุก element ต้องอยู่ภายใน viewBox โดยเว้นขอบอย่างน้อย 15px ห้ามมีส่วนใดถูกตัดออกนอกกรอบ
+
+**มาตรฐานการวางตัวอักษร:**
+- จุดยอด (Vertex): วางตัวอักษรห่างจากจุดประมาณ 12px ในทิศทางตรงข้ามกับรูปทรง
+- ความยาวด้าน: วางตัวเลขตรงกลางด้านนั้น ห่างจากเส้นออกไปด้านนอกประมาณ 15px
+- มุม: วางสัญลักษณ์มุมใกล้จุดยอดแต่ไม่ทับเส้น
+---
+`;
+        } else if (mode === 'transcribe') {
+            const tType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
+            promptText += `เป้าหมาย: **พิมพ์โจทย์ตามเอกสาร/รูปภาพที่แนบมา** ให้เหมือนต้นฉบับทุกประการ (ประเภท: ${tType})\n`;
+            promptText += `
+---
+**บทบาทพิเศษ: นักพิมพ์โจทย์ตามต้นฉบับ (Transcription Mode)**
+
+**กฎเหล็กในการพิมพ์ตาม:**
+1. **พิมพ์ตามต้นฉบับเป๊ะ:** พิมพ์โจทย์ทุกข้อให้เหมือนกับเอกสาร/รูปภาพที่แนบมาทุกประการ ห้ามเปลี่ยนตัวเลข ห้ามเปลี่ยนคำ ห้ามสรุปย่อ
+2. **ห้ามใส่หมายเลขข้อ:** ห้ามใส่เลขข้อ (เช่น "1." "2." "ข้อ 1") นำหน้าโจทย์ เพราะระบบจะนับเลขข้อให้อัตโนมัติ
+3. **ห้ามใส่ prefix ตัวเลือก:** ห้ามใส่ "ก." "ข." "ค." "ง." นำหน้าตัวเลือก เพราะระบบจะใส่ให้อัตโนมัติ
+4. **ใช้ LaTeX สำหรับสมการ:** สูตรคณิตศาสตร์ทุกตัวต้องเขียนด้วย LaTeX (เช่น $x^2 + 3x = 0$)
+5. **รักษาความหมายเดิม:** หากตัวอักษรในรูปภาพไม่ชัด ให้ตีความตามบริบทคณิตศาสตร์
+6. **แยกโจทย์แต่ละข้อ:** แต่ละข้อเป็น 1 object ใน JSON Array
+
+**ข้อควรระวัง:**
+- หากโจทย์ต้นฉบับมีรูปภาพประกอบ ให้อธิบายรูปเป็นข้อความสั้นๆ ใน "question" (เช่น "จากรูป สามเหลี่ยม ABC มีด้าน AB = 5 cm...")
+- หากมีสูตรหรือสมการ ต้องใช้ LaTeX เท่านั้น
+- พิมพ์ทุกข้อที่เห็นในเอกสาร ห้ามข้ามข้อใดข้อหนึ่ง
+---
+`;
         } else if (mode === 'mistake') {
             promptText += `เป้าหมาย: วิเคราะห์เจาะลึกกลไกและตรรกะเบื้องหลัง ไม่พูดเรื่องผิวเผิน\n`;
             promptText += `
@@ -189,7 +246,13 @@ const PromptBuilderPage = () => {
 ---
 `;
 
-        promptText += `\n**สิ่งที่ต้องส่งกลับมา (Output Requirements):**\n`;
+        promptText += `\n**กฎเหล็กสำหรับ "question" field (สำคัญมาก):**
+- **ห้ามใส่หมายเลขข้อ** นำหน้าโจทย์เด็ดขาด (ห้ามใส่ "ข้อที่ 1:", "ข้อ 1.", "1.", "1)" ฯลฯ) เพราะระบบจะนับเลขข้อให้อัตโนมัติ
+- **ห้ามใช้ blockquote (>) ใน "question"** เพราะจะทำให้เกิดกล่องข้อความที่ไม่จำเป็น ให้เขียนเป็นข้อความปกติ
+- **ห้ามใช้ Callout Block** (เช่น "> 📘 โจทย์:", "> 📝 โจทย์:") ใน "question" field ให้เขียนโจทย์เป็นข้อความธรรมดาเท่านั้น
+
+`;
+        promptText += `**สิ่งที่ต้องส่งกลับมา (Output Requirements):**\n`;
 
         const isDetailed = formData.contentLength === 'very_long';
         const solutionTypeDesc = isDetailed
@@ -200,7 +263,77 @@ const PromptBuilderPage = () => {
             ? "(ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)"
             : "(ใช้ Markdown ตาม Style Guide ด้านบน โดยแสดงวิธีทำสั้นๆ กระชับ)";
 
-        if (mode === 'exam' || mode === 'practice') {
+        if (mode === 'svg_question') {
+            const isSubjective = formData.questionType === 'subjective';
+            if (isSubjective) {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
+    "svg": "<svg viewBox=\\"0 0 300 250\\" width=\\"300\\" height=\\"250\\" xmlns=\\"http://www.w3.org/2000/svg\\">...</svg>",
+    "answer": "คำตอบที่ถูกต้อง",
+    "solution": "${solutionTypeDesc} ${solutionTemplateSuffix}",
+    "space": "large"
+  }
+]
+**สำคัญ:**
+- ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย (แสดงวิธีทำ) ไม่มีตัวเลือก
+- **"svg" ต้องเป็น SVG code string สมบูรณ์** ที่ปฏิบัติตามกฎเหล็ก SVG ด้านบนทุกข้อ
+- ทุกข้อต้องมี "svg" field เสมอ ห้ามเว้น`;
+            } else {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
+    "svg": "<svg viewBox=\\"0 0 300 250\\" width=\\"300\\" height=\\"250\\" xmlns=\\"http://www.w3.org/2000/svg\\">...</svg>",
+    "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
+    "answer": "คำตอบที่ถูกต้อง",
+    "solution": "${solutionTypeDesc} ${solutionTemplateSuffix}",
+    "space": "medium"
+  }
+]
+**สำคัญ:**
+- ต้องมี "options" ครบ 4 ตัวเลือกเสมอ
+- **ห้ามใส่ prefix "ก." "ข." "ค." "ง." นำหน้าตัวเลือก** เพราะระบบจะใส่ให้อัตโนมัติ (เช่น ใส่แค่ "รูปสามเหลี่ยม" ไม่ใช่ "ก. รูปสามเหลี่ยม")
+- **"svg" ต้องเป็น SVG code string สมบูรณ์** ที่ปฏิบัติตามกฎเหล็ก SVG ด้านบนทุกข้อ
+- ทุกข้อต้องมี "svg" field เสมอ ห้ามเว้น`;
+            }
+        } else if (mode === 'transcribe') {
+            const isSubjective = formData.questionType === 'subjective';
+            if (isSubjective) {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ตามต้นฉบับ (ใช้ LaTeX สำหรับสมการ) ห้ามใส่เลขข้อ",
+    "answer": "คำตอบ (ถ้ามีในต้นฉบับ)",
+    "solution": "เฉลย/วิธีทำ (ถ้ามีในต้นฉบับ หรือเว้นว่างไว้)",
+    "space": "large"
+  }
+]
+**สำคัญ:**
+- ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย
+- **ห้ามใส่หมายเลขข้อนำหน้า** โจทย์ในทุกกรณี
+- หากต้นฉบับไม่มีเฉลย ให้ใส่ "solution" เป็น ""
+- แนบเอกสาร/รูปภาพโจทย์ไปพร้อมกับคำสั่งนี้ใน Gemini`;
+            } else {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ตามต้นฉบับ (ใช้ LaTeX สำหรับสมการ) ห้ามใส่เลขข้อ",
+    "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
+    "answer": "คำตอบที่ถูกต้อง",
+    "solution": "เฉลย/วิธีทำ (ถ้ามีในต้นฉบับ หรือเว้นว่างไว้)",
+    "space": "medium"
+  }
+]
+**สำคัญ:**
+- **ห้ามใส่หมายเลขข้อนำหน้า** โจทย์ในทุกกรณี
+- **ห้ามใส่ prefix "ก." "ข." "ค." "ง." นำหน้าตัวเลือก** เพราะระบบจะใส่ให้อัตโนมัติ
+- ต้องมี "options" ครบ 4 ตัวเลือกเสมอ (ตามต้นฉบับ)
+- หากต้นฉบับไม่มีเฉลย ให้ใส่ "solution" เป็น ""
+- แนบเอกสาร/รูปภาพโจทย์ไปพร้อมกับคำสั่งนี้ใน Gemini`;
+            }
+        } else if (mode === 'exam' || mode === 'practice') {
             const isSubjective = formData.questionType === 'subjective' || (formData.questionType === 'word_problem' && formData.wordProblemType === 'subjective');
 
             if (isSubjective) {
@@ -219,13 +352,13 @@ const PromptBuilderPage = () => {
 [
   {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
-    "options": ["ตัวเลือก ก.", "ตัวเลือก ข.", "ตัวเลือก ค.", "ตัวเลือก ง."],
+    "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
     "answer": "คำตอบที่ถูกต้อง",
     "solution": "${solutionTypeDesc} ${solutionTemplateSuffix}",
     "space": "medium" (เว้นที่ว่าง: small/medium/large)
   }
 ]
-**สำคัญ:** ต้องมี "options" ครบ 4 ตัวเลือกเสมอ (ก. ข. ค. ง.) เพราะเป็นข้อสอบปรนัย`;
+**สำคัญ:** ต้องมี "options" ครบ 4 ตัวเลือกเสมอ **ห้ามใส่ prefix "ก." "ข." "ค." "ง." นำหน้าตัวเลือก** เพราะระบบจะใส่ให้อัตโนมัติ`;
             }
         } else {
             promptText += `ส่งผลลัพธ์เป็น **JSON Object** เพียงก้อนเดียวเท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) โดยมีโครงสร้างดังนี้:
@@ -307,9 +440,9 @@ const PromptBuilderPage = () => {
     );
 
     return (
-        <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#F1F5F9] font-sans selection:bg-blue-600 selection:text-white">
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-[#F1F5F9] font-sans selection:bg-blue-600 selection:text-white">
             {/* --- Left Panel --- */}
-            <div className="w-[62%] h-full overflow-y-auto p-6 lg:p-10 custom-scrollbar relative z-0">
+            <div className="w-full lg:w-[62%] h-full overflow-y-auto p-4 sm:p-6 lg:p-10 custom-scrollbar relative z-0">
                 <div className="max-w-4xl mx-auto space-y-10 pb-32">
 
                     {/* Glass Header */}
@@ -355,6 +488,8 @@ const PromptBuilderPage = () => {
                                 { id: 'content', label: 'บทเรียน', icon: <BookOpen size={16} />, color: 'blue' },
                                 { id: 'practice', label: 'แบบฝึกหัด', icon: <PenTool size={16} />, color: 'teal' },
                                 { id: 'exam', label: 'ข้อสอบ', icon: <FileText size={16} />, color: 'indigo' },
+                                { id: 'svg_question', label: 'โจทย์+รูป', icon: <ImageIcon size={16} />, color: 'purple' },
+                                { id: 'transcribe', label: 'พิมพ์ตาม', icon: <ScanText size={16} />, color: 'cyan' },
                                 { id: 'summary', label: 'สรุปสูตร', icon: <Zap size={16} />, color: 'amber' },
                                 { id: 'mistake', label: 'วิเคราะห์', icon: <Brain size={16} />, color: 'rose' },
                             ].map(item => (
@@ -576,6 +711,38 @@ const PromptBuilderPage = () => {
                             </div>
                         </div>
 
+                        {/* SVG Image Type Selector (only for svg_question mode) */}
+                        {formData.mode === 'svg_question' && (
+                            <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
+                                    ประเภทรูปภาพ (SVG Image Type)
+                                </label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+                                    {[
+                                        { id: 'geometry', label: 'เรขาคณิต', desc: 'สามเหลี่ยม สี่เหลี่ยม วงกลม', icon: '📐' },
+                                        { id: 'graph', label: 'กราฟ', desc: 'เส้นตรง พาราโบลา พิกัด', icon: '📈' },
+                                        { id: 'number_line', label: 'เส้นจำนวน', desc: 'Number Line', icon: '📏' },
+                                        { id: 'diagram', label: 'แผนภาพ', desc: 'Venn, Tree Diagram', icon: '🔀' },
+                                        { id: 'mixed', label: 'ผสม', desc: 'เลือกอัตโนมัติตามโจทย์', icon: '🎨' },
+                                    ].map(t => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => handleChange('svgImageType', t.id)}
+                                            className={`p-3 rounded-2xl border-2 text-left transition-all
+                                            ${formData.svgImageType === t.id
+                                                    ? 'border-purple-600 bg-purple-50/20 ring-4 ring-purple-500/5'
+                                                    : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200'
+                                                } `}
+                                        >
+                                            <span className="text-lg">{t.icon}</span>
+                                            <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-purple-600' : 'text-slate-700'}`}>{t.label}</div>
+                                            <div className="text-[9px] font-bold text-slate-400 leading-tight">{t.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Components Chip Set */}
                         <div className="mb-10">
                             <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
@@ -606,8 +773,8 @@ const PromptBuilderPage = () => {
                             </div>
                         </div>
 
-                        {/* Quantities for Practice/Exam */}
-                        {['practice', 'exam'].includes(formData.mode) && (
+                        {/* Quantities for Practice/Exam/SVG Question/Transcribe */}
+                        {['practice', 'exam', 'svg_question', 'transcribe'].includes(formData.mode) && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 bg-slate-50/80 rounded-3xl border border-slate-100 animate-in zoom-in-95 duration-500">
                                 <div className="space-y-3">
                                     <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">จำนวนข้อสอบ</label>
@@ -704,7 +871,7 @@ const PromptBuilderPage = () => {
             </div >
 
             {/* --- Right Panel --- */}
-            < div className="w-[38%] bg-[#0B0F19] flex flex-col shadow-[inset_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden relative border-l border-slate-800/50" >
+            < div className="w-full lg:w-[38%] bg-[#0B0F19] flex flex-col shadow-[inset_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden relative border-l border-slate-800/50 min-h-[40vh] lg:min-h-0" >
                 {/* Visual Glow */}
                 < div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[150px] -mr-80 -mt-80 rounded-full" />
 
@@ -749,6 +916,17 @@ const PromptBuilderPage = () => {
                                     <div className="w-3 h-3 rounded-full bg-amber-500" />
                                     <div className="w-3 h-3 rounded-full bg-emerald-500" />
                                 </div>
+                                {formData.mode === 'transcribe' && (
+                                    <div className="mb-6 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl">
+                                        <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs mb-2">
+                                            <Paperclip size={14} />
+                                            <span>📎 อย่าลืมแนบเอกสาร!</span>
+                                        </div>
+                                        <p className="text-[11px] text-cyan-300/70 leading-relaxed">
+                                            คัดลอกคำสั่งนี้ไปวางใน Gemini แล้ว<strong>แนบรูปภาพ/เอกสารโจทย์สอบ</strong>ไปพร้อมกัน AI จะพิมพ์โจทย์ตามให้เหมือนต้นฉบับทุกประการ
+                                        </p>
+                                    </div>
+                                )}
                                 <div className="font-mono text-[13px] leading-relaxed text-slate-300 whitespace-pre-wrap selection:bg-blue-500/30">
                                     {generatedPrompt}
                                 </div>
