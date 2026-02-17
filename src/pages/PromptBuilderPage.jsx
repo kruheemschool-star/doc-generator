@@ -144,7 +144,7 @@ const PromptBuilderPage = () => {
 ---
 `;
         } else {
-            promptText += `เป้าหมาย: สรุปเนื้อหาและสอนวิธีทำอย่างละเอียด\n`;
+            promptText += `เป้าหมาย: อธิบายเนื้อหาแบบเต็มที่ เจาะลึก และละเอียดที่สุด (ห้ามสรุปย่อ) พร้อมสอนวิธีทำอย่างเป็นขั้นตอน\n`;
         }
 
         // --- Logic for Extra Options (Components) ---
@@ -234,7 +234,7 @@ const PromptBuilderPage = () => {
   "title": "ชื่อหัวข้อเรื่อง",
   "blocks": [
     { "type": "header", "content": "# หัวข้อหลัก" },
-    { "type": "text", "content": "เนื้อหาอธิบายอย่างละเอียด (ใส่ Markdown ได้ตาม Style Guide)..." },
+    { "type": "text", "content": "เนื้อหาอธิบายอย่างละเอียดลึกซึ้ง (ห้ามสรุปย่อ) ใส่ Markdown ได้ตาม Style Guide..." },
     { "type": "callout", "style": "warning", "content": "> ⚠️ **ข้อควรระวัง:** ..." },
     { "type": "header", "content": "## หัวข้อย่อย" },
     { "type": "text", "content": "คำอธิบายส่วนถัดไป..." },
