@@ -6,6 +6,60 @@ import remarkGfm from 'remark-gfm';
 import 'katex/dist/katex.min.css';
 import { AlertTriangle, BookOpen, Lightbulb, Info, FileText } from 'lucide-react';
 
+/**
+ * Pre-process markdown content to extract multi-line $$ LaTeX blocks
+ * from blockquotes. remark-math cannot parse $$ delimiters when each
+ * line is prefixed with '>' because the blockquote syntax breaks the
+ * math block recognition.
+ *
+ * Strategy: close the blockquote before the $$ block, output the LaTeX
+ * lines without '>' prefix, then resume the blockquote after.
+ */
+const preprocessLatexInBlockquotes = (content) => {
+    if (!content || typeof content !== 'string') return content;
+
+    const lines = content.split('\n');
+    const result = [];
+    let insideBlockquoteMath = false;
+    let mathLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Strip blockquote prefix for analysis
+        const stripped = line.replace(/^>\s?/, '');
+        const isBlockquoteLine = /^>/.test(line);
+
+        if (isBlockquoteLine && !insideBlockquoteMath && stripped.trim() === '$$') {
+            // Entering a multi-line $$ block inside a blockquote
+            insideBlockquoteMath = true;
+            mathLines = ['$$'];
+            // Add a blank line to close the blockquote context
+            result.push('');
+        } else if (isBlockquoteLine && insideBlockquoteMath && stripped.trim() === '$$') {
+            // Closing the $$ block
+            mathLines.push('$$');
+            // Flush the math block (without > prefix)
+            result.push(...mathLines);
+            // Add blank line and resume blockquote
+            result.push('');
+            mathLines = [];
+            insideBlockquoteMath = false;
+        } else if (insideBlockquoteMath) {
+            // Inside math block — strip the > prefix
+            mathLines.push(stripped);
+        } else {
+            result.push(line);
+        }
+    }
+
+    // If we ended inside a math block (malformed), flush what we have
+    if (insideBlockquoteMath && mathLines.length > 0) {
+        result.push(...mathLines);
+    }
+
+    return result.join('\n');
+};
+
 // Robust helper function
 const getCalloutStyle = (text) => {
     if (!text || typeof text !== 'string') return { type: 'note', icon: <Info className="w-5 h-5 text-gray-500" />, border: 'border-l-4 border-gray-300' };
@@ -19,13 +73,13 @@ const getCalloutStyle = (text) => {
 
 const MarkdownRenderer = ({ content }) => {
     // Safety check for content
-    const safeContent = typeof content === 'string' ? content : '';
+    const safeContent = typeof content === 'string' ? preprocessLatexInBlockquotes(content) : '';
 
     return (
         <div className="text-gray-900 text-base leading-relaxed font-sans">
             <ReactMarkdown
                 remarkPlugins={[remarkMath, remarkGfm]}
-                rehypePlugins={[rehypeKatex]}
+                rehypePlugins={[[rehypeKatex, { strict: false }]]}
                 components={{
                     // 1. Headings
                     h1: ({ node, ...props }) => <h1 className="text-3xl font-bold mt-2 mb-2 border-b-2 border-black pb-2" {...props} />,
