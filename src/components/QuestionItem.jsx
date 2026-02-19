@@ -133,7 +133,7 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
                 {/* SVG Image - below question, above options */}
                 {svg && (
                   <div className="relative mt-3 mb-3 flex justify-center group/svg">
-                    <div className="border border-gray-100 rounded-lg p-2 bg-white max-w-full print:border-transparent print:p-0">
+                    <div className="border border-gray-100 rounded-lg p-2 bg-white max-w-full print:border-transparent">
                       <SvgRenderer svgString={svg} maxWidth={380} />
                     </div>
                     {/* Image action buttons */}
@@ -187,7 +187,7 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
                 {!svg && !questionImage && onUpdate && (
                   <span
                     onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
-                    className="inline-block cursor-pointer text-gray-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 print:hidden ml-1"
+                    className="inline-block cursor-pointer text-gray-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 print:invisible ml-1"
                     title="แทรกรูปภาพ"
                   >
                     <ImagePlus size={14} className="inline" />
