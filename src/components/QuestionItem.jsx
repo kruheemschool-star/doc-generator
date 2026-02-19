@@ -183,16 +183,15 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
                   </div>
                 )}
 
-                {/* Upload image placeholder - when no svg and no image */}
+                {/* Upload image icon - when no svg and no image (zero-height, no layout impact) */}
                 {!svg && !questionImage && onUpdate && (
-                  <button
+                  <span
                     onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
-                    className="mt-2 mb-1 px-3 py-1.5 text-xs text-gray-400 hover:text-blue-500 hover:bg-blue-50 border border-dashed border-gray-200 hover:border-blue-300 rounded-lg flex items-center gap-1.5 transition-colors opacity-0 group-hover:opacity-100 print:hidden"
+                    className="inline-block cursor-pointer text-gray-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 print:hidden ml-1"
                     title="แทรกรูปภาพ"
                   >
-                    <ImagePlus size={14} />
-                    <span>แทรกรูปภาพ</span>
-                  </button>
+                    <ImagePlus size={14} className="inline" />
+                  </span>
                 )}
 
                 {/* Options (if present) */}
