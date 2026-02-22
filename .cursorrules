@@ -27,3 +27,4 @@
    - คำสั่งที่ไม่มีผลต่อไฟล์ระบบ (เช่น `git status`, `git log`, `ls`)
    - คำสั่งอ่านไฟล์เท่านั้น (เช่น `cat`, `head`, `tail`)
    - คำสั่งที่มี `SafeToAutoRun: true` ใน tool call
+   - **ทุกคำสั่ง git** (git add, git commit, git push, git status, git log) ทำอัตโนมัติเสมอ
