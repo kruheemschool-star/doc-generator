@@ -19,3 +19,11 @@
      
    **ตัวอย่างการระบุ:** 
    > "Using **Frontend Architect Skill**: To optimize the re-rendering issue in `QuestionInput`..."
+
+3. **Auto-Approval Commands (คำสั่งอนุมัติอัตโนมัติ):**
+   คำสั่งต่อไปนี้ **อนุมัติอัตโนมัติ** ไม่ต้องรอการยืนยัน:
+   - `npx vite build` (build command)
+   - `npm run dev` (dev server)
+   - คำสั่งที่ไม่มีผลต่อไฟล์ระบบ (เช่น `git status`, `git log`, `ls`)
+   - คำสั่งอ่านไฟล์เท่านั้น (เช่น `cat`, `head`, `tail`)
+   - คำสั่งที่มี `SafeToAutoRun: true` ใน tool call
