@@ -119,4 +119,36 @@ export const loadPromptSettings = async () => {
   }
 };
 
+// --- Prompt Templates CRUD (Item 5) ---
+export const savePromptTemplate = async (template) => {
+  try {
+    await setDoc(doc(db, "promptTemplates", template.id), {
+      ...template,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Error saving prompt template:", error);
+    throw error;
+  }
+};
+
+export const loadPromptTemplates = async () => {
+  try {
+    const snapshot = await getDocs(collection(db, "promptTemplates"));
+    return snapshot.docs.map(d => d.data());
+  } catch (error) {
+    console.error("Error loading prompt templates:", error);
+    return [];
+  }
+};
+
+export const deletePromptTemplate = async (templateId) => {
+  try {
+    await deleteDoc(doc(db, "promptTemplates", templateId));
+  } catch (error) {
+    console.error("Error deleting prompt template:", error);
+    throw error;
+  }
+};
+
 export { db };

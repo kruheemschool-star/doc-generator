@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
     Folder, FolderOpen, FileText, Plus, Calendar, Search, BookOpen,
@@ -42,6 +42,18 @@ const FOLDER_ICONS = {
     clipboard: ClipboardList,
 };
 
+// Extracted from inline IIFE to avoid re-creation on every render
+const FolderPreview = ({ color, icon, name }) => {
+    const colors = FOLDER_COLORS[color] || FOLDER_COLORS.blue;
+    const Icon = FOLDER_ICONS[icon] || Folder;
+    return (
+        <div className={`rounded-2xl p-5 border-2 ${colors.bg} ${colors.border} inline-flex items-center gap-3`}>
+            <div className={`w-10 h-10 ${colors.iconBg} ${colors.text} rounded-xl flex items-center justify-center`}><Icon size={20} /></div>
+            <span className="font-bold text-gray-800 text-sm">{name || 'Folder Name'}</span>
+        </div>
+    );
+};
+
 const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, onCreateDocument, onDeleteDocument, onUpdateDocument, onBatchDelete, onRestoreDocument, onPermanentDelete, onEmptyTrash, onCreateFolder, onUpdateFolder, onDeleteFolder, onMoveDocToFolder, onDuplicateDocument }) => {
     // --- State ---
     const [selectedGrade, setSelectedGrade] = useState('M1');
@@ -69,6 +81,8 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
     const [showTrash, setShowTrash] = useState(false);
     const [editingDocId, setEditingDocId] = useState(null);
     const [editingDocData, setEditingDocData] = useState({ title: '', topic: '' });
+    const [pendingDeleteId, setPendingDeleteId] = useState(null); // inline confirm for permanent delete
+    const [pendingEmptyTrash, setPendingEmptyTrash] = useState(false); // inline confirm for empty trash
 
     // --- Derived Data ---
     const availableTopics = CURRICULUM_DATA[selectedGrade]?.[selectedTerm] || [];
@@ -89,13 +103,13 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
         )
         : null;
 
-    const sortedDocs = (arr) => {
+    const sortedDocs = useCallback((arr) => {
         const sorted = [...arr];
         if (sortBy === 'newest') sorted.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
         else if (sortBy === 'oldest') sorted.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
         else if (sortBy === 'alphabetical') sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
         return sorted;
-    };
+    }, [sortBy]);
 
     const docsToShow = sortedDocs(searchResults || filteredDocs);
     const docCountByGrade = (grade) => documents.filter(d => d.grade === grade).length;
@@ -313,10 +327,24 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
                                 <p className="text-sm text-gray-500 mt-1">{trashedDocs.length} items in trash</p>
                             </div>
                             {trashedDocs.length > 0 && (
-                                <button onClick={() => { if (window.confirm('ลบเอกสารทั้งหมดในถังขยะอย่างถาวร?')) onEmptyTrash && onEmptyTrash(); }}
-                                    className="px-4 py-2 bg-rose-50 text-rose-600 text-sm font-semibold rounded-xl hover:bg-rose-100 transition-all flex items-center gap-2">
-                                    <Trash2 size={14} /> ล้างถังขยะ
-                                </button>
+                                pendingEmptyTrash ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-600">ล้างทั้งหมด?</span>
+                                        <button onClick={() => { onEmptyTrash && onEmptyTrash(); setPendingEmptyTrash(false); }}
+                                            className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700 transition-all">
+                                            ยืนยัน
+                                        </button>
+                                        <button onClick={() => setPendingEmptyTrash(false)}
+                                            className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-200 transition-all">
+                                            ยกเลิก
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => setPendingEmptyTrash(true)}
+                                        className="px-4 py-2 bg-rose-50 text-rose-600 text-sm font-semibold rounded-xl hover:bg-rose-100 transition-all flex items-center gap-2">
+                                        <Trash2 size={14} /> ล้างถังขยะ
+                                    </button>
+                                )
                             )}
                         </div>
                         {trashedDocs.length === 0 ? (
@@ -337,8 +365,17 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
                                             <button onClick={() => onRestoreDocument && onRestoreDocument(doc.id)}
                                                 className="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-100 transition-all flex items-center gap-1"><RotateCcw size={12} /> กู้คืน</button>
-                                            <button onClick={() => { if (window.confirm('ลบอย่างถาวร?')) onPermanentDelete && onPermanentDelete(doc.id); }}
-                                                className="px-3 py-1.5 bg-rose-50 text-rose-600 text-xs font-bold rounded-lg hover:bg-rose-100 transition-all flex items-center gap-1"><Trash2 size={12} /> ลบถาวร</button>
+                                            {pendingDeleteId === doc.id ? (
+                                                <>
+                                                    <button onClick={() => { onPermanentDelete && onPermanentDelete(doc.id); setPendingDeleteId(null); }}
+                                                        className="px-3 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700 transition-all flex items-center gap-1"><Trash2 size={12} /> ยืนยัน</button>
+                                                    <button onClick={() => setPendingDeleteId(null)}
+                                                        className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-200 transition-all">ยกเลิก</button>
+                                                </>
+                                            ) : (
+                                                <button onClick={() => setPendingDeleteId(doc.id)}
+                                                    className="px-3 py-1.5 bg-rose-50 text-rose-600 text-xs font-bold rounded-lg hover:bg-rose-100 transition-all flex items-center gap-1"><Trash2 size={12} /> ลบถาวร</button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -658,16 +695,7 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
                             {/* Preview */}
                             <div className="pt-2">
                                 <label className="block text-xs font-semibold text-gray-400 uppercase mb-2">Preview</label>
-                                {(() => {
-                                    const colors = FOLDER_COLORS[newFolderData.color] || FOLDER_COLORS.blue;
-                                    const Icon = FOLDER_ICONS[newFolderData.icon] || Folder;
-                                    return (
-                                        <div className={`rounded-2xl p-5 border-2 ${colors.bg} ${colors.border} inline-flex items-center gap-3`}>
-                                            <div className={`w-10 h-10 ${colors.iconBg} ${colors.text} rounded-xl flex items-center justify-center`}><Icon size={20} /></div>
-                                            <span className="font-bold text-gray-800 text-sm">{newFolderData.name || 'Folder Name'}</span>
-                                        </div>
-                                    );
-                                })()}
+                                <FolderPreview color={newFolderData.color} icon={newFolderData.icon} name={newFolderData.name} />
                             </div>
                         </div>
 

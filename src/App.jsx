@@ -77,75 +77,79 @@ const App = () => {
     const activeDocument = documents.find(d => d.id === activeDocumentId) || null;
 
     // --- Handlers ---
-    const handleViewChange = (view) => {
+    const handleViewChange = useCallback((view) => {
         if (view === 'dashboard') {
             setActiveDocumentId(null);
         }
         setCurrentView(view);
-    };
+    }, []);
 
     // Called when clicking a doc in Dashboard
-    const handleOpenDocument = (doc) => {
+    const handleOpenDocument = useCallback((doc) => {
         setActiveDocumentId(doc.id);
         setCurrentView('editor');
-    };
+    }, []);
 
     // Called when creating a new doc in Dashboard
-    const handleCreateDocument = (newDocInfo) => {
+    const handleCreateDocument = useCallback((newDocInfo) => {
         const newDoc = {
             ...newDocInfo,
             id: newDocInfo.id || uuidv4(),
             pages: [{ id: uuidv4(), questions: [] }] // Initialize with one empty page
         };
-
         setDocuments(prev => [newDoc, ...prev]);
         setActiveDocumentId(newDoc.id);
         setCurrentView('editor');
-    };
+    }, []);
 
-    const handleUpdateDocument = (docId, updates) => {
+    const handleUpdateDocument = useCallback((docId, updates) => {
         setDocuments(prev => prev.map(d => d.id === docId ? { ...d, ...updates } : d));
-    };
+    }, []);
 
-    const handleDeleteDocument = (docId) => {
-        const doc = documents.find(d => d.id === docId);
-        if (!doc) return;
-        setTrashedDocs(prev => [{ ...doc, deletedAt: new Date().toISOString() }, ...prev]);
-        setDocuments(prev => prev.filter(d => d.id !== docId));
-        if (activeDocumentId === docId) {
-            setActiveDocumentId(null);
-            setCurrentView('dashboard');
-        }
-    };
+    const handleDeleteDocument = useCallback((docId) => {
+        setDocuments(prev => {
+            const doc = prev.find(d => d.id === docId);
+            if (!doc) return prev;
+            setTrashedDocs(t => [{ ...doc, deletedAt: new Date().toISOString() }, ...t]);
+            return prev.filter(d => d.id !== docId);
+        });
+        setActiveDocumentId(prev => {
+            if (prev === docId) { setCurrentView('dashboard'); return null; }
+            return prev;
+        });
+    }, []);
 
-    const handleBatchDelete = (docIds) => {
-        const docsToTrash = documents.filter(d => docIds.includes(d.id));
-        setTrashedDocs(prev => [...docsToTrash.map(d => ({ ...d, deletedAt: new Date().toISOString() })), ...prev]);
-        setDocuments(prev => prev.filter(d => !docIds.includes(d.id)));
-    };
+    const handleBatchDelete = useCallback((docIds) => {
+        setDocuments(prev => {
+            const docsToTrash = prev.filter(d => docIds.includes(d.id));
+            setTrashedDocs(t => [...docsToTrash.map(d => ({ ...d, deletedAt: new Date().toISOString() })), ...t]);
+            return prev.filter(d => !docIds.includes(d.id));
+        });
+    }, []);
 
-    const handleRestoreDocument = (docId) => {
-        const doc = trashedDocs.find(d => d.id === docId);
-        if (!doc) return;
-        const { deletedAt, ...restoredDoc } = doc;
-        setDocuments(prev => [restoredDoc, ...prev]);
-        setTrashedDocs(prev => prev.filter(d => d.id !== docId));
-    };
+    const handleRestoreDocument = useCallback((docId) => {
+        setTrashedDocs(prev => {
+            const doc = prev.find(d => d.id === docId);
+            if (!doc) return prev;
+            const { deletedAt, ...restoredDoc } = doc;
+            setDocuments(docs => [restoredDoc, ...docs]);
+            return prev.filter(d => d.id !== docId);
+        });
+    }, []);
 
-    const handlePermanentDelete = async (docId) => {
+    const handlePermanentDelete = useCallback(async (docId) => {
         setTrashedDocs(prev => prev.filter(d => d.id !== docId));
         await fbDeleteDocument(docId);
-    };
+    }, []);
 
-    const handleEmptyTrash = async () => {
-        for (const doc of trashedDocs) {
-            await fbDeleteDocument(doc.id);
-        }
+    // Fix: use Promise.all for parallel deletes (was sequential await-in-loop)
+    const handleEmptyTrash = useCallback(async () => {
+        await Promise.all(trashedDocs.map(doc => fbDeleteDocument(doc.id)));
         setTrashedDocs([]);
-    };
+    }, [trashedDocs]);
 
     // --- Folder Handlers ---
-    const handleCreateFolder = (folderData) => {
+    const handleCreateFolder = useCallback((folderData) => {
         const newFolder = {
             id: uuidv4(),
             name: folderData.name,
@@ -156,49 +160,50 @@ const App = () => {
             createdAt: new Date().toISOString()
         };
         setFolders(prev => [newFolder, ...prev]);
-    };
+    }, []);
 
-    const handleUpdateFolder = (folderId, updates) => {
+    const handleUpdateFolder = useCallback((folderId, updates) => {
         setFolders(prev => prev.map(f => f.id === folderId ? { ...f, ...updates } : f));
-    };
+    }, []);
 
-    const handleDeleteFolder = (folderId) => {
+    const handleDeleteFolder = useCallback((folderId) => {
         // Move docs out of folder before deleting
         setDocuments(prev => prev.map(d => d.folderId === folderId ? { ...d, folderId: null } : d));
         setFolders(prev => prev.filter(f => f.id !== folderId));
-    };
+    }, []);
 
-    const handleMoveDocToFolder = (docId, folderId) => {
+    const handleMoveDocToFolder = useCallback((docId, folderId) => {
         setDocuments(prev => prev.map(d => d.id === docId ? { ...d, folderId: folderId || null } : d));
-    };
+    }, []);
 
-    const handleDuplicateDocument = (docId) => {
-        const original = documents.find(d => d.id === docId);
-        if (!original) return;
-        const copy = {
-            ...original,
-            id: uuidv4(),
-            title: original.title + ' (Copy)',
-            date: new Date().toISOString().split('T')[0],
-            pages: JSON.parse(JSON.stringify(original.pages || []))
-        };
-        setDocuments(prev => [copy, ...prev]);
-    };
+    const handleDuplicateDocument = useCallback((docId) => {
+        setDocuments(prev => {
+            const original = prev.find(d => d.id === docId);
+            if (!original) return prev;
+            const copy = {
+                ...original,
+                id: uuidv4(),
+                title: original.title + ' (Copy)',
+                date: new Date().toISOString().split('T')[0],
+                pages: JSON.parse(JSON.stringify(original.pages || []))
+            };
+            return [copy, ...prev];
+        });
+    }, []);
 
-    const handleSaveDocument = (updatedPages, subtitle) => {
+    const handleSaveDocument = useCallback((updatedPages, subtitle) => {
         if (!activeDocumentId) return;
-
         setDocuments(prev => prev.map(doc => {
             if (doc.id === activeDocumentId) {
                 return { ...doc, pages: updatedPages, subtitle: subtitle || '' };
             }
             return doc;
         }));
-    };
+    }, [activeDocumentId]);
 
-    const handleBackToDashboard = () => {
+    const handleBackToDashboard = useCallback(() => {
         handleViewChange('dashboard');
-    };
+    }, [handleViewChange]);
 
     if (isLoading) {
         return (

@@ -1,10 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { savePromptSettings, loadPromptSettings } from '../firebase';
 import {
     Sparkles, Copy, Check, Terminal, Zap, FileText,
-    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar, Image as ImageIcon, ScanText
+    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar, Image as ImageIcon, ScanText, AlertCircle, Loader2, Save, ClipboardCopy
 } from 'lucide-react';
 import { IPST_CURRICULUM, getChapters, getChapterObject } from '../data/thaiMathCurriculum';
+import { useDebounce } from '../hooks/useDebounce';
+import { useToast, ToastContainer } from '../components/Toast';
+import { usePromptGenerator } from '../hooks/usePromptGenerator';
+import PromptPreview from '../components/promptBuilder/PromptPreview';
+import TemplateManager from '../components/promptBuilder/TemplateManager';
+
+// --- Mode-specific options configuration (Item 9) ---
+const MODE_ALLOWED_OPTIONS = {
+    content: ['formula', 'shortcut', 'trivia', 'vocab', 'mistake', 'problemSolving'],
+    practice: ['formula', 'shortcut', 'mistake'],
+    exam: ['formula', 'shortcut', 'mistake'],
+    svg_question: ['formula', 'shortcut', 'mistake'],
+    transcribe: [],
+    summary: [],
+    mistake: ['formula', 'shortcut', 'trivia', 'vocab'],
+};
+
+// --- Mode-specific default resets (Item 13) ---
+const MODE_DEFAULTS = {
+    questionType: 'objective',
+    wordProblemType: 'objective',
+    questionCount: 10,
+    svgImageType: 'geometry',
+};
 
 const DEFAULT_FORM_DATA = {
     mode: 'content',
@@ -36,25 +60,54 @@ const PromptBuilderPage = () => {
     const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
     const [availableChapters, setAvailableChapters] = useState([]);
     const [availableTopics, setAvailableTopics] = useState([]);
-    const [generatedPrompt, setGeneratedPrompt] = useState('');
     const [isCopied, setIsCopied] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);   // Item 1: Loading state
+    const [saveStatus, setSaveStatus] = useState('idle'); // Item 1: 'idle' | 'saving' | 'saved' | 'error'
+    const [isTemplateOpen, setIsTemplateOpen] = useState(false); // Item 5: Template modal
     const isInitialLoad = useRef(true);
+    const { toasts, addToast, removeToast } = useToast(); // Item 1: Toast notifications
 
-    // Load from Firestore on mount
+    // Item 2: Debounced formData for auto-save
+    const debouncedFormData = useDebounce(formData, 800);
+
+    // Item 7: Use extracted prompt generation hook
+    const generatedPrompt = usePromptGenerator(formData);
+
+    // Load from Firestore on mount (Item 1: Error Handling)
     useEffect(() => {
         const load = async () => {
-            const saved = await loadPromptSettings();
-            if (saved) setFormData(saved);
-            setTimeout(() => { isInitialLoad.current = false; }, 500);
+            try {
+                setIsLoading(true);
+                const saved = await loadPromptSettings();
+                if (saved) setFormData(saved);
+            } catch (error) {
+                console.error('Error loading prompt settings:', error);
+                addToast('ไม่สามารถโหลดค่าที่บันทึกไว้ได้ ใช้ค่าเริ่มต้นแทน', 'error', 5000);
+            } finally {
+                setIsLoading(false);
+                setTimeout(() => { isInitialLoad.current = false; }, 500);
+            }
         };
         load();
     }, []);
 
-    // Auto-save to Firestore
+    // Item 2: Auto-save to Firestore with debounce + Item 1: Error handling
     useEffect(() => {
         if (isInitialLoad.current) return;
-        savePromptSettings(formData);
-    }, [formData]);
+        const save = async () => {
+            try {
+                setSaveStatus('saving');
+                await savePromptSettings(debouncedFormData);
+                setSaveStatus('saved');
+                setTimeout(() => setSaveStatus('idle'), 2000);
+            } catch (error) {
+                console.error('Error saving prompt settings:', error);
+                setSaveStatus('error');
+                addToast('บันทึกค่าไม่สำเร็จ กรุณาลองอีกครั้ง', 'error', 4000);
+            }
+        };
+        save();
+    }, [debouncedFormData]);
 
     useEffect(() => {
         const chapters = getChapters(formData.grade, formData.term, formData.subjectType);
@@ -74,341 +127,57 @@ const PromptBuilderPage = () => {
         }
     }, [formData.chapter, formData.grade, formData.term, formData.subjectType]);
 
-    useEffect(() => {
-        const topic = formData.selectedTopic === 'custom' ? formData.customTopic : formData.selectedTopic;
-        const mode = formData.mode;
-
-        const toneMap = {
-            friendly: 'พูดจาเป็นกันเอง อบอุ่น ใจดี ให้กำลังใจนักเรียน',
-            academic: 'ใช้ภาษาวิชาการ เน้นความถูกต้องและเป็นระบบ',
-            fun: 'สนุกสนาน เปรียบเทียบกับชีวิตจริง มีมุกตลกแทรก',
-            detailed: 'อธิบายละเอียดทุกขั้นตอน เน้นให้เข้าใจลึกซึ้ง'
-        };
-        const toneDesc = toneMap[formData.tone] || toneMap.friendly;
-
-        let promptText = `รับบทเป็น "ครูฮีม" ครูสอนคณิตศาสตร์ที่${toneDesc} `;
-        promptText += `แทนตัวเองว่า "ครูฮีม" เวลาพูดกับนักเรียน `;
-        promptText += `ช่วยสร้างเนื้อหาการสอนวิชาคณิตศาสตร์ `;
-        promptText += `เรื่อง "${formData.chapter}" `;
-        if (topic) promptText += `หัวข้อเจาะจง "${topic}" `;
-        promptText += `สำหรับนักเรียนชั้น ${formData.grade} (หลักสูตร สสวท.)\n\n`;
-
-        let qType = '';
-        if (formData.questionType === 'word_problem') {
-            qType = formData.wordProblemType === 'subjective'
-                ? 'โจทย์ปัญหาแสดงวิธีทำ (Word Problem - Subjective)'
-                : 'โจทย์ปัญหาแบบตัวเลือก (Word Problem - Objective)';
-        } else {
-            qType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
-        }
-
-        if (mode === 'exam') {
-            promptText += `เป้าหมาย: ออกข้อสอบแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
-        } else if (mode === 'practice') {
-            promptText += `เป้าหมาย: สร้างแบบฝึกหัดแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
-        } else if (mode === 'summary') {
-            promptText += `เป้าหมาย: สรุปสูตรแบบ Cheat Sheet ให้อ่านจบใน 5 นาทีแล้วเข้าห้องสอบได้เลย\n`;
-            promptText += `
----
-**บทบาทพิเศษ: ติวเตอร์หน้าห้องสอบ (Cheat Sheet Mode)**
-
-กฎเหล็กในการสรุป:
-1. **คัดเน้นๆ (High-Yield Only):** สรุปเฉพาะเนื้อหาและสูตรที่เป็น 'หัวใจสำคัญ' หรือ 'ออกสอบบ่อย' เท่านั้น ตัดประวัติความเป็นมา หรือคำอธิบายพื้นฐานที่ยืดยาวทิ้งทั้งหมด
-2. **ห้ามเกริ่นนำ:** เริ่มต้นที่สูตรหรือคอนเซปต์เลย ห้ามมีประโยคเปิดเรื่อง (เช่น 'ในบทนี้เราจะมาเรียนรู้...')
-3. **กระชับที่สุด:** ใช้ Bullet Point สั้นๆ หรือตารางเปรียบเทียบ
-
-โครงสร้างที่ต้องมี:
-- ใช้ > 📘 **สูตรหลัก:** (สูตรที่ต้องจำ)
-- ใช้ > ⚠️ **จุดตาย:** (จุดที่นักเรียนมักพลาด หรือโดนหลอกในข้อสอบ)
-- ใช้ > 💡 **เทคนิค:** (สูตรลัด หรือวิธีจำให้เร็วขึ้น)
-
-**เป้าหมายสูงสุด:** ทำให้นักเรียนอ่านจบใน 5 นาทีแล้วมีความมั่นใจเดินเข้าห้องสอบได้ทันที
----
-`;
-        } else if (mode === 'svg_question') {
-            const svgTypeMap = {
-                geometry: 'รูปทรงเรขาคณิต (สามเหลี่ยม สี่เหลี่ยม วงกลม ฯลฯ)',
-                graph: 'กราฟเส้นตรง กราฟพาราโบลา หรือระบบพิกัด',
-                number_line: 'เส้นจำนวน (Number Line)',
-                diagram: 'แผนภาพ (Venn Diagram, Tree Diagram ฯลฯ)',
-                mixed: 'ผสมหลายแบบ (เรขาคณิต, กราฟ, แผนภาพ ตามความเหมาะสมของโจทย์)'
-            };
-            const svgDesc = svgTypeMap[formData.svgImageType] || svgTypeMap.geometry;
-            const svgQType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
-
-            promptText += `เป้าหมาย: สร้างโจทย์คณิตศาสตร์แบบ${svgQType} จำนวน ${formData.questionCount || 5} ข้อ **พร้อมรูปภาพประกอบ (SVG)** (ความยาก: ${formData.difficulty})\n`;
-            promptText += `ประเภทรูปภาพ: ${svgDesc}\n`;
-            promptText += `
----
-**บทบาทพิเศษ: นักออกแบบโจทย์พร้อมรูปภาพ (Visual Math Question Designer)**
-
-**กฎเหล็กสำหรับ SVG (สำคัญมาก):**
-1. **เส้นสีดำเท่านั้น:** ทุกเส้นใน SVG ต้องใช้ stroke="#000000" เท่านั้น ห้ามใช้สีอื่น
-2. **เส้นหนาและคม:** กำหนด stroke-width="2.5" เป็นอย่างน้อย เพื่อให้มองเห็นชัดเจนเมื่อพิมพ์
-3. **พื้นหลังขาว:** ใช้ fill="none" สำหรับรูปทรง (ยกเว้นพื้นที่แรเงาใช้ fill="#e5e5e5")
-4. **ตัวอักษรกำกับห้ามทับเส้น:** ตัวเลข/ตัวอักษร (เช่น ชื่อจุด A, B, C หรือความยาวด้าน) ต้องมีระยะห่างจากเส้นรูปทรงอย่างน้อย 8px
-5. **ขนาด SVG:** กำหนด viewBox="0 0 300 250" (ปรับตามความเหมาะสม) width="300" height="250"
-6. **ฟอนต์:** ใช้ font-family="sans-serif" font-size="16" font-weight="bold" fill="#000"
-7. **ห้ามใช้ CSS ภายนอก:** ทุก style ต้องเป็น inline attribute ใน SVG element
-8. **SVG ต้องสมบูรณ์:** ต้องขึ้นต้นด้วย <svg และปิดด้วย </svg> เสมอ
-9. **ความสมบูรณ์ของรูปภาพ (สำคัญที่สุด):** รูปภาพต้องวาดครบถ้วนสมบูรณ์ทุกส่วน ห้ามตัดขาด ห้ามวาดไม่จบ ต้องตรวจสอบว่ารูปทรงทุกเส้นเชื่อมต่อกันครบ ทุกจุดยอดมีตัวอักษรกำกับ และทุกมิติที่จำเป็นต้องมีตัวเลขกำกับ
-10. **Margin ภายใน:** ทุก element ต้องอยู่ภายใน viewBox โดยเว้นขอบอย่างน้อย 15px ห้ามมีส่วนใดถูกตัดออกนอกกรอบ
-
-**มาตรฐานการวางตัวอักษร:**
-- จุดยอด (Vertex): วางตัวอักษรห่างจากจุดประมาณ 12px ในทิศทางตรงข้ามกับรูปทรง
-- ความยาวด้าน: วางตัวเลขตรงกลางด้านนั้น ห่างจากเส้นออกไปด้านนอกประมาณ 15px
-- มุม: วางสัญลักษณ์มุมใกล้จุดยอดแต่ไม่ทับเส้น
----
-`;
-        } else if (mode === 'transcribe') {
-            const tType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
-            promptText += `เป้าหมาย: **พิมพ์โจทย์ตามเอกสาร/รูปภาพที่แนบมา** ให้เหมือนต้นฉบับทุกประการ (ประเภท: ${tType})\n`;
-            promptText += `
----
-**บทบาทพิเศษ: นักพิมพ์โจทย์ตามต้นฉบับ (Transcription Mode)**
-
-**กฎเหล็กในการพิมพ์ตาม:**
-1. **พิมพ์ตามต้นฉบับเป๊ะ:** พิมพ์โจทย์ทุกข้อให้เหมือนกับเอกสาร/รูปภาพที่แนบมาทุกประการ ห้ามเปลี่ยนตัวเลข ห้ามเปลี่ยนคำ ห้ามสรุปย่อ
-2. **ห้ามใส่หมายเลขข้อ:** ห้ามใส่เลขข้อ (เช่น "1." "2." "ข้อ 1") นำหน้าโจทย์ เพราะระบบจะนับเลขข้อให้อัตโนมัติ
-3. **ห้ามใส่ prefix ตัวเลือก:** ห้ามใส่ "ก." "ข." "ค." "ง." นำหน้าตัวเลือก เพราะระบบจะใส่ให้อัตโนมัติ
-4. **ใช้ LaTeX สำหรับสมการ:** สูตรคณิตศาสตร์ทุกตัวต้องเขียนด้วย LaTeX (เช่น $x^2 + 3x = 0$)
-5. **รักษาความหมายเดิม:** หากตัวอักษรในรูปภาพไม่ชัด ให้ตีความตามบริบทคณิตศาสตร์
-6. **แยกโจทย์แต่ละข้อ:** แต่ละข้อเป็น 1 object ใน JSON Array
-
-**ข้อควรระวัง:**
-- หากโจทย์ต้นฉบับมีรูปภาพประกอบ ให้อธิบายรูปเป็นข้อความสั้นๆ ใน "question" (เช่น "จากรูป สามเหลี่ยม ABC มีด้าน AB = 5 cm...")
-- หากมีสูตรหรือสมการ ต้องใช้ LaTeX เท่านั้น
-- พิมพ์ทุกข้อที่เห็นในเอกสาร ห้ามข้ามข้อใดข้อหนึ่ง
----
-`;
-        } else if (mode === 'mistake') {
-            promptText += `เป้าหมาย: วิเคราะห์เจาะลึกกลไกและตรรกะเบื้องหลัง ไม่พูดเรื่องผิวเผิน\n`;
-            promptText += `
----
-**บทบาทพิเศษ: นักวิเคราะห์เชิงลึก (Deep Dive Analysis Mode)**
-
-กฎเหล็กในการวิเคราะห์:
-1. **ห้ามเกริ่นนำภาพรวม:** ห้ามอธิบายความหมายกว้างๆ ของหัวข้อ (เช่น ถ้าวิเคราะห์เรื่อง 'การคูณเลขยกกำลัง' ไม่ต้องอธิบายว่าเลขยกกำลังคืออะไร)
-2. **เจาะที่ 'กลไก' (Mechanism):** วิเคราะห์ว่า 'ทำไม' สูตรนี้ถึงเป็นแบบนี้ หรือ 'ตรรกะเบื้องหลัง' คืออะไร
-3. **เชื่อมโยง (Connections):** แสดงความสัมพันธ์ระหว่างหัวข้อนี้กับหัวข้ออื่นที่เกี่ยวข้อง
-
-โครงสร้างที่ต้องมี:
-- **การทำงาน:** อธิบายกลไกการทำงานทีละขั้นตอน (Step-by-step logic)
-- **สาเหตุของปัญหา:** วิเคราะห์ว่าทำไมคนส่วนใหญ่ถึงไม่เข้าใจเรื่องนี้
-- **การประยุกต์ใช้:** วิเคราะห์สถานการณ์ที่ต้องใช้ความรู้นี้แก้ปัญหา
-
-**เป้าหมายสูงสุด:** ให้ผู้อ่านเข้าใจ 'แก่นแท้' ของเรื่องนั้นอย่างทะลุปรุโปร่ง ไม่ใช่แค่จำสูตรได้
----
-`;
-        } else {
-            promptText += `เป้าหมาย: อธิบายเนื้อหาแบบเต็มที่ เจาะลึก และละเอียดที่สุด (ห้ามสรุปย่อ) พร้อมสอนวิธีทำอย่างเป็นขั้นตอน\n`;
-        }
-
-        // --- Logic for Extra Options (Components) ---
-        const activeComponents = [];
-        if (formData.components.formula) activeComponents.push('สรุปสูตรสำคัญ (Formula)');
-        if (formData.components.shortcut) activeComponents.push('เทคนิคลัด (Shortcuts & Tricks)');
-        if (formData.components.trivia) activeComponents.push('เกร็ดความรู้ (Trivia)');
-        if (formData.components.vocab) activeComponents.push('คำศัพท์เทคนิค (Technical Terms)');
-        if (formData.components.mistake) activeComponents.push('จุดที่มักผิด (Common Mistakes)');
-        if (formData.components.problemSolving) activeComponents.push('โจทย์ปัญหาและการแก้ปัญหา (Word Problems)');
-
-        if (activeComponents.length > 0) {
-            promptText += `\n**องค์ประกอบเพิ่มเติมที่ต้องมี (Requirements):**\nช่วยเน้นหรือแทรกเนื้อหาเกี่ยวกับ: ${activeComponents.join(', ')} ให้เหมาะสมกับบทเรียน\n`;
-        }
-        // ------------------------------------------
-
-        promptText += `
----
-**รูปแบบการเขียน (STYLE GUIDE) - สำคัญมาก:**
-เพื่อให้เอกสารอ่านง่ายและสวยงาม ต้องใช้สัญลักษณ์ Markdown ดังนี้เท่านั้น:
-
-1. **โครงสร้าง:**
-   - หัวข้อหลัก (Title): ใช้ # (เช่น # จำนวนเต็ม)
-   - หัวข้อย่อย (Sub-topic): ใช้ ## (เช่น ## 1. การบวก)
-   - รายการ: ใช้ - หรือ 1.
-
-2. **กล่องข้อความพิเศษ (Callout Blocks):**
-   *ต้องขึ้นต้นบรรทัดด้วยสัญลักษณ์นี้เป๊ะๆ เพื่อให้ระบบแปลงเป็นกล่องสวยงาม:*
-   - **นิยาม/สูตร:** ใช้ "> 📘 **นิยาม:** ..."
-   - **ข้อควรระวัง:** ใช้ "> ⚠️ **ข้อควรระวัง:** ..."
-   - **เทคนิค/สูตรลัด:** ใช้ "> 💡 **เทคนิค:** ..."
-   - **ตัวอย่าง:** ใช้ "> 📝 **ตัวอย่าง:** ..."
-
-3. **คณิตศาสตร์ (Math & Equations) - สำคัญมาก:**
-   - **กฎเหล็ก:** ทุกๆ สมการ, นิพจน์, ตัวแปร, หรือตัวเลขที่มีสัญลักษณ์ทางคณิตศาสตร์ **ต้องอยู่ในเครื่องหมาย $$ ... $$ หรือ $ ... $ เสมอ**
-   - ห้ามใช้ตัวหนา Markdown (**...**) กับสัญลักษณ์คณิตศาสตร์ ให้ใช้ LaTeX แทนเท่านั้น
-   - สัญลักษณ์อย่าง \`\`\\times\`\`, \`\`\\div\`\`, \`\`\\frac\`\`, \`\`^\`\`, \`\`\\sqrt\`\` **ห้ามอยู่นอกเครื่องหมายดอลล่าร์เด็ดขาด** เพราะจะทำให้การแสดงผลผิดพลาด (เช่น จะกลายเป็น imes แทนเครื่องหมายคูณ)
-   - ตัวอย่างที่ถูกต้อง:
-     - ใช้ \`\`$$(-4) \\times (-4)$$\`\` แทน \`\`(-4) \\times (-4)\`\`
-     - ใช้ \`\`$x = 2$\`\` แทน **x = 2**
-   - **กฎเหล็กเพิ่มเติมสำหรับสมการหลายบรรทัด:** ถ้าต้องใช้ \\begin{array} หรือ \\begin{aligned} ภายใน $$ ... $$ block **ห้ามวางไว้ในบรรทัดที่ขึ้นต้นด้วย > (blockquote)** เพราะจะทำให้ระบบแสดงผลเป็น Raw Text ให้ปิด blockquote (เว้นบรรทัดว่าง) เขียน $$ block แยกออกมา แล้วค่อยเปิด blockquote ใหม่
----
-`;
-
-        promptText += `\n**กฎเหล็กสำหรับ "question" field (สำคัญมาก):**
-- **ห้ามใส่หมายเลขข้อ** นำหน้าโจทย์เด็ดขาด (ห้ามใส่ "ข้อที่ 1:", "ข้อ 1.", "1.", "1)" ฯลฯ) เพราะระบบจะนับเลขข้อให้อัตโนมัติ
-- **ห้ามใช้ blockquote (>) ใน "question"** เพราะจะทำให้เกิดกล่องข้อความที่ไม่จำเป็น ให้เขียนเป็นข้อความปกติ
-- **ห้ามใช้ Callout Block** (เช่น "> 📘 โจทย์:", "> 📝 โจทย์:") ใน "question" field ให้เขียนโจทย์เป็นข้อความธรรมดาเท่านั้น
-
-**กฎเหล็กสำหรับข้อสอบปรนัย (ตัวเลือก 4 ข้อ) — สำคัญที่สุด:**
-- **คำตอบที่ถูกต้องมีเพียง 1 ข้อเท่านั้น:** ทุกข้อต้องมีตัวเลือกที่ถูกต้องเพียงข้อเดียว ห้ามมีคำตอบถูกมากกว่า 1 ข้อเด็ดขาด
-- **ตรวจสอบการคำนวณซ้ำทุกข้อ (Double-Check):** ก่อนส่งผลลัพธ์ ให้คำนวณคำตอบของทุกตัวเลือกซ้ำอีกครั้ง เพื่อยืนยันว่ามีเพียงตัวเลือกเดียวที่ถูกต้อง หากพบว่ามีคำตอบถูกมากกว่า 1 ข้อ ให้แก้ไขตัวเลือกหรือโจทย์ใหม่ทันที
-- **"answer" ต้องระบุตัวเลือกที่ถูกต้องชัดเจน:** ต้องระบุเป็น "ก. [คำตอบ]", "ข. [คำตอบ]", "ค. [คำตอบ]" หรือ "ง. [คำตอบ]" เสมอ (เช่น "ข. $-a^n$") เพื่อให้ผู้ใช้ทราบทันทีว่าข้อใดถูก
-- **"solution" ต้องสรุปคำตอบที่ถูกต้อง:** ในส่วนเฉลยต้องขึ้นต้นด้วย **"คำตอบ: ข้อ [ก/ข/ค/ง]"** ก่อนแสดงวิธีทำ เพื่อให้เห็นคำตอบชัดเจนทันที
-
-`;
-        promptText += `**สิ่งที่ต้องส่งกลับมา (Output Requirements):**\n`;
-
-        const isDetailed = formData.contentLength === 'very_long';
-        const solutionTypeDesc = isDetailed
-            ? "เฉลยแบบละเอียด: ต้องมีส่วนประกอบ 1) **หลักการคิด (Principle)** 2) **วิธีทำอย่างละเอียดเป็นขั้นตอน** 3) **สรุปจุดที่ควรระวัง (Precautions)** และ 4) **Danger Zone (จุดที่ผิดบ่อย)**"
-            : "เฉลยแบบสั้น: ให้เน้นการเฉลยแสดงวิธีทำอย่างเดียว ไม่ต้องพูดถึงหลักการคิดหรือข้อควรระวัง โดยให้ความยาวของการเฉลยประมาณ 3-4 บรรทัด";
-
-        const solutionTemplateSuffix = isDetailed
-            ? "(ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)"
-            : "(ใช้ Markdown ตาม Style Guide ด้านบน โดยแสดงวิธีทำสั้นๆ กระชับ)";
-
-        if (mode === 'svg_question') {
-            const isSubjective = formData.questionType === 'subjective';
-            if (isSubjective) {
-                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
-[
-  {
-    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
-    "svg": "<svg viewBox=\\"0 0 300 250\\" width=\\"300\\" height=\\"250\\" xmlns=\\"http://www.w3.org/2000/svg\\">...</svg>",
-    "answer": "คำตอบที่ถูกต้อง",
-    "solution": "${solutionTypeDesc} ${solutionTemplateSuffix}",
-    "space": "large"
-  }
-]
-**สำคัญ:**
-- ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย (แสดงวิธีทำ) ไม่มีตัวเลือก
-- **"svg" ต้องเป็น SVG code string สมบูรณ์** ที่ปฏิบัติตามกฎเหล็ก SVG ด้านบนทุกข้อ
-- ทุกข้อต้องมี "svg" field เสมอ ห้ามเว้น`;
-            } else {
-                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
-[
-  {
-    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
-    "svg": "<svg viewBox=\\"0 0 300 250\\" width=\\"300\\" height=\\"250\\" xmlns=\\"http://www.w3.org/2000/svg\\">...</svg>",
-    "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
-    "answer": "ก. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก ก/ข/ค/ง ที่ถูกต้องเสมอ)",
-    "solution": "**คำตอบ: ข้อ ก.** [แสดงวิธีทำ] ${solutionTemplateSuffix}",
-    "space": "medium"
-  }
-]
-**สำคัญ:**
-- ต้องมี "options" ครบ 4 ตัวเลือกเสมอ และ **มีคำตอบถูกเพียง 1 ข้อเท่านั้น**
-- **ห้ามใส่ prefix "ก." "ข." "ค." "ง." นำหน้าตัวเลือก** เพราะระบบจะใส่ให้อัตโนมัติ (เช่น ใส่แค่ "รูปสามเหลี่ยม" ไม่ใช่ "ก. รูปสามเหลี่ยม")
-- **"answer" ต้องขึ้นต้นด้วย ก./ข./ค./ง.** ตามตัวเลือกที่ถูกต้อง
-- **"svg" ต้องเป็น SVG code string สมบูรณ์** ที่ปฏิบัติตามกฎเหล็ก SVG ด้านบนทุกข้อ
-- ทุกข้อต้องมี "svg" field เสมอ ห้ามเว้น
-- **ตรวจสอบการคำนวณซ้ำทุกข้อก่อนส่ง** ยืนยันว่ามีคำตอบถูกเพียงข้อเดียว`;
-            }
-        } else if (mode === 'transcribe') {
-            const isSubjective = formData.questionType === 'subjective';
-            if (isSubjective) {
-                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
-[
-  {
-    "question": "โจทย์ตามต้นฉบับ (ใช้ LaTeX สำหรับสมการ) ห้ามใส่เลขข้อ",
-    "answer": "คำตอบ (ถ้ามีในต้นฉบับ)",
-    "solution": "เฉลย/วิธีทำ (ถ้ามีในต้นฉบับ หรือเว้นว่างไว้)",
-    "space": "large"
-  }
-]
-**สำคัญ:**
-- ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย
-- **ห้ามใส่หมายเลขข้อนำหน้า** โจทย์ในทุกกรณี
-- หากต้นฉบับไม่มีเฉลย ให้ใส่ "solution" เป็น ""
-- แนบเอกสาร/รูปภาพโจทย์ไปพร้อมกับคำสั่งนี้ใน Gemini`;
-            } else {
-                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
-[
-  {
-    "question": "โจทย์ตามต้นฉบับ (ใช้ LaTeX สำหรับสมการ) ห้ามใส่เลขข้อ",
-    "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
-    "answer": "ก. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก ก/ข/ค/ง ที่ถูกต้องเสมอ)",
-    "solution": "**คำตอบ: ข้อ ก.** เฉลย/วิธีทำ (ถ้ามีในต้นฉบับ หรือเว้นว่างไว้)",
-    "space": "medium"
-  }
-]
-**สำคัญ:**
-- **ห้ามใส่หมายเลขข้อนำหน้า** โจทย์ในทุกกรณี
-- **ห้ามใส่ prefix "ก." "ข." "ค." "ง." นำหน้าตัวเลือก** เพราะระบบจะใส่ให้อัตโนมัติ
-- ต้องมี "options" ครบ 4 ตัวเลือกเสมอ (ตามต้นฉบับ) และ **มีคำตอบถูกเพียง 1 ข้อเท่านั้น**
-- **"answer" ต้องขึ้นต้นด้วย ก./ข./ค./ง.** ตามตัวเลือกที่ถูกต้อง
-- หากต้นฉบับไม่มีเฉลย ให้ใส่ "solution" เป็น ""
-- แนบเอกสาร/รูปภาพโจทย์ไปพร้อมกับคำสั่งนี้ใน Gemini`;
-            }
-        } else if (mode === 'exam' || mode === 'practice') {
-            const isSubjective = formData.questionType === 'subjective' || (formData.questionType === 'word_problem' && formData.wordProblemType === 'subjective');
-
-            if (isSubjective) {
-                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
-[
-  {
-    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
-    "answer": "คำตอบที่ถูกต้อง",
-    "solution": "${solutionTypeDesc} ${solutionTemplateSuffix}",
-    "space": "large" (เว้นที่ว่างสำหรับเขียนวิธีทำ: small/medium/large)
-  }
-]
-**สำคัญ:** ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย (แสดงวิธีทำ) ไม่มีตัวเลือก`;
-            } else {
-                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
-[
-  {
-    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
-    "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
-    "answer": "ก. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก ก/ข/ค/ง ที่ถูกต้องเสมอ)",
-    "solution": "**คำตอบ: ข้อ ก.** [แสดงวิธีทำ] ${solutionTemplateSuffix}",
-    "space": "medium" (เว้นที่ว่าง: small/medium/large)
-  }
-]
-**สำคัญ:**
-- ต้องมี "options" ครบ 4 ตัวเลือกเสมอ และ **มีคำตอบถูกเพียง 1 ข้อเท่านั้น**
-- **ห้ามใส่ prefix "ก." "ข." "ค." "ง." นำหน้าตัวเลือก** เพราะระบบจะใส่ให้อัตโนมัติ
-- **"answer" ต้องขึ้นต้นด้วย ก./ข./ค./ง.** ตามตัวเลือกที่ถูกต้อง
-- **"solution" ต้องเริ่มด้วย "คำตอบ: ข้อ [ก/ข/ค/ง]"** ก่อนแสดงวิธีทำ
-- **ตรวจสอบการคำนวณซ้ำทุกข้อก่อนส่ง** ยืนยันว่ามีคำตอบถูกเพียงข้อเดียว`;
-            }
-        } else {
-            promptText += `ส่งผลลัพธ์เป็น **JSON Object** เพียงก้อนเดียวเท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) โดยมีโครงสร้างดังนี้:
-
-{
-  "type": "lesson",
-  "title": "ชื่อหัวข้อเรื่อง",
-  "blocks": [
-    { "type": "header", "content": "# หัวข้อหลัก" },
-    { "type": "text", "content": "เนื้อหาอธิบายอย่างละเอียดลึกซึ้ง (ห้ามสรุปย่อ) ใส่ Markdown ได้ตาม Style Guide..." },
-    { "type": "callout", "style": "warning", "content": "> ⚠️ **ข้อควรระวัง:** ..." },
-    { "type": "header", "content": "## หัวข้อย่อย" },
-    { "type": "text", "content": "คำอธิบายส่วนถัดไป..." },
-    { "type": "example", "content": "> 📝 **ตัวอย่าง:** ..." }
-  ]
-}
-
-**สำคัญ:** ห้ามรวมเนื้อหาทั้งหมดเป็น String เดียว ให้แบ่งเป็น Blocks ย่อยๆ ตามหัวข้อ เพื่อให้ระบบสามารถจัดหน้ากระดาษ (Pagination) ได้อย่างสวยงาม`;
-        }
-
-        setGeneratedPrompt(promptText);
-    }, [formData]);
-
     const handleReset = () => {
         if (window.confirm("คุณต้องการล้างการตั้งค่าทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่?")) {
             setFormData(DEFAULT_FORM_DATA);
-            setGeneratedPrompt('');
             savePromptSettings(DEFAULT_FORM_DATA);
+            addToast('รีเซ็ตค่าทั้งหมดเรียบร้อย', 'success');
         }
     };
 
+    // Item 13: Mode change reset + Item 3: Validation
     const handleChange = (field, value) => {
+        // Item 3: Validate questionCount
+        if (field === 'questionCount') {
+            const num = parseInt(value, 10);
+            if (isNaN(num)) value = 1;
+            else value = Math.max(1, Math.min(50, num));
+        }
+        // Item 3: Validate customTopic max length
+        if (field === 'customTopic' && value.length > 200) {
+            value = value.slice(0, 200);
+        }
+
+        // Item 13: Reset mode-specific values when changing mode
+        if (field === 'mode') {
+            setFormData(prev => {
+                const allowedOpts = MODE_ALLOWED_OPTIONS[value] || [];
+                const newComponents = { ...prev.components };
+                // Deselect components not allowed in the new mode
+                Object.keys(newComponents).forEach(key => {
+                    if (!allowedOpts.includes(key)) {
+                        newComponents[key] = false;
+                    }
+                });
+                return {
+                    ...prev,
+                    mode: value,
+                    ...MODE_DEFAULTS,
+                    components: newComponents,
+                };
+            });
+            return;
+        }
+
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    // Item 9: Get allowed options for current mode
+    const allowedComponents = MODE_ALLOWED_OPTIONS[formData.mode] || [];
+
     const handleComponentChange = (comp) => {
+        // Item 9: Only allow toggling components that are allowed for current mode
+        if (!allowedComponents.includes(comp)) return;
         setFormData(prev => ({
             ...prev,
             components: { ...prev.components, [comp]: !prev.components[comp] }
@@ -418,6 +187,15 @@ const PromptBuilderPage = () => {
     const handleCopy = () => {
         if (!generatedPrompt) return;
         navigator.clipboard.writeText(generatedPrompt);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    };
+
+    // Item 15: Copy as Markdown
+    const handleCopyMarkdown = () => {
+        if (!generatedPrompt) return;
+        const markdownPrompt = `# AI Prompt — ${formData.mode.toUpperCase()}\n\n---\n\n${generatedPrompt}`;
+        navigator.clipboard.writeText(markdownPrompt);
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
     };
@@ -453,8 +231,31 @@ const PromptBuilderPage = () => {
         </div>
     );
 
+    // Item 1: Loading state
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-[#F1F5F9]">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 size={40} className="text-blue-600 animate-spin" />
+                    <p className="text-slate-500 font-semibold text-sm">กำลังโหลดค่าที่บันทึกไว้...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-[#F1F5F9] font-sans selection:bg-blue-600 selection:text-white">
+            {/* Item 1: Toast Container */}
+            <ToastContainer toasts={toasts} removeToast={removeToast} />
+            {/* Item 5: Template Manager Modal */}
+            <TemplateManager
+                isOpen={isTemplateOpen}
+                onClose={() => setIsTemplateOpen(false)}
+                currentFormData={formData}
+                onLoadTemplate={(data) => setFormData(data)}
+                addToast={addToast}
+            />
+
             {/* --- Left Panel --- */}
             <div className="w-full lg:w-[62%] h-full overflow-y-auto p-4 sm:p-6 lg:p-10 custom-scrollbar relative z-0">
                 <div className="max-w-4xl mx-auto space-y-10 pb-32">
@@ -471,13 +272,23 @@ const PromptBuilderPage = () => {
                                     MathCraft <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500">AI</span>
                                 </h1>
                             </div>
-                            <button
-                                onClick={handleReset}
-                                className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm active:scale-95"
-                            >
-                                <Undo2 size={14} className="group-hover:-rotate-45 transition-transform" />
-                                RESET
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleReset}
+                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm active:scale-95"
+                                >
+                                    <Undo2 size={14} className="group-hover:-rotate-45 transition-transform" />
+                                    RESET
+                                </button>
+                                <button
+                                    onClick={() => setIsTemplateOpen(true)}
+                                    aria-label="เปิด Templates"
+                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm active:scale-95"
+                                >
+                                    <FileText size={14} />
+                                    TEMPLATES
+                                </button>
+                            </div>
                         </div>
                         <p className="text-slate-500 max-w-xl text-[15px] font-medium leading-relaxed">
                             สร้างคำสั่งที่ทรงพลังเพื่อเปลี่ยน AI ให้เป็นผู้ช่วยเตรียมเนื้อหาและข้อสอบตามหลักสูตร สสวท. อย่างมืออาชีพ
@@ -497,7 +308,7 @@ const PromptBuilderPage = () => {
                         </div>
 
                         {/* Mode Switcher */}
-                        <div className="flex flex-wrap gap-2.5 mb-8 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
+                        <div className="flex flex-wrap gap-2.5 mb-8 bg-slate-50/50 p-2 rounded-2xl border border-slate-100" role="tablist" aria-label="เลือกโหมดการสร้างคำสั่ง">
                             {[
                                 { id: 'content', label: 'บทเรียน', icon: <BookOpen size={16} />, color: 'blue' },
                                 { id: 'practice', label: 'แบบฝึกหัด', icon: <PenTool size={16} />, color: 'teal' },
@@ -510,6 +321,9 @@ const PromptBuilderPage = () => {
                                 <button
                                     key={item.id}
                                     onClick={() => handleChange('mode', item.id)}
+                                    role="tab"
+                                    aria-selected={formData.mode === item.id}
+                                    aria-label={`โหมด ${item.label}`}
                                     className={`flex-1 min-w-[100px] py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2.5 
                                     ${formData.mode === item.id
                                             ? `bg-slate-900 text-white shadow-xl shadow-slate-900/20 scale-[1.03]`
@@ -563,6 +377,7 @@ const PromptBuilderPage = () => {
                                         className="w-full p-4 pl-12 pr-10 bg-white border border-slate-200 rounded-2xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-base font-bold text-slate-800 shadow-sm hover:border-blue-300 cursor-pointer"
                                         value={formData.chapter}
                                         onChange={(e) => handleChange('chapter', e.target.value)}
+                                        aria-label="เลือกบทเรียน"
                                     >
                                         <option value="">-- เลือกบทเรียน --</option>
                                         {availableChapters.map((chapter, idx) => (
@@ -600,6 +415,14 @@ const PromptBuilderPage = () => {
                                 </div>
                             )}
 
+                            {/* Item 3: Chapter warning */}
+                            {!formData.chapter && (
+                                <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl animate-in fade-in duration-300">
+                                    <AlertCircle size={16} className="text-amber-500 shrink-0" />
+                                    <span className="text-xs font-semibold text-amber-700">กรุณาเลือกบทเรียนเพื่อให้ Prompt สมบูรณ์ยิ่งขึ้น</span>
+                                </div>
+                            )}
+
                             {(formData.chapter === 'custom' || formData.selectedTopic === 'custom') && (
                                 <div className="animate-in zoom-in-95 duration-300">
                                     <input
@@ -608,7 +431,15 @@ const PromptBuilderPage = () => {
                                         placeholder="ระบุหัวข้อที่ต้องการ เช่น เลขยกกำลังที่มีฐานเป็นลบ..."
                                         value={formData.customTopic}
                                         onChange={(e) => handleChange('customTopic', e.target.value)}
+                                        maxLength={200}
+                                        aria-label="ระบุหัวข้อที่ต้องการ"
                                     />
+                                    {/* Item 3: Character counter */}
+                                    <div className="flex justify-end mt-1 pr-1">
+                                        <span className={`text-[10px] font-bold ${formData.customTopic.length >= 180 ? 'text-amber-500' : 'text-slate-300'}`}>
+                                            {formData.customTopic.length}/200
+                                        </span>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -761,8 +592,12 @@ const PromptBuilderPage = () => {
                         <div className="mb-10">
                             <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
                                 เลือกออปชันเสริม
+                                {allowedComponents.length === 0 && (
+                                    <span className="ml-2 text-slate-300 font-medium normal-case">(ไม่มีออปชันสำหรับโหมดนี้)</span>
+                                )}
                             </label>
                             <div className="flex flex-wrap gap-2.5">
+                                {/* Item 9: Only show options allowed for current mode */}
                                 {[
                                     { id: 'formula', label: 'สรุปสูตร', color: 'blue' },
                                     { id: 'shortcut', label: 'เทคนิคลัด', color: 'indigo' },
@@ -770,10 +605,12 @@ const PromptBuilderPage = () => {
                                     { id: 'vocab', label: 'ศัพท์เทคนิค', color: 'emerald' },
                                     { id: 'mistake', label: 'จุดที่มักผิด', color: 'rose' },
                                     { id: 'problemSolving', label: 'โจทย์ปัญหา', color: 'purple' },
-                                ].map(comp => (
+                                ].filter(comp => allowedComponents.includes(comp.id)).map(comp => (
                                     <button
                                         key={comp.id}
                                         onClick={() => handleComponentChange(comp.id)}
+                                        aria-label={`เปิด/ปิดออปชัน ${comp.label}`}
+                                        aria-pressed={formData.components[comp.id]}
                                         className={`px-4 py-2.5 rounded-2xl border-2 font-bold text-xs transition-all flex items-center gap-2.5 active:scale-95
                                         ${formData.components[comp.id]
                                                 ? `border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/10`
@@ -795,11 +632,15 @@ const PromptBuilderPage = () => {
                                     <div className="flex items-center gap-4">
                                         <input
                                             type="number"
+                                            min={1}
+                                            max={50}
                                             className="w-24 p-4 bg-white border-2 border-slate-200 rounded-2xl text-2xl font-black text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
                                             value={formData.questionCount}
                                             onChange={(e) => handleChange('questionCount', e.target.value)}
+                                            aria-label="จำนวนข้อสอบ"
                                         />
                                         <span className="font-bold text-slate-400">ITEMS</span>
+                                        <span className="text-[9px] font-bold text-slate-300">(1-50)</span>
                                     </div>
                                 </div>
                                 <div className="flex gap-2 p-1.5 bg-white rounded-2xl border border-slate-100">
@@ -884,87 +725,17 @@ const PromptBuilderPage = () => {
                 </div>
             </div >
 
-            {/* --- Right Panel --- */}
-            < div className="w-full lg:w-[38%] bg-[#0B0F19] flex flex-col shadow-[inset_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden relative border-l border-slate-800/50 min-h-[40vh] lg:min-h-0" >
-                {/* Visual Glow */}
-                < div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[150px] -mr-80 -mt-80 rounded-full" />
-
-                {/* Header Section */}
-                < div className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-black/20 backdrop-blur-md relative z-10" >
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 text-emerald-400">
-                            <Terminal size={14} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <h3 className="text-white font-black font-outfit text-xs tracking-widest leading-none">PREVIEW</h3>
-                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter mt-1 block">Live AI Instruction</span>
-                        </div>
-                    </div>
-                    <div className="flex gap-2.5">
-                        <button
-                            onClick={handleOpenGemini}
-                            className="h-10 px-4 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all flex items-center gap-2 text-[11px] font-bold uppercase border border-white/10 hover:border-white/20 active:scale-95 tracking-wider"
-                        >
-                            <ExternalLink size={14} strokeWidth={2.5} />
-                            Open Gemini
-                        </button>
-                        <button
-                            onClick={handleCopy}
-                            disabled={!generatedPrompt}
-                            className={`h-10 px-5 rounded-xl font-bold text-[11px] transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-blue-600/20 tracking-wider
-                            ${isCopied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50'} `}
-                        >
-                            {isCopied ? <Check size={14} strokeWidth={3} /> : <Sparkles size={14} fill="currentColor" />}
-                            {isCopied ? 'COPIED' : 'GENERATE & COPY'}
-                        </button>
-                    </div>
-                </div >
-
-                {/* Editor Content */}
-                < div className="flex-1 overflow-auto p-4 md:p-8 custom-scrollbar relative z-10" >
-                    {
-                        generatedPrompt ? (
-                            <div className="bg-[#131926] rounded-3xl p-8 border border-white/5 shadow-2xl animate-in fade-in zoom-in-95 duration-700 min-h-full" >
-                                <div className="flex gap-2 mb-6 opacity-30">
-                                    <div className="w-3 h-3 rounded-full bg-rose-500" />
-                                    <div className="w-3 h-3 rounded-full bg-amber-500" />
-                                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                                </div>
-                                {formData.mode === 'transcribe' && (
-                                    <div className="mb-6 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl">
-                                        <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs mb-2">
-                                            <Paperclip size={14} />
-                                            <span>📎 อย่าลืมแนบเอกสาร!</span>
-                                        </div>
-                                        <p className="text-[11px] text-cyan-300/70 leading-relaxed">
-                                            คัดลอกคำสั่งนี้ไปวางใน Gemini แล้ว<strong>แนบรูปภาพ/เอกสารโจทย์สอบ</strong>ไปพร้อมกัน AI จะพิมพ์โจทย์ตามให้เหมือนต้นฉบับทุกประการ
-                                        </p>
-                                    </div>
-                                )}
-                                <div className="font-mono text-[13px] leading-relaxed text-slate-300 whitespace-pre-wrap selection:bg-blue-500/30">
-                                    {generatedPrompt}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-700 gap-6 opacity-30 select-none">
-                                <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center animate-[spin_10s_linear_infinite]">
-                                    <Terminal size={32} />
-                                </div>
-                                <p className="text-center text-[10px] font-black tracking-[0.2em] uppercase">Ready to generate your command</p>
-                            </div>
-                        )}
-                </div >
-
-                {/* Status Bar */}
-                < div className="p-4 bg-black/40 backdrop-blur-xl text-[9px] font-bold text-slate-500 flex justify-between px-8 border-t border-white/5 relative z-10" >
-                    <div className="flex gap-6">
-                        <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> ENGINE: GPT-4/GEMINI READY</span>
-                        <span>LENGTH: ~{generatedPrompt.length} chars</span>
-                    </div>
-                    <span>LOCALE: TH_TH / EN_US</span>
-                </div >
-            </div >
-        </div >
+            {/* --- Right Panel (Extracted Component) --- */}
+            <PromptPreview
+                generatedPrompt={generatedPrompt}
+                formData={formData}
+                isCopied={isCopied}
+                onCopy={handleCopy}
+                onCopyMarkdown={handleCopyMarkdown}
+                onOpenGemini={handleOpenGemini}
+                saveStatus={saveStatus}
+            />
+        </div>
     );
 };
 

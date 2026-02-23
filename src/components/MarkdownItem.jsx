@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
+import React, { memo, useState, useEffect, useCallback, useRef, useId } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
@@ -43,6 +43,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
     const [text, setText] = useState(content || '');
     const [showPreview, setShowPreview] = useState(false);
     const textAreaRef = useRef(null);
+    const textareaId = useId();
 
     const EDUCATION_ICONS = [
         '📚', '📖', '✏️', '📝', '📐', '📏', '🎒', '🎓', '💡', '🧠',
@@ -160,7 +161,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
                         {isEditing ? (
                             <div className="w-full" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex items-center justify-between mb-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">
+                                    <label htmlFor={textareaId} className="text-xs font-bold text-gray-500 uppercase">
                                         แก้ไข Markdown
                                     </label>
                                     <button
@@ -189,6 +190,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
                                         </div>
                                         <textarea
                                             ref={textAreaRef}
+                                            id={textareaId}
                                             className="w-full min-h-[200px] p-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y"
                                             value={text}
                                             onChange={(e) => setText(e.target.value)}
