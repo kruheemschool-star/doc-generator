@@ -20,7 +20,7 @@ const formats = [
     'align', 'script', 'size'
 ];
 
-const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown }) => {
+const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [QuillComponent, setQuillComponent] = useState(null);
@@ -76,7 +76,7 @@ const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate
     };
 
     return (
-        <Draggable draggableId={id} index={index}>
+        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}
@@ -84,13 +84,14 @@ const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate
                     className={`group relative mb-1 transition-all ${snapshot.isDragging ? 'z-50 opacity-90' : ''
                         } ${isEditing ? 'z-20' : ''}`}
                     onClick={(e) => {
+                        if (isViewOnly) return;
                         e.stopPropagation();
                         // Only trigger select if not already editing
                         if (!isEditing) onSelect && onSelect(id);
                     }}
                 >
                     {/* Hover Controls (Only when not editing) */}
-                    {!isEditing && (
+                    {!isEditing && !isViewOnly && (
                         <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
                             <div
                                 {...provided.dragHandleProps}
@@ -127,7 +128,7 @@ const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate
                                 ? 'bg-blue-50/10 border-blue-400 ring-2 ring-blue-50 p-4'
                                 : 'bg-transparent border-transparent hover:border-gray-200 hover:bg-gray-50/50 p-4'
                             }`}
-                        onDoubleClick={() => { setIsEditing(true); loadQuill(); }}
+                        onDoubleClick={() => { if (!isViewOnly) { setIsEditing(true); loadQuill(); } }}
                     >
                         {isEditing ? (
                             <div className="w-full">

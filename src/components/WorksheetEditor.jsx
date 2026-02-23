@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3 } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2 } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
 import ImageItem from './ImageItem';
 import SpacerItem from './SpacerItem';
+import DividerItem from './DividerItem';
 import MarkdownItem from './MarkdownItem';
 import QuestionEditorModal from './QuestionEditorModal';
 import ErrorBoundary from './ErrorBoundary';
@@ -73,9 +74,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [globalFontSize, setGlobalFontSize] = useState('medium');
     const [showDebug, setShowDebug] = useState(false);
     const [showGrid, setShowGrid] = useState(false);
+    const [isViewOnly, setIsViewOnly] = useState(false);
     const gridSize = 'medium';
     const gridOpacity = 5;
-    
+
 
     // --- Selection & Editing State ---
     const [selectedItemId, setSelectedItemId] = useState(null);
@@ -150,6 +152,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const handleAddText = () => handleAddQuestion({ id: uuidv4(), type: 'text', content: '', size: 'medium' });
     const handleAddImage = () => handleAddQuestion({ id: uuidv4(), type: 'image', src: '', size: 'medium' });
     const handleAddSpacer = () => handleAddQuestion({ id: uuidv4(), type: 'spacer', height: 100 });
+    const handleAddDivider = () => handleAddQuestion({ id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' });
     const handleAddMarkdown = () => handleAddQuestion({ id: uuidv4(), type: 'markdown', content: '> พิมพ์เนื้อหา Markdown ที่นี่...', size: 'medium' });
 
     const handleUpdateItem = useCallback((itemId, updates) => {
@@ -486,7 +489,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             isExplicitEditing: q.id === editingItemId,
             onEditEnd: () => setEditingItemId(null),
             canMoveUp: !isFirstItem,
-            canMoveDown: !isLastItem
+            canMoveDown: !isLastItem,
+            isViewOnly
         };
 
         if (q.type === 'text') return (
@@ -507,6 +511,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         if (q.type === 'spacer') return (
             <ErrorBoundary key={q.id}>
                 <SpacerItem {...commonProps} height={q.height} />
+            </ErrorBoundary>
+        );
+        if (q.type === 'divider') return (
+            <ErrorBoundary key={q.id}>
+                <DividerItem {...commonProps} style={q.style} thickness={q.thickness} color={q.color} />
             </ErrorBoundary>
         );
 
@@ -700,6 +709,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 hover:text-blue-600 rounded-xl transition-all" title="เพิ่มกล่องข้อความ"><Type size={20} /></button>
                                 <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 hover:text-teal-600 rounded-xl transition-all" title="เพิ่ม Markdown"><FileText size={20} /></button>
                                 <button onClick={handleAddImage} className="p-3 hover:bg-purple-50 text-gray-500 hover:text-purple-600 rounded-xl transition-all" title="เพิ่มรูปภาพ"><ImageIcon size={20} /></button>
+                                <button onClick={handleAddDivider} className="p-3 hover:bg-rose-50 text-gray-500 hover:text-rose-600 rounded-xl transition-all" title="เพิ่มเส้นคั่น"><Minus size={20} /></button>
                                 <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" title="Import จาก Gemini"><FileJson size={20} /></button>
                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
                                 <button onClick={undo} disabled={!canUndo} className={`p-3 rounded-xl transition-all ${canUndo ? 'hover:bg-amber-50 text-gray-500 hover:text-amber-600' : 'text-gray-200 cursor-not-allowed'}`} title="ย้อนกลับ (Undo)"><RotateCcw size={20} /></button>
@@ -708,16 +718,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <button onClick={() => setZoomLevel(z => Math.max(50, z - 10))} className="p-3 hover:bg-gray-100 text-gray-500 rounded-xl transition-all" title="ซูมออก"><ZoomOut size={20} /></button>
                                 <span className="text-xs text-gray-400 font-medium min-w-[40px] text-center select-none">{zoomLevel}%</span>
                                 <button onClick={() => setZoomLevel(z => Math.min(150, z + 10))} className="p-3 hover:bg-gray-100 text-gray-500 rounded-xl transition-all" title="ซูมเข้า"><ZoomIn size={20} /></button>
+
                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
-                                <div className="relative group/font">
-                                    <button className="p-3 hover:bg-gray-100 text-gray-500 rounded-xl transition-all" title="ขนาดฟอนต์"><ALargeSmall size={20} /></button>
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/font:flex flex-col bg-white border border-gray-200 rounded-xl shadow-xl p-1 min-w-[120px]">
-                                        {[{ label: 'เล็ก', value: 'small' }, { label: 'ปกติ', value: 'medium' }, { label: 'ใหญ่', value: 'large' }, { label: 'ใหญ่มาก', value: 'xl' }].map(f => (
-                                            <button key={f.value} onClick={() => setGlobalFontSize(f.value)} className={`text-left px-3 py-1.5 rounded-lg text-sm transition-all ${globalFontSize === f.value ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>{f.label}</button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
+                                <button onClick={() => setIsViewOnly(!isViewOnly)} className={`p-3 rounded-xl transition-all ${isViewOnly ? 'bg-orange-50 text-orange-600' : 'text-gray-400 hover:bg-gray-100'}`} title={isViewOnly ? "โหมดมุมมอง (ดูอย่างเดียว)" : "โหมดแก้ไข"}>{isViewOnly ? <Hand size={20} /> : <MousePointer2 size={20} />}</button>
                                 <button onClick={() => setShowSolution(!showSolution)} className={`p-3 rounded-xl transition-all ${showSolution ? 'bg-blue-50 text-blue-600' : 'text-gray-400'}`} title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={20} /> : <EyeOff size={20} />}</button>
                                 <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={`p-3 rounded-xl transition-all ${showGrid ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:bg-gray-100'}`} title="เปิด/ปิดตารางกริด"><Grid3X3 size={20} /></button>
                                 <button onClick={() => window.print()} className="p-3 hover:bg-gray-100 text-gray-400 rounded-xl" title="พิมพ์"><Printer size={20} /></button>
@@ -747,6 +750,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
 
                                 <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'spacer', height: 100 })} className="p-3 hover:bg-amber-50 text-gray-500 hover:text-amber-600 rounded-xl transition-all" title="แทรกช่องว่าง"><MoveVertical size={20} /></button>
+
+                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' })} className="p-3 hover:bg-rose-50 text-gray-500 hover:text-rose-600 rounded-xl transition-all" title="แทรกเส้นคั่น"><Minus size={20} /></button>
 
                                 <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 hover:text-purple-600 rounded-xl transition-all" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
 

@@ -38,7 +38,7 @@ const splitAnswerContent = (content) => {
     };
 };
 
-const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown }) => {
+const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [showPreview, setShowPreview] = useState(false);
@@ -105,7 +105,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
     };
 
     return (
-        <Draggable draggableId={id} index={index}>
+        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}
@@ -113,13 +113,14 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
                     className={`group relative mb-1 transition-all ${snapshot.isDragging ? 'z-50 opacity-90' : ''
                         } ${isEditing ? 'z-20' : ''}`}
                     onClick={(e) => {
+                        if (isViewOnly) return;
                         e.stopPropagation();
                         // Only trigger select if not already editing
                         if (!isEditing) onSelect && onSelect(id);
                     }}
                 >
                     {/* Hover Controls (Only when not editing) */}
-                    {!isEditing && (
+                    {!isEditing && !isViewOnly && (
                         <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
                             <div
                                 {...provided.dragHandleProps}
@@ -156,7 +157,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
                                 ? 'bg-blue-50/10 border-blue-400 ring-2 ring-blue-50 py-3 px-4'
                                 : 'bg-transparent border-transparent hover:border-gray-200 hover:bg-gray-50/50 py-3 px-4'
                             }`}
-                        onDoubleClick={() => !isEditing && setIsEditing(true)}
+                        onDoubleClick={() => !isViewOnly && !isEditing && setIsEditing(true)}
                     >
                         {isEditing ? (
                             <div className="w-full" onClick={(e) => e.stopPropagation()}>
@@ -246,7 +247,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
                         })()}
 
                         {/* Edit Button Overlay */}
-                        {!isEditing && (
+                        {!isEditing && !isViewOnly && (
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}

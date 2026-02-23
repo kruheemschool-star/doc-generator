@@ -222,7 +222,7 @@ const App = () => {
             <Navbar currentView={currentView} onViewChange={handleViewChange} />
 
             {/* --- Main Content Area --- */}
-            <div className="flex-1">
+            <div className="flex-1 animate-page-fade-in" key={currentView}>
 
                 {/* Dashboard View */}
                 {currentView === 'dashboard' && (

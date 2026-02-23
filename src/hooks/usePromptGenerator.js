@@ -14,6 +14,85 @@ export const usePromptGenerator = (formData) => {
         const topic = formData.selectedTopic === 'custom' ? formData.customTopic : formData.selectedTopic;
         const mode = formData.mode;
 
+        // --- Transcribe mode: standalone simplified prompt ---
+        if (mode === 'transcribe') {
+            const tType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
+            let promptText = `**พิมพ์โจทย์ตามเอกสาร/รูปภาพที่แนบมา** ให้เหมือนต้นฉบับทุกประการ (ประเภท: ${tType})\n`;
+
+            if (formData.transcribePageRange) {
+                promptText += `**ระบุหน้า:** พิมพ์เฉพาะ ${formData.transcribePageRange} เท่านั้น\n`;
+            }
+            if (formData.transcribeQuestionRange) {
+                promptText += `**ระบุข้อ:** พิมพ์เฉพาะ ${formData.transcribeQuestionRange} เท่านั้น\n`;
+            }
+
+            promptText += `
+---
+**บทบาท: นักพิมพ์โจทย์ตามต้นฉบับ (Transcription Mode)**
+
+**กฎเหล็กในการพิมพ์ตาม:**
+1. **พิมพ์ตามต้นฉบับเป๊ะ:** พิมพ์โจทย์ให้เหมือนกับเอกสาร/รูปภาพที่แนบมาทุกประการ ห้ามเปลี่ยนตัวเลข ห้ามเปลี่ยนคำ ห้ามสรุปย่อ ห้ามดัดแปลงแก้ไขใดๆ ทั้งสิ้น
+2. **ห้ามใส่หมายเลขข้อ:** ห้ามใส่เลขข้อ (เช่น "1." "2." "ข้อ 1") นำหน้าโจทย์ เพราะระบบจะนับเลขข้อให้อัตโนมัติ ถ้าต้นฉบับมีเลขข้อติดมา ให้ลบออก
+3. **ห้ามใส่ prefix ตัวเลือก:** ห้ามใส่ "ก." "ข." "ค." "ง." นำหน้าตัวเลือก เพราะระบบจะใส่ให้อัตโนมัติ
+4. **ใช้ LaTeX สำหรับสมการ:** สูตรคณิตศาสตร์ทุกตัวต้องเขียนด้วย LaTeX (เช่น $x^2 + 3x = 0$)
+5. **รักษาความหมายเดิม:** หากตัวอักษรในรูปภาพไม่ชัด ให้ตีความตามบริบทคณิตศาสตร์
+6. **แยกโจทย์แต่ละข้อ:** แต่ละข้อเป็น 1 object ใน JSON Array
+
+**ข้อควรระวัง:**
+- หากโจทย์ต้นฉบับมีรูปภาพประกอบ ให้อธิบายรูปเป็นข้อความสั้นๆ ใน "question" (เช่น "จากรูป สามเหลี่ยม ABC มีด้าน AB = 5 cm...")
+- หากมีสูตรหรือสมการ ต้องใช้ LaTeX เท่านั้น
+- ${formData.transcribeQuestionRange ? `พิมพ์เฉพาะข้อที่ระบุ (${formData.transcribeQuestionRange})` : 'พิมพ์ทุกข้อที่เห็นในเอกสาร ห้ามข้ามข้อใดข้อหนึ่ง'}
+---
+`;
+
+            // Output format for transcribe
+            promptText += `\n**กฎเหล็กสำหรับ "question" field (สำคัญมาก):**
+- **ห้ามใส่หมายเลขข้อ** นำหน้าโจทย์เด็ดขาด (ห้ามใส่ "ข้อที่ 1:", "ข้อ 1.", "1.", "1)" ฯลฯ) เพราะระบบจะนับเลขข้อให้อัตโนมัติ
+- **ห้ามใช้ blockquote (>) ใน "question"** เพราะจะทำให้เกิดกล่องข้อความที่ไม่จำเป็น ให้เขียนเป็นข้อความปกติ
+
+`;
+
+            const isSubjective = formData.questionType === 'subjective';
+            if (isSubjective) {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ตามต้นฉบับ (ใช้ LaTeX สำหรับสมการ) ห้ามใส่เลขข้อ",
+    "answer": "คำตอบ (ถ้ามีในต้นฉบับ)",
+    "solution": "เฉลย/วิธีทำ (ถ้ามีในต้นฉบับ หรือเว้นว่างไว้)",
+    "space": "large"
+  }
+]
+**สำคัญ:**
+- ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย
+- **ห้ามใส่หมายเลขข้อนำหน้า** โจทย์ในทุกกรณี
+- หากต้นฉบับไม่มีเฉลย ให้ใส่ "solution" เป็น ""
+- แนบเอกสาร/รูปภาพโจทย์ไปพร้อมกับคำสั่งนี้ใน Gemini`;
+            } else {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ตามต้นฉบับ (ใช้ LaTeX สำหรับสมการ) ห้ามใส่เลขข้อ",
+    "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
+    "answer": "ก. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก ก/ข/ค/ง ที่ถูกต้องเสมอ)",
+    "solution": "**คำตอบ: ข้อ ก.** เฉลย/วิธีทำ (ถ้ามีในต้นฉบับ หรือเว้นว่างไว้)",
+    "space": "medium"
+  }
+]
+**สำคัญ:**
+- **ห้ามใส่หมายเลขข้อนำหน้า** โจทย์ในทุกกรณี
+- **ห้ามใส่ prefix "ก." "ข." "ค." "ง." นำหน้าตัวเลือก** เพราะระบบจะใส่ให้อัตโนมัติ
+- ต้องมี "options" ครบ 4 ตัวเลือกเสมอ (ตามต้นฉบับ) และ **มีคำตอบถูกเพียง 1 ข้อเท่านั้น**
+- **"answer" ต้องขึ้นต้นด้วย ก./ข./ค./ง.** ตามตัวเลือกที่ถูกต้อง
+- หากต้นฉบับไม่มีเฉลย ให้ใส่ "solution" เป็น ""
+- แนบเอกสาร/รูปภาพโจทย์ไปพร้อมกับคำสั่งนี้ใน Gemini`;
+            }
+
+            setGeneratedPrompt(promptText);
+            return; // Early return for transcribe mode
+        }
+
+        // --- All other modes ---
         const toneMap = {
             friendly: 'พูดจาเป็นกันเอง อบอุ่น ใจดี ให้กำลังใจนักเรียน',
             academic: 'ใช้ภาษาวิชาการ เน้นความถูกต้องและเป็นระบบ',
@@ -43,22 +122,29 @@ export const usePromptGenerator = (formData) => {
         } else if (mode === 'practice') {
             promptText += `เป้าหมาย: สร้างแบบฝึกหัดแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
         } else if (mode === 'summary') {
-            promptText += `เป้าหมาย: สรุปสูตรแบบ Cheat Sheet ให้อ่านจบใน 5 นาทีแล้วเข้าห้องสอบได้เลย\n`;
+            const lengthMap = { short: '~200', medium: '~500', long: '~800' };
+            const lengthLabel = { short: 'สั้น', medium: 'กลาง', long: 'ยาว' };
+            const wordCount = lengthMap[formData.summaryLength] || '~500';
+            const lengthName = lengthLabel[formData.summaryLength] || 'กลาง';
+            promptText += `เป้าหมาย: สรุปสูตรแบบ Cheat Sheet (ความยาว: ${lengthName} ${wordCount} คำ)\n`;
             promptText += `
 ---
 **บทบาทพิเศษ: ติวเตอร์หน้าห้องสอบ (Cheat Sheet Mode)**
+
+**ความยาว:** ประมาณ ${wordCount} คำ${formData.summaryLength === 'short' ? ' (สรุปเฉพาะสูตรหลักที่สำคัญที่สุด)' : formData.summaryLength === 'long' ? ' (ครบทุกหัวข้อ พร้อมตัวอย่างประกอบ)' : ' (สูตร + เทคนิค + จุดระวัง)'}
 
 กฎเหล็กในการสรุป:
 1. **คัดเน้นๆ (High-Yield Only):** สรุปเฉพาะเนื้อหาและสูตรที่เป็น 'หัวใจสำคัญ' หรือ 'ออกสอบบ่อย' เท่านั้น ตัดประวัติความเป็นมา หรือคำอธิบายพื้นฐานที่ยืดยาวทิ้งทั้งหมด
 2. **ห้ามเกริ่นนำ:** เริ่มต้นที่สูตรหรือคอนเซปต์เลย ห้ามมีประโยคเปิดเรื่อง (เช่น 'ในบทนี้เราจะมาเรียนรู้...')
 3. **กระชับที่สุด:** ใช้ Bullet Point สั้นๆ หรือตารางเปรียบเทียบ
+4. **ควบคุมจำนวนคำ:** ห้ามเกิน ${wordCount} คำ
 
 โครงสร้างที่ต้องมี:
 - ใช้ > 📘 **สูตรหลัก:** (สูตรที่ต้องจำ)
 - ใช้ > ⚠️ **จุดตาย:** (จุดที่นักเรียนมักพลาด หรือโดนหลอกในข้อสอบ)
 - ใช้ > 💡 **เทคนิค:** (สูตรลัด หรือวิธีจำให้เร็วขึ้น)
 
-**เป้าหมายสูงสุด:** ทำให้นักเรียนอ่านจบใน 5 นาทีแล้วมีความมั่นใจเดินเข้าห้องสอบได้ทันที
+**เป้าหมายสูงสุด:** ทำให้นักเรียนอ่านจบแล้วมีความมั่นใจเดินเข้าห้องสอบได้ทันที
 ---
 `;
         } else if (mode === 'svg_question') {
@@ -96,27 +182,6 @@ export const usePromptGenerator = (formData) => {
 - มุม: วางสัญลักษณ์มุมใกล้จุดยอดแต่ไม่ทับเส้น
 ---
 `;
-        } else if (mode === 'transcribe') {
-            const tType = formData.questionType === 'subjective' ? 'อัตนัย (แสดงวิธีทำ)' : 'ปรนัย (ตัวเลือก 4 ข้อ)';
-            promptText += `เป้าหมาย: **พิมพ์โจทย์ตามเอกสาร/รูปภาพที่แนบมา** ให้เหมือนต้นฉบับทุกประการ (ประเภท: ${tType})\n`;
-            promptText += `
----
-**บทบาทพิเศษ: นักพิมพ์โจทย์ตามต้นฉบับ (Transcription Mode)**
-
-**กฎเหล็กในการพิมพ์ตาม:**
-1. **พิมพ์ตามต้นฉบับเป๊ะ:** พิมพ์โจทย์ทุกข้อให้เหมือนกับเอกสาร/รูปภาพที่แนบมาทุกประการ ห้ามเปลี่ยนตัวเลข ห้ามเปลี่ยนคำ ห้ามสรุปย่อ
-2. **ห้ามใส่หมายเลขข้อ:** ห้ามใส่เลขข้อ (เช่น "1." "2." "ข้อ 1") นำหน้าโจทย์ เพราะระบบจะนับเลขข้อให้อัตโนมัติ
-3. **ห้ามใส่ prefix ตัวเลือก:** ห้ามใส่ "ก." "ข." "ค." "ง." นำหน้าตัวเลือก เพราะระบบจะใส่ให้อัตโนมัติ
-4. **ใช้ LaTeX สำหรับสมการ:** สูตรคณิตศาสตร์ทุกตัวต้องเขียนด้วย LaTeX (เช่น $x^2 + 3x = 0$)
-5. **รักษาความหมายเดิม:** หากตัวอักษรในรูปภาพไม่ชัด ให้ตีความตามบริบทคณิตศาสตร์
-6. **แยกโจทย์แต่ละข้อ:** แต่ละข้อเป็น 1 object ใน JSON Array
-
-**ข้อควรระวัง:**
-- หากโจทย์ต้นฉบับมีรูปภาพประกอบ ให้อธิบายรูปเป็นข้อความสั้นๆ ใน "question" (เช่น "จากรูป สามเหลี่ยม ABC มีด้าน AB = 5 cm...")
-- หากมีสูตรหรือสมการ ต้องใช้ LaTeX เท่านั้น
-- พิมพ์ทุกข้อที่เห็นในเอกสาร ห้ามข้ามข้อใดข้อหนึ่ง
----
-`;
         } else if (mode === 'mistake') {
             promptText += `เป้าหมาย: วิเคราะห์เจาะลึกกลไกและตรรกะเบื้องหลัง ไม่พูดเรื่องผิวเผิน\n`;
             promptText += `
@@ -142,12 +207,14 @@ export const usePromptGenerator = (formData) => {
 
         // --- Logic for Extra Options (Components) ---
         const activeComponents = [];
-        if (formData.components.formula) activeComponents.push('สรุปสูตรสำคัญ (Formula)');
-        if (formData.components.shortcut) activeComponents.push('เทคนิคลัด (Shortcuts & Tricks)');
-        if (formData.components.trivia) activeComponents.push('เกร็ดความรู้ (Trivia)');
-        if (formData.components.vocab) activeComponents.push('คำศัพท์เทคนิค (Technical Terms)');
-        if (formData.components.mistake) activeComponents.push('จุดที่มักผิด (Common Mistakes)');
-        if (formData.components.problemSolving) activeComponents.push('โจทย์ปัญหาและการแก้ปัญหา (Word Problems)');
+        if (formData.components?.dummyChoice) activeComponents.push('ช้อยส์หลอกดักทาง (Distractor/Dummy choices)');
+        if (formData.components?.realWorldApp) activeComponents.push('ประยุกต์ใช้ในชีวิตจริง (Real-World Applications)');
+        if (formData.components?.addHint) activeComponents.push('เพิ่มคำใบ้ (Hints)');
+        if (formData.components?.crossChapter) activeComponents.push('โจทย์ประยุกต์ผสมข้ามบท (Cross-Chapter Problems)');
+        if (formData.components?.mistake) activeComponents.push('จุดที่มักผิด (Common Mistakes)');
+        if (formData.components?.bulletPoints) activeComponents.push('สรุปเป็นข้อๆ (Bullet Points)');
+        if (formData.components?.comparisonTable) activeComponents.push('ตารางเปรียบเทียบ (Comparison Table)');
+        if (formData.components?.stepByStep) activeComponents.push('สรุปแบบทีละขั้นตอน (Step-by-step)');
 
         if (activeComponents.length > 0) {
             promptText += `\n**องค์ประกอบเพิ่มเติมที่ต้องมี (Requirements):**\nช่วยเน้นหรือแทรกเนื้อหาเกี่ยวกับ: ${activeComponents.join(', ')} ให้เหมาะสมกับบทเรียน\n`;
@@ -240,42 +307,6 @@ export const usePromptGenerator = (formData) => {
 - **"svg" ต้องเป็น SVG code string สมบูรณ์** ที่ปฏิบัติตามกฎเหล็ก SVG ด้านบนทุกข้อ
 - ทุกข้อต้องมี "svg" field เสมอ ห้ามเว้น
 - **ตรวจสอบการคำนวณซ้ำทุกข้อก่อนส่ง** ยืนยันว่ามีคำตอบถูกเพียงข้อเดียว`;
-            }
-        } else if (mode === 'transcribe') {
-            const isSubjective = formData.questionType === 'subjective';
-            if (isSubjective) {
-                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
-[
-  {
-    "question": "โจทย์ตามต้นฉบับ (ใช้ LaTeX สำหรับสมการ) ห้ามใส่เลขข้อ",
-    "answer": "คำตอบ (ถ้ามีในต้นฉบับ)",
-    "solution": "เฉลย/วิธีทำ (ถ้ามีในต้นฉบับ หรือเว้นว่างไว้)",
-    "space": "large"
-  }
-]
-**สำคัญ:**
-- ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย
-- **ห้ามใส่หมายเลขข้อนำหน้า** โจทย์ในทุกกรณี
-- หากต้นฉบับไม่มีเฉลย ให้ใส่ "solution" เป็น ""
-- แนบเอกสาร/รูปภาพโจทย์ไปพร้อมกับคำสั่งนี้ใน Gemini`;
-            } else {
-                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
-[
-  {
-    "question": "โจทย์ตามต้นฉบับ (ใช้ LaTeX สำหรับสมการ) ห้ามใส่เลขข้อ",
-    "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
-    "answer": "ก. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก ก/ข/ค/ง ที่ถูกต้องเสมอ)",
-    "solution": "**คำตอบ: ข้อ ก.** เฉลย/วิธีทำ (ถ้ามีในต้นฉบับ หรือเว้นว่างไว้)",
-    "space": "medium"
-  }
-]
-**สำคัญ:**
-- **ห้ามใส่หมายเลขข้อนำหน้า** โจทย์ในทุกกรณี
-- **ห้ามใส่ prefix "ก." "ข." "ค." "ง." นำหน้าตัวเลือก** เพราะระบบจะใส่ให้อัตโนมัติ
-- ต้องมี "options" ครบ 4 ตัวเลือกเสมอ (ตามต้นฉบับ) และ **มีคำตอบถูกเพียง 1 ข้อเท่านั้น**
-- **"answer" ต้องขึ้นต้นด้วย ก./ข./ค./ง.** ตามตัวเลือกที่ถูกต้อง
-- หากต้นฉบับไม่มีเฉลย ให้ใส่ "solution" เป็น ""
-- แนบเอกสาร/รูปภาพโจทย์ไปพร้อมกับคำสั่งนี้ใน Gemini`;
             }
         } else if (mode === 'exam' || mode === 'practice') {
             const isSubjective = formData.questionType === 'subjective' || (formData.questionType === 'word_problem' && formData.wordProblemType === 'subjective');

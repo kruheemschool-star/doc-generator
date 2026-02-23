@@ -3,7 +3,7 @@ import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, MoveVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { Resizable } from 're-resizable';
 
-const SpacerItem = memo(({ id, index, height, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown }) => {
+const SpacerItem = memo(({ id, index, height, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
     const [currentHeight, setCurrentHeight] = useState(height || 50);
 
     const handleResizeStop = (e, direction, ref, d) => {
@@ -13,7 +13,7 @@ const SpacerItem = memo(({ id, index, height, onDelete, onUpdate, onMove, isSele
     };
 
     return (
-        <Draggable draggableId={id} index={index}>
+        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}
@@ -21,45 +21,48 @@ const SpacerItem = memo(({ id, index, height, onDelete, onUpdate, onMove, isSele
                     className={`group relative mb-1 transition-all ${snapshot.isDragging ? 'z-50 opacity-90' : ''
                         }`}
                     onClick={(e) => {
+                        if (isViewOnly) return;
                         e.stopPropagation();
                         onSelect && onSelect(id);
                     }}
                 >
                     {/* Hover Controls */}
-                    <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
-                        <div
-                            {...provided.dragHandleProps}
-                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
-                            title="Drag to reorder"
-                        >
-                            <GripVertical size={16} />
+                    {!isViewOnly && (
+                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
+                            <div
+                                {...provided.dragHandleProps}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
+                                title="Drag to reorder"
+                            >
+                                <GripVertical size={16} />
+                            </div>
+                            {canMoveUp && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onMove(id, 'up'); }}
+                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                                    title="Move up"
+                                >
+                                    <ChevronUp size={16} />
+                                </button>
+                            )}
+                            {canMoveDown && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onMove(id, 'down'); }}
+                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                                    title="Move down"
+                                >
+                                    <ChevronDown size={16} />
+                                </button>
+                            )}
                         </div>
-                        {canMoveUp && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onMove(id, 'up'); }}
-                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-                                title="Move up"
-                            >
-                                <ChevronUp size={16} />
-                            </button>
-                        )}
-                        {canMoveDown && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onMove(id, 'down'); }}
-                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-                                title="Move down"
-                            >
-                                <ChevronDown size={16} />
-                            </button>
-                        )}
-                    </div>
+                    )}
 
                     <Resizable
                         size={{ width: '100%', height: currentHeight }}
                         onResizeStop={handleResizeStop}
                         minHeight={20}
                         maxHeight={800}
-                        enable={{ bottom: true }}
+                        enable={{ bottom: !isViewOnly }}
                         className="relative mx-auto"
                         handleComponent={{
                             bottom: (

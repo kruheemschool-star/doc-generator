@@ -37,7 +37,7 @@ const cleanQuestionText = (text) => {
   return cleaned;
 };
 
-const QuestionItem = memo(({ id, index, no, question, type, options, solution, svg, questionImage, spaceNeeded, fontSize = 'default', showSolution, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown }) => {
+const QuestionItem = memo(({ id, index, no, question, type, options, solution, svg, questionImage, spaceNeeded, fontSize = 'default', showSolution, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
 
   const imageInputRef = useRef(null);
 
@@ -70,12 +70,13 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
   }, [options]);
 
   return (
-    <Draggable draggableId={id} index={index}>
+    <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
           onClick={(e) => {
+            if (isViewOnly) return;
             e.stopPropagation();
             onSelect && onSelect(id);
           }}
@@ -85,33 +86,35 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
           `}
         >
           {/* Hover Controls (Standardized on Left) */}
-          <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
-            <div
-              {...provided.dragHandleProps}
-              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
-              title="Drag to reorder"
-            >
-              <GripVertical size={18} />
+          {!isViewOnly && (
+            <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
+              <div
+                {...provided.dragHandleProps}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
+                title="Drag to reorder"
+              >
+                <GripVertical size={18} />
+              </div>
+              {canMoveUp && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onMove(id, 'up'); }}
+                  className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                  title="Move up"
+                >
+                  <ChevronUp size={18} />
+                </button>
+              )}
+              {canMoveDown && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onMove(id, 'down'); }}
+                  className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                  title="Move down"
+                >
+                  <ChevronDown size={18} />
+                </button>
+              )}
             </div>
-            {canMoveUp && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onMove(id, 'up'); }}
-                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-                title="Move up"
-              >
-                <ChevronUp size={18} />
-              </button>
-            )}
-            {canMoveDown && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onMove(id, 'down'); }}
-                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-                title="Move down"
-              >
-                <ChevronDown size={18} />
-              </button>
-            )}
-          </div>
+          )}
 
           {/* Hidden file input for image upload */}
           <input
@@ -137,7 +140,7 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
                       <SvgRenderer svgString={svg} maxWidth={380} />
                     </div>
                     {/* Image action buttons */}
-                    {onUpdate && (
+                    {!isViewOnly && onUpdate && (
                       <div className="absolute -top-2 right-0 flex gap-1 opacity-0 group-hover/svg:opacity-100 transition-opacity print:hidden">
                         <button
                           onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
@@ -162,7 +165,7 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
                 {!svg && questionImage && (
                   <div className="relative mt-3 mb-3 flex justify-center group/img">
                     <img src={questionImage} alt="รูปประกอบโจทย์" className="max-w-full max-h-[300px] object-contain rounded-lg border border-gray-100" />
-                    {onUpdate && (
+                    {!isViewOnly && onUpdate && (
                       <div className="absolute -top-2 right-0 flex gap-1 opacity-0 group-hover/img:opacity-100 transition-opacity print:hidden">
                         <button
                           onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
@@ -184,7 +187,7 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
                 )}
 
                 {/* Upload image icon - when no svg and no image (zero-height, no layout impact) */}
-                {!svg && !questionImage && onUpdate && (
+                {!isViewOnly && !svg && !questionImage && onUpdate && (
                   <span
                     onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
                     className="inline-block cursor-pointer text-gray-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 print:invisible ml-1"

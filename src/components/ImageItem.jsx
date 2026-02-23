@@ -2,7 +2,7 @@ import React, { memo, useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, Image as ImageIcon, Upload, ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
 
-const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown }) => {
+const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
     // content can be used for caption if needed, src is the image source
     const [isHovered, setIsHovered] = useState(false);
     const [uploadError, setUploadError] = useState('');
@@ -92,7 +92,7 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
     };
 
     return (
-        <Draggable draggableId={id} index={index}>
+        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}
@@ -102,38 +102,41 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                     onClick={(e) => {
+                        if (isViewOnly) return;
                         e.stopPropagation();
                         onSelect && onSelect(id);
                     }}
                 >
                     {/* Hover Controls */}
-                    <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
-                        <div
-                            {...provided.dragHandleProps}
-                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
-                            title="Drag to reorder"
-                        >
-                            <GripVertical size={16} />
+                    {!isViewOnly && (
+                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
+                            <div
+                                {...provided.dragHandleProps}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
+                                title="Drag to reorder"
+                            >
+                                <GripVertical size={16} />
+                            </div>
+                            {canMoveUp && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onMove(id, 'up'); }}
+                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                                    title="Move up"
+                                >
+                                    <ChevronUp size={16} />
+                                </button>
+                            )}
+                            {canMoveDown && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onMove(id, 'down'); }}
+                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                                    title="Move down"
+                                >
+                                    <ChevronDown size={16} />
+                                </button>
+                            )}
                         </div>
-                        {canMoveUp && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onMove(id, 'up'); }}
-                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-                                title="Move up"
-                            >
-                                <ChevronUp size={16} />
-                            </button>
-                        )}
-                        {canMoveDown && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onMove(id, 'down'); }}
-                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-                                title="Move down"
-                            >
-                                <ChevronDown size={16} />
-                            </button>
-                        )}
-                    </div>
+                    )}
 
                     <div className={`relative rounded-lg overflow-hidden border-2 transition-all p-2 ${isSelected
                         ? 'border-blue-400 ring-2 ring-blue-50 bg-blue-50/10'
@@ -148,14 +151,16 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                                     className={`rounded-md shadow-sm object-contain mx-auto ${getSizeClass()}`}
                                 />
                                 {/* Resize Controls Overlay */}
-                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm p-1 rounded-lg flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity print:hidden">
-                                    <button onClick={() => handleResize('small')} className={`p-1 hover:text-white ${size === 'small' ? 'text-white' : 'text-gray-400'}`} title="Small"><ImageIcon size={14} /></button>
-                                    <button onClick={() => handleResize('medium')} className={`p-1 hover:text-white ${size === 'medium' ? 'text-white' : 'text-gray-400'}`} title="Medium"><ImageIcon size={18} /></button>
-                                    <button onClick={() => handleResize('large')} className={`p-1 hover:text-white ${size === 'large' ? 'text-white' : 'text-gray-400'}`} title="Large"><ImageIcon size={22} /></button>
-                                </div>
+                                {!isViewOnly && (
+                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm p-1 rounded-lg flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity print:hidden">
+                                        <button onClick={() => handleResize('small')} className={`p-1 hover:text-white ${size === 'small' ? 'text-white' : 'text-gray-400'}`} title="Small"><ImageIcon size={14} /></button>
+                                        <button onClick={() => handleResize('medium')} className={`p-1 hover:text-white ${size === 'medium' ? 'text-white' : 'text-gray-400'}`} title="Medium"><ImageIcon size={18} /></button>
+                                        <button onClick={() => handleResize('large')} className={`p-1 hover:text-white ${size === 'large' ? 'text-white' : 'text-gray-400'}`} title="Large"><ImageIcon size={22} /></button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-8 text-gray-400 cursor-pointer" onClick={() => document.getElementById(`upload-${id}`).click()}>
+                            <div className={`flex flex-col items-center justify-center py-8 text-gray-400 ${!isViewOnly ? 'cursor-pointer' : ''}`} onClick={() => !isViewOnly && document.getElementById(`upload-${id}`).click()}>
                                 {isUploading ? (
                                     <>
                                         <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
