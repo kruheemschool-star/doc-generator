@@ -542,7 +542,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
         const qCountSinceReset = allItemsUpToMe
             .slice(Math.max(0, lastResetIdx))
-            .filter(i => !['text', 'image', 'spacer', 'markdown'].includes(i.type))
+            .filter(i => !['text', 'image', 'spacer', 'markdown', 'divider'].includes(i.type))
             .length;
 
         return (
