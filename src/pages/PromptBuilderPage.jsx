@@ -351,13 +351,17 @@ const PromptBuilderPage = () => {
                                     icon={Type}
                                     value={formData.grade}
                                     onChange={(e) => handleChange('grade', e.target.value)}
-                                    options={['M1', 'M2', 'M3', 'M4', 'M5', 'M6'].map(g => ({ value: g, label: g.replace('M', 'มัธยมศึกษาปีที่ ') }))}
+                                    options={[
+                                        { value: 'ENTRANCE_M1', label: 'สอบเข้า ม.1' },
+                                        ...['M1', 'M2', 'M3', 'M4', 'M5', 'M6'].map(g => ({ value: g, label: g.replace('M', 'มัธยมศึกษาปีที่ ') }))
+                                    ]}
                                 />
                                 <SelectWrapper
                                     label="ภาคเรียน"
                                     icon={Calendar}
                                     value={formData.term}
                                     onChange={(e) => handleChange('term', e.target.value)}
+                                    disabled={formData.grade === 'ENTRANCE_M1'}
                                     options={[{ value: '1', label: 'เทอม 1' }, { value: '2', label: 'เทอม 2' }]}
                                 />
                                 <SelectWrapper
@@ -365,7 +369,7 @@ const PromptBuilderPage = () => {
                                     icon={Settings}
                                     value={formData.subjectType}
                                     onChange={(e) => handleChange('subjectType', e.target.value)}
-                                    disabled={['M1', 'M2', 'M3'].includes(formData.grade)}
+                                    disabled={['M1', 'M2', 'M3', 'ENTRANCE_M1'].includes(formData.grade)}
                                     options={[{ value: 'Basic', label: 'พื้นฐาน' }, { value: 'Additional', label: 'เพิ่มเติม' }]}
                                 />
                             </div>
