@@ -123,6 +123,8 @@ export const usePromptGenerator = (formData) => {
 
         if (mode === 'exam') {
             promptText += `เป้าหมาย: ออกข้อสอบแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
+        } else if (mode === 'web_quiz') {
+            promptText += `เป้าหมาย: สร้างแนวข้อสอบสำหรับเว็บไซต์แบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
         } else if (mode === 'practice') {
             promptText += `เป้าหมาย: สร้างแบบฝึกหัดแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
         } else if (mode === 'summary') {
@@ -325,6 +327,45 @@ export const usePromptGenerator = (formData) => {
 - **"svg" ต้องเป็น SVG code string สมบูรณ์** ตามกฎเหล็ก SVG ด้านบน
 - ทุกข้อต้องมี "svg" field เสมอ ห้ามเว้น`;
             }
+        } else if (mode === 'web_quiz') {
+            const isSubjective = formData.questionType === 'subjective' || (formData.questionType === 'word_problem' && formData.wordProblemType === 'subjective');
+
+            if (isSubjective) {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
+    "answer": "คำตอบที่ถูกต้อง",
+    "solution": "${solutionTypeDesc} ${solutionTemplateSuffix}"
+  }
+]
+**สำคัญ:** ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย (แสดงวิธีทำ) ไม่มีตัวเลือก
+**ห้ามใส่ "space"** เพราะเป็น JSON สำหรับเว็บไซต์ไม่ต้องเว้นที่`;
+            } else {
+                promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
+[
+  {
+    "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
+    "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
+    "answer": "ข. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก ก/ข/ค/ง ที่ถูกต้อง สุ่มตำแหน่ง)",
+    "solution": "**คำตอบ: ข้อ ข.** [แสดงวิธีทำกระชับ + อธิบายว่าทำไมตัวเลือกอื่นผิด] ${solutionTemplateSuffix}"
+  }
+]
+**สำคัญ:**
+- **ปฏิบัติตาม 4 ขั้นตอนด้านบนอย่างเคร่งครัด** (ทดเลข → ดักทาง → จัดจาน → ตรวจสอบ)
+- ต้องมี "options" ครบ 4 ตัวเลือก โดย **3 ตัวเป็นตัวเลือกหลอกจากข้อผิดพลาดที่พบบ่อย**
+- **ห้ามใส่ prefix "ก." "ข." "ค." "ง." นำหน้าตัวเลือก** ระบบจะใส่ให้อัตโนมัติ
+- **"answer" ต้องระบุ ก./ข./ค./ง.** ตามตำแหน่งที่คำตอบถูกอยู่จริง
+- **ห้ามใส่ "space"** เพราะเป็น JSON สำหรับเว็บไซต์ไม่ต้องเว้นที่
+- **"solution" ต้องเริ่มด้วย "คำตอบ: ข้อ [ก/ข/ค/ง]"** แสดงวิธีทำ + อธิบายว่าทำไมตัวเลือกอื่นผิด
+
+**กฎเหล็กสำหรับเว็บไซต์ (Web Formatting Rules) — สำคัญมาก:**
+- **ห้ามเว้นบรรทัดเกินจำเป็น:** เขียนโจทย์และเฉลยให้กระชับต่อเนื่องกัน ไม่ต้องเว้นบรรทัดว่างระหว่างขั้นตอน
+- **ห้ามใช้ Callout Block:** ห้ามใช้ >, ห้ามใช้ emoji นำหน้า (เช่น "> 📘", "> ⚠️", "> 💡") ใน question และ solution
+- **เขียนเฉลยให้กระชับ:** solution ต้องเขียนต่อเนื่องกันไม่ตัดคำหรือเว้นบรรทัดโดยไม่จำเป็น เขียนวิธีทำเป็นปกติเหมือนแสดงในเว็บไซต์
+- **ห้ามใช้หัวข้อ Markdown (#, ##):** ใน question และ solution ให้เขียนข้อความธรรมดาเท่านั้น ใช้แค่ **ตัวหนา** สำหรับเน้นคำสำคัญ
+- **ใช้ LaTeX สำหรับสมการ:** ทุกสมการต้องอยู่ใน $ ... $ หรือ $$ ... $$ เสมอ`;
+            }
         } else if (mode === 'exam' || mode === 'practice') {
             const isSubjective = formData.questionType === 'subjective' || (formData.questionType === 'word_problem' && formData.wordProblemType === 'subjective');
 
@@ -418,6 +459,23 @@ export const getOutputSkeleton = (mode, questionType, wordProblemType) => {
             answer: "ก. คำตอบ",
             solution: "**คำตอบ: ข้อ ก.** วิธีทำ...",
             space: "medium"
+        }], null, 2);
+    }
+
+    // web_quiz
+    if (mode === 'web_quiz') {
+        if (isSubjective) {
+            return JSON.stringify([{
+                question: "โจทย์ (LaTeX)",
+                answer: "คำตอบ",
+                solution: "วิธีทำ..."
+            }], null, 2);
+        }
+        return JSON.stringify([{
+            question: "โจทย์ (LaTeX)",
+            options: ["ตัวเลือก 1", "ตัวเลือก 2", "ตัวเลือก 3", "ตัวเลือก 4"],
+            answer: "ก. คำตอบ",
+            solution: "**คำตอบ: ข้อ ก.** วิธีทำ..."
         }], null, 2);
     }
 
