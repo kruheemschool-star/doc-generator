@@ -740,8 +740,9 @@ const PromptBuilderPage = () => {
                                 </div>
                             </div>
 
-                            {/* Quantities for Practice/Exam/SVG Question/Transcribe */}
-                            {['practice', 'exam', 'svg_question'].includes(formData.mode) && (
+                            {/* Quantities for Practice/Exam/SVG Question/Entrance Exam */}
+                            {(['practice', 'exam', 'svg_question'].includes(formData.mode) || 
+                              (formData.mode === 'content' && formData.grade === 'ENTRANCE_M1')) && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 bg-slate-50/80 rounded-3xl border border-slate-100 animate-in zoom-in-95 duration-500">
                                     <div className="space-y-3">
                                         <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">จำนวนข้อสอบ</label>
