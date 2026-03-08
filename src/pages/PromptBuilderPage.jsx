@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { savePromptSettings, loadPromptSettings } from '../firebase';
 import {
     Sparkles, Copy, Check, Terminal, Zap, FileText,
-    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar, Image as ImageIcon, ScanText, AlertCircle, Loader2, Save, ClipboardCopy, Globe
+    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar, Image as ImageIcon, ScanText, AlertCircle, Loader2, Save, ClipboardCopy, Globe, Award
 } from 'lucide-react';
 import { IPST_CURRICULUM, getChapters, getChapterObject } from '../data/thaiMathCurriculum';
 import { useDebounce } from '../hooks/useDebounce';
@@ -17,6 +17,7 @@ const MODE_ALLOWED_OPTIONS = {
     practice: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     exam: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     web_quiz: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
+    gifted_quiz: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     svg_question: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     transcribe: [],
     summary: ['bulletPoints', 'comparisonTable', 'stepByStep'],
@@ -170,6 +171,7 @@ const PromptBuilderPage = () => {
                     mode: value,
                     ...MODE_DEFAULTS,
                     components: newComponents,
+                    ...(value === 'gifted_quiz' ? { grade: 'GIFTED_M1' } : {}),
                 };
             });
             return;
@@ -320,6 +322,7 @@ const PromptBuilderPage = () => {
                                 { id: 'practice', label: 'แบบฝึกหัด', icon: <PenTool size={16} />, color: 'teal' },
                                 { id: 'exam', label: 'ข้อสอบ', icon: <FileText size={16} />, color: 'indigo' },
                                 { id: 'web_quiz', label: 'แนวข้อสอบเว็บ', icon: <Globe size={16} />, color: 'sky' },
+                                { id: 'gifted_quiz', label: 'Gifted เว็บ', icon: <Award size={16} />, color: 'orange' },
                                 { id: 'svg_question', label: 'โจทย์+รูป', icon: <ImageIcon size={16} />, color: 'purple' },
                                 { id: 'transcribe', label: 'พิมพ์ตาม', icon: <ScanText size={16} />, color: 'cyan' },
                                 { id: 'summary', label: 'สรุปสูตร', icon: <Zap size={16} />, color: 'amber' },
@@ -355,6 +358,7 @@ const PromptBuilderPage = () => {
                                     onChange={(e) => handleChange('grade', e.target.value)}
                                     options={[
                                         { value: 'ENTRANCE_M1', label: 'สอบเข้า ม.1' },
+                                        { value: 'GIFTED_M1', label: 'Gifted ม.1' },
                                         ...['M1', 'M2', 'M3', 'M4', 'M5', 'M6'].map(g => ({ value: g, label: g.replace('M', 'มัธยมศึกษาปีที่ ') }))
                                     ]}
                                 />
@@ -363,7 +367,7 @@ const PromptBuilderPage = () => {
                                     icon={Calendar}
                                     value={formData.term}
                                     onChange={(e) => handleChange('term', e.target.value)}
-                                    disabled={formData.grade === 'ENTRANCE_M1'}
+                                    disabled={['ENTRANCE_M1', 'GIFTED_M1'].includes(formData.grade)}
                                     options={[{ value: '1', label: 'เทอม 1' }, { value: '2', label: 'เทอม 2' }]}
                                 />
                                 <SelectWrapper
@@ -371,7 +375,7 @@ const PromptBuilderPage = () => {
                                     icon={Settings}
                                     value={formData.subjectType}
                                     onChange={(e) => handleChange('subjectType', e.target.value)}
-                                    disabled={['M1', 'M2', 'M3', 'ENTRANCE_M1'].includes(formData.grade)}
+                                    disabled={['M1', 'M2', 'M3', 'ENTRANCE_M1', 'GIFTED_M1'].includes(formData.grade)}
                                     options={[{ value: 'Basic', label: 'พื้นฐาน' }, { value: 'Additional', label: 'เพิ่มเติม' }]}
                                 />
                             </div>
@@ -743,7 +747,7 @@ const PromptBuilderPage = () => {
                             </div>
 
                             {/* Quantities for Practice/Exam/SVG Question/Transcribe */}
-                            {['practice', 'exam', 'web_quiz', 'svg_question'].includes(formData.mode) && (
+                            {['practice', 'exam', 'web_quiz', 'gifted_quiz', 'svg_question'].includes(formData.mode) && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 bg-slate-50/80 rounded-3xl border border-slate-100 animate-in zoom-in-95 duration-500">
                                     <div className="space-y-3">
                                         <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">จำนวนข้อสอบ</label>
@@ -808,7 +812,7 @@ const PromptBuilderPage = () => {
                             {formData.mode !== 'summary' && (
                                 <div className="mt-8">
                                     <label className="block text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest pl-1">
-                                        {(['practice', 'exam', 'web_quiz', 'mistake'].includes(formData.mode))
+                                        {(['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode))
                                             ? 'ระดับความละเอียดของเฉลย'
                                             : 'ระดับความลึกของเนื้อหา'}
                                     </label>
@@ -816,13 +820,13 @@ const PromptBuilderPage = () => {
                                         {[
                                             {
                                                 id: 'long',
-                                                label: (['practice', 'exam', 'web_quiz', 'mistake'].includes(formData.mode)) ? 'เฉลยแบบสั้น (Short Solution)' : 'Standard Depth',
-                                                desc: (['practice', 'exam', 'web_quiz', 'mistake'].includes(formData.mode)) ? 'เน้นการเฉลยที่สั้น กระชับ และเข้าใจง่าย' : 'ครอบคลุมทุกจุดสำคัญ (PDF 1-3 หน้า)'
+                                                label: (['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode)) ? 'เฉลยแบบสั้น (Short Solution)' : 'Standard Depth',
+                                                desc: (['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode)) ? 'เน้นการเฉลยที่สั้น กระชับ และเข้าใจง่าย' : 'ครอบคลุมทุกจุดสำคัญ (PDF 1-3 หน้า)'
                                             },
                                             {
                                                 id: 'very_long',
-                                                label: (['practice', 'exam', 'web_quiz', 'mistake'].includes(formData.mode)) ? 'เฉลยแบบละเอียด (Detailed Solution)' : 'Ultimate Master',
-                                                desc: (['practice', 'exam', 'web_quiz', 'mistake'].includes(formData.mode)) ? 'เฉลยละเอียด มีหลักการคิด วิธีทำ และสรุปจุดที่ควรระวัง' : 'เจาะลึกทุกรายละเอียด (PDF 4+ หน้า)'
+                                                label: (['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode)) ? 'เฉลยแบบละเอียด (Detailed Solution)' : 'Ultimate Master',
+                                                desc: (['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode)) ? 'เฉลยละเอียด มีหลักการคิด วิธีทำ และสรุปจุดที่ควรระวัง' : 'เจาะลึกทุกรายละเอียด (PDF 4+ หน้า)'
                                             },
                                         ].map(len => (
                                             <button

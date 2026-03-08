@@ -103,6 +103,8 @@ export const usePromptGenerator = (formData) => {
 
         const gradeLabel = formData.grade === 'ENTRANCE_M1' 
             ? 'สอบเข้า ม.1' 
+            : formData.grade === 'GIFTED_M1'
+            ? 'สอบ Gifted ม.1'
             : formData.grade.replace('M', 'มัธยมศึกษาปีที่ ');
 
         let promptText = `รับบทเป็น "ครูฮีม" ครูสอนคณิตศาสตร์ที่${toneDesc} `;
@@ -110,7 +112,7 @@ export const usePromptGenerator = (formData) => {
         promptText += `ช่วยสร้างเนื้อหาการสอนวิชาคณิตศาสตร์ `;
         promptText += `เรื่อง "${formData.chapter}" `;
         if (topic) promptText += `หัวข้อเจาะจง "${topic}" `;
-        promptText += `สำหรับ${gradeLabel}${formData.grade === 'ENTRANCE_M1' ? '' : ' (หลักสูตร สสวท.)'}\n\n`;
+        promptText += `สำหรับ${gradeLabel}${['ENTRANCE_M1', 'GIFTED_M1'].includes(formData.grade) ? '' : ' (หลักสูตร สสวท.)'}\n\n`;
 
         let qType = '';
         if (formData.questionType === 'word_problem') {
@@ -125,6 +127,8 @@ export const usePromptGenerator = (formData) => {
             promptText += `เป้าหมาย: ออกข้อสอบแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
         } else if (mode === 'web_quiz') {
             promptText += `เป้าหมาย: สร้างแนวข้อสอบสำหรับเว็บไซต์แบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
+        } else if (mode === 'gifted_quiz') {
+            promptText += `เป้าหมาย: สร้างแนวข้อสอบ Gifted สำหรับเว็บไซต์แบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
         } else if (mode === 'practice') {
             promptText += `เป้าหมาย: สร้างแบบฝึกหัดแบบ${qType} จำนวน ${formData.questionCount || 5} ข้อ (ความยาก: ${formData.difficulty})\n`;
         } else if (mode === 'summary') {
@@ -327,7 +331,7 @@ export const usePromptGenerator = (formData) => {
 - **"svg" ต้องเป็น SVG code string สมบูรณ์** ตามกฎเหล็ก SVG ด้านบน
 - ทุกข้อต้องมี "svg" field เสมอ ห้ามเว้น`;
             }
-        } else if (mode === 'web_quiz') {
+        } else if (mode === 'web_quiz' || mode === 'gifted_quiz') {
             const isSubjective = formData.questionType === 'subjective' || (formData.questionType === 'word_problem' && formData.wordProblemType === 'subjective');
 
             if (isSubjective) {
@@ -462,8 +466,8 @@ export const getOutputSkeleton = (mode, questionType, wordProblemType) => {
         }], null, 2);
     }
 
-    // web_quiz
-    if (mode === 'web_quiz') {
+    // web_quiz, gifted_quiz
+    if (mode === 'web_quiz' || mode === 'gifted_quiz') {
         if (isSubjective) {
             return JSON.stringify([{
                 question: "โจทย์ (LaTeX)",
