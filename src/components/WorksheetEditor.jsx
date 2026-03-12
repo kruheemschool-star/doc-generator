@@ -211,7 +211,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             ...page,
             questions: page.questions.map(q =>
                 q.id === editingQuestionId
-                    ? { ...q, question: updatedData.question, options: updatedData.options, solution: updatedData.solution }
+                    ? { ...q, question: updatedData.question, options: updatedData.options, solution: updatedData.solution, layoutColumn: updatedData.layoutColumn }
                     : q
             )
         })));
@@ -601,7 +601,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
         return (
             <ErrorBoundary key={q.id}>
-                <QuestionItem {...commonProps} no={qCountSinceReset + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} svg={q.svg} questionImage={q.questionImage} spaceNeeded={q.spaceNeeded} fontSize={globalFontSize} showSolution={showSolution} onEdit={handleEditQuestion} />
+                <QuestionItem {...commonProps} no={qCountSinceReset + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} svg={q.svg} questionImage={q.questionImage} spaceNeeded={q.spaceNeeded} layoutColumn={q.layoutColumn} fontSize={globalFontSize} showSolution={showSolution} onEdit={handleEditQuestion} />
             </ErrorBoundary>
         );
     };

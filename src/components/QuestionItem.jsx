@@ -37,8 +37,7 @@ const cleanQuestionText = (text) => {
   return cleaned;
 };
 
-const QuestionItem = memo(({ id, index, no, question, type, options, solution, svg, questionImage, spaceNeeded, fontSize = 'default', showSolution, onDelete, onUpdate, onMove, onEdit, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
-
+const QuestionItem = React.memo(({ id, index, no, question, options, solution, type, svg, questionImage, spaceNeeded, layoutColumn, isSelected, onSelect, onMove, canMoveUp, canMoveDown, onUpdate, onEdit, isViewOnly, fontSize, showSolution, onDelete }) => {
   const imageInputRef = useRef(null);
 
   const handleImageUpload = (e) => {
@@ -52,7 +51,6 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
     e.target.value = '';
   };
 
-  // Helper for font size
   const getSizeClass = () => {
     switch (fontSize) {
       case 'small': return 'text-sm';
@@ -62,12 +60,18 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
     }
   };
 
-  // Auto-detect: use 1-column if any option is too long for 2-column layout
+  // Auto-detect or use manual override: 
+  // - If layoutColumn is '1', force 1-column
+  // - If layoutColumn is '2', force 2-column
+  // - Otherwise, use auto-detection logic
   const useOneColumn = useMemo(() => {
+    if (layoutColumn === '1') return true;
+    if (layoutColumn === '2') return false;
+
     if (!options || options.length === 0) return false;
     const THRESHOLD = 35;
     return options.some(opt => estimateVisibleLength(opt) > THRESHOLD);
-  }, [options]);
+  }, [options, layoutColumn]);
 
   return (
     <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly}>

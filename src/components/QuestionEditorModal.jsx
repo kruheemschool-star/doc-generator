@@ -25,6 +25,7 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
         question: '',
         options: [],
         solution: '',
+        layoutColumn: 'auto', // 'auto', '1', '2'
         ...initialData,
         solution: normalizeSolution(initialData?.solution)
     });
@@ -34,6 +35,7 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
             question: '',
             options: [],
             solution: '',
+            layoutColumn: 'auto',
             ...initialData,
             solution: normalizeSolution(initialData?.solution)
         });
@@ -170,9 +172,31 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <label className="block text-sm font-medium text-gray-700">Multiple Choice Options</label>
-                                        <button onClick={addOption} className="text-xs flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-lg hover:bg-blue-100 transition">
-                                            <Plus size={14} /> Add Option
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                                <button
+                                                    onClick={() => setFormData({ ...formData, layoutColumn: 'auto' })}
+                                                    className={`px-2 py-1 text-[10px] rounded-md transition-all ${formData.layoutColumn === 'auto' || !formData.layoutColumn ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                >
+                                                    Auto
+                                                </button>
+                                                <button
+                                                    onClick={() => setFormData({ ...formData, layoutColumn: '1' })}
+                                                    className={`px-2 py-1 text-[10px] rounded-md transition-all ${formData.layoutColumn === '1' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                >
+                                                    1 Col
+                                                </button>
+                                                <button
+                                                    onClick={() => setFormData({ ...formData, layoutColumn: '2' })}
+                                                    className={`px-2 py-1 text-[10px] rounded-md transition-all ${formData.layoutColumn === '2' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                >
+                                                    2 Col
+                                                </button>
+                                            </div>
+                                            <button onClick={addOption} className="text-xs flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-lg hover:bg-blue-100 transition">
+                                                <Plus size={14} /> Add Option
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="space-y-3">
                                         {formData.options?.map((opt, idx) => (
