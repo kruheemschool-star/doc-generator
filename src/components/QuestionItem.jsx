@@ -2,7 +2,7 @@ import React, { memo, useMemo, useRef } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import MarkdownRenderer from './MarkdownRenderer';
 import SvgRenderer from './SvgRenderer';
-import { Trash2, GripVertical, ChevronUp, ChevronDown, X, ImagePlus } from 'lucide-react';
+import { Trash2, GripVertical, ChevronUp, ChevronDown, X, ImagePlus, Pencil } from 'lucide-react';
 
 // Estimate visible character length of an option (strip LaTeX/Markdown markers)
 const estimateVisibleLength = (text) => {
@@ -37,7 +37,7 @@ const cleanQuestionText = (text) => {
   return cleaned;
 };
 
-const QuestionItem = memo(({ id, index, no, question, type, options, solution, svg, questionImage, spaceNeeded, fontSize = 'default', showSolution, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
+const QuestionItem = memo(({ id, index, no, question, type, options, solution, svg, questionImage, spaceNeeded, fontSize = 'default', showSolution, onDelete, onUpdate, onMove, onEdit, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
 
   const imageInputRef = useRef(null);
 
@@ -95,6 +95,15 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
               >
                 <GripVertical size={18} />
               </div>
+              {onEdit && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit(id); }}
+                  className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded"
+                  title="แก้ไขโจทย์"
+                >
+                  <Pencil size={18} />
+                </button>
+              )}
               {canMoveUp && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onMove(id, 'up'); }}
@@ -129,7 +138,7 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
           <div className="mb-4">
             <div className="flex gap-3">
               <span className={`font-bold min-w-[24px] flex-shrink-0 select-none font-prompt ${getSizeClass()}`}>{no}.</span>
-              <div className={`flex-1 min-w-0 overflow-hidden ${getSizeClass()}`}>
+              <div className={`flex-1 min-w-0 overflow-hidden relative ${getSizeClass()}`}>
                 {/* Question text */}
                 <MarkdownRenderer content={cleanQuestionText(question)} />
 
@@ -186,23 +195,23 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
                   </div>
                 )}
 
-                {/* Upload image icon - when no svg and no image (zero-height, no layout impact) */}
+                {/* Upload image icon - absolutely positioned, zero layout impact */}
                 {!isViewOnly && !svg && !questionImage && onUpdate && (
-                  <span
+                  <button
                     onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
-                    className="inline-block cursor-pointer text-gray-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 print:invisible ml-1"
+                    className="absolute top-0 right-0 p-1 cursor-pointer text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors opacity-0 group-hover:opacity-100 print:hidden"
                     title="แทรกรูปภาพ"
                   >
-                    <ImagePlus size={14} className="inline" />
-                  </span>
+                    <ImagePlus size={14} />
+                  </button>
                 )}
 
                 {/* Options (if present) */}
                 {options && options.length > 0 && (
-                  <div className={`grid ${useOneColumn ? 'grid-cols-1' : 'grid-cols-2'} gap-3 mt-4 ml-2`}>
+                  <div className={`grid ${useOneColumn ? 'grid-cols-1' : 'grid-cols-2'} gap-3 mt-3 ml-2`}>
                     {options.map((opt, idx) => (
                       <div key={idx} className="flex items-start gap-2 text-gray-700">
-                        <span className="font-semibold min-w-[20px]">{['ก.', 'ข.', 'ค.', 'ง.'][idx] || `${idx + 1}.`}</span>
+                        <span className="font-semibold min-w-[20px]">{idx + 1}.</span>
                         <div className="flex-1 min-w-0">
                           <MarkdownRenderer content={stripOptionPrefix(opt)} />
                         </div>
@@ -214,12 +223,14 @@ const QuestionItem = memo(({ id, index, no, question, type, options, solution, s
             </div>
           </div>
 
-          {/* Solution Section */}
-          <div className={`mt-4 ml-9 relative z-10 rounded-lg transition-all print:border-transparent print:bg-transparent ${showSolution ? 'bg-green-50/50 border border-green-100' : 'border-2 border-dashed border-gray-300 bg-gray-50/30'}`}>
-            <div className={`p-4 ${getSizeClass()} ${showSolution ? '' : 'invisible'}`}>
-              <MarkdownRenderer content={solution || '> ℹ️ ยังไม่มีเฉลย'} />
+          {/* Solution Section - only show when toggled on and has content */}
+          {showSolution && solution && (
+            <div className="mt-4 ml-9 relative z-10 rounded-lg transition-all bg-green-50/50 border border-green-100 print:border-transparent print:bg-transparent">
+              <div className={`p-4 ${getSizeClass()}`}>
+                <MarkdownRenderer content={solution} />
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
       )}

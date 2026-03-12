@@ -3,6 +3,20 @@ import { X, Plus, Trash2, Check, Eye, RefreshCw, ChevronDown, ChevronUp } from '
 import Latex from 'react-latex-next';
 import 'katex/dist/katex.min.css';
 
+// Normalize solution: if string, keep as string; if object, ensure all fields
+const normalizeSolution = (sol) => {
+    if (typeof sol === 'string') return sol;
+    if (sol && typeof sol === 'object') {
+        return {
+            answer: sol.answer || '',
+            principle: sol.principle || '',
+            steps: Array.isArray(sol.steps) ? sol.steps : [],
+            caution: sol.caution || ''
+        };
+    }
+    return '';
+};
+
 const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
     if (!isOpen) return null;
 
@@ -10,27 +24,20 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
     const [formData, setFormData] = useState({
         question: '',
         options: [],
-        solution: {
-            answer: '',
-            principle: '',
-            steps: [],
-            caution: ''
-        },
-        ...initialData
+        solution: '',
+        ...initialData,
+        solution: normalizeSolution(initialData?.solution)
     });
 
     useEffect(() => {
         setFormData({
             question: '',
             options: [],
-            solution: {
-                answer: '',
-                principle: '',
-                steps: [],
-                caution: ''
-            },
-            ...initialData
+            solution: '',
+            ...initialData,
+            solution: normalizeSolution(initialData?.solution)
         });
+        setActiveTab('question');
     }, [initialData]);
 
     const handleSave = () => {
@@ -38,11 +45,18 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
         onClose();
     };
 
+    const isSolutionString = typeof formData.solution === 'string';
+
     const updateSolution = (field, value) => {
-        setFormData(prev => ({
-            ...prev,
-            solution: { ...prev.solution, [field]: value }
-        }));
+        if (isSolutionString) {
+            // For string solutions, just replace the whole string
+            setFormData(prev => ({ ...prev, solution: value }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                solution: { ...prev.solution, [field]: value }
+            }));
+        }
     };
 
     const addOption = () => {
@@ -186,60 +200,79 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
 
                             {activeTab === 'solution' && (
                                 <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Correct Answer</label>
-                                        <input
-                                            value={formData.solution.answer}
-                                            onChange={(e) => updateSolution('answer', e.target.value)}
-                                            className="w-full p-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-sarabun"
-                                            placeholder="e.g. 2x + 5"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Principle / Concept</label>
-                                        <textarea
-                                            value={formData.solution.principle}
-                                            onChange={(e) => updateSolution('principle', e.target.value)}
-                                            className="w-full p-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-sarabun h-24 resize-none"
-                                            placeholder="Explain the core concept..."
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <label className="block text-sm font-medium text-gray-700">Solution Steps</label>
-                                            <button onClick={addStep} className="text-xs flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-lg hover:bg-green-100 transition">
-                                                <Plus size={14} /> Add Step
-                                            </button>
+                                    {isSolutionString ? (
+                                        /* String solution: single textarea for raw markdown */
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">เฉลย (Markdown)</label>
+                                            <textarea
+                                                value={formData.solution}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, solution: e.target.value }))}
+                                                className="w-full h-64 p-4 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-mono text-sm resize-none bg-white"
+                                                placeholder="พิมพ์เฉลยในรูปแบบ Markdown..."
+                                            />
+                                            <div className="text-xs text-gray-400 mt-1">
+                                                Tip: ใช้ LaTeX syntax เช่น $x^2$ หรือ $$\frac{'{1}'}{'{2}'}$$
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            {formData.solution.steps?.map((step, idx) => (
-                                                <div key={idx} className="flex items-start gap-2 group">
-                                                    <span className="w-6 font-bold text-gray-400 text-sm pt-3">{idx + 1}.</span>
-                                                    <textarea
-                                                        value={step}
-                                                        onChange={(e) => updateStep(idx, e.target.value)}
-                                                        className="flex-1 p-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-sarabun resize-none h-16 text-sm"
-                                                        placeholder={`Step ${idx + 1}`}
-                                                    />
-                                                    <button onClick={() => removeStep(idx)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 mt-2">
-                                                        <Trash2 size={16} />
+                                    ) : (
+                                        /* Object solution: structured fields */
+                                        <>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Correct Answer</label>
+                                                <input
+                                                    value={formData.solution.answer}
+                                                    onChange={(e) => updateSolution('answer', e.target.value)}
+                                                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-sarabun"
+                                                    placeholder="e.g. 2x + 5"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Principle / Concept</label>
+                                                <textarea
+                                                    value={formData.solution.principle}
+                                                    onChange={(e) => updateSolution('principle', e.target.value)}
+                                                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-sarabun h-24 resize-none"
+                                                    placeholder="Explain the core concept..."
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <label className="block text-sm font-medium text-gray-700">Solution Steps</label>
+                                                    <button onClick={addStep} className="text-xs flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-lg hover:bg-green-100 transition">
+                                                        <Plus size={14} /> Add Step
                                                     </button>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                                <div className="space-y-2">
+                                                    {formData.solution.steps?.map((step, idx) => (
+                                                        <div key={idx} className="flex items-start gap-2 group">
+                                                            <span className="w-6 font-bold text-gray-400 text-sm pt-3">{idx + 1}.</span>
+                                                            <textarea
+                                                                value={step}
+                                                                onChange={(e) => updateStep(idx, e.target.value)}
+                                                                className="flex-1 p-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-sarabun resize-none h-16 text-sm"
+                                                                placeholder={`Step ${idx + 1}`}
+                                                            />
+                                                            <button onClick={() => removeStep(idx)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 mt-2">
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2 text-red-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Caution / Warning</label>
-                                        <textarea
-                                            value={formData.solution.caution}
-                                            onChange={(e) => updateSolution('caution', e.target.value)}
-                                            className="w-full p-3 rounded-xl border border-red-200 bg-red-50/20 focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all font-sarabun h-20 resize-none"
-                                            placeholder="Common mistakes to avoid..."
-                                        />
-                                    </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2 text-red-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Caution / Warning</label>
+                                                <textarea
+                                                    value={formData.solution.caution}
+                                                    onChange={(e) => updateSolution('caution', e.target.value)}
+                                                    className="w-full p-3 rounded-xl border border-red-200 bg-red-50/20 focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all font-sarabun h-20 resize-none"
+                                                    placeholder="Common mistakes to avoid..."
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -261,7 +294,7 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                                     <div className="grid grid-cols-1 gap-3 mb-6">
                                         {formData.options.map((opt, idx) => (
                                             <div key={idx} className="flex items-center gap-3 text-gray-700 font-sarabun">
-                                                <span className="font-semibold text-gray-400">{['ก.', 'ข.', 'ค.', 'ง.'][idx] || idx + 1}.</span>
+                                                <span className="font-semibold text-gray-400">{idx + 1}.</span>
                                                 <div><Latex>{opt}</Latex></div>
                                             </div>
                                         ))}
@@ -272,21 +305,29 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                                 {activeTab === 'solution' && (
                                     <div className="bg-green-50/50 rounded-lg border border-green-100 p-4 text-sm">
                                         <h4 className="font-bold text-green-700 mb-2">เฉลยละเอียด</h4>
-                                        <div className="space-y-2">
-                                            {formData.solution.answer && <div><span className="font-semibold text-green-800">คำตอบ: </span><Latex>{formData.solution.answer}</Latex></div>}
-                                            {formData.solution.principle && <div><span className="font-semibold text-green-800">หลักการ: </span><Latex>{formData.solution.principle}</Latex></div>}
-                                            {formData.solution.steps?.length > 0 && (
-                                                <ul className="list-disc list-inside pl-2 space-y-1 mt-1 text-gray-700">
-                                                    {formData.solution.steps.map((step, i) => (
-                                                        <li key={i}><Latex>{step}</Latex></li>
-                                                    ))}
-                                                </ul>
-                                            )}
-                                        </div>
-                                        {formData.solution.caution && (
-                                            <div className="bg-red-50 p-2 rounded border border-red-100 text-red-800 mt-2 text-xs">
-                                                <span className="font-bold">Caution: </span><Latex>{formData.solution.caution}</Latex>
+                                        {isSolutionString ? (
+                                            <div className="text-gray-700 whitespace-pre-wrap">
+                                                <Latex>{formData.solution || 'ยังไม่มีเฉลย...'}</Latex>
                                             </div>
+                                        ) : (
+                                            <>
+                                                <div className="space-y-2">
+                                                    {formData.solution.answer && <div><span className="font-semibold text-green-800">คำตอบ: </span><Latex>{formData.solution.answer}</Latex></div>}
+                                                    {formData.solution.principle && <div><span className="font-semibold text-green-800">หลักการ: </span><Latex>{formData.solution.principle}</Latex></div>}
+                                                    {formData.solution.steps?.length > 0 && (
+                                                        <ul className="list-disc list-inside pl-2 space-y-1 mt-1 text-gray-700">
+                                                            {formData.solution.steps.map((step, i) => (
+                                                                <li key={i}><Latex>{step}</Latex></li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </div>
+                                                {formData.solution.caution && (
+                                                    <div className="bg-red-50 p-2 rounded border border-red-100 text-red-800 mt-2 text-xs">
+                                                        <span className="font-bold">Caution: </span><Latex>{formData.solution.caution}</Latex>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 )}

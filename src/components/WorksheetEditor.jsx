@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2 } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -78,6 +78,31 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const gridSize = 'medium';
     const gridOpacity = 5;
 
+    // --- Watermark State ---
+    const [watermark, setWatermark] = useState({
+        enabled: false,
+        type: 'text', // 'text' | 'image'
+        text: 'คณิตครูฮีม',
+        imageUrl: '',
+        opacity: 8,
+        fontSize: 48,
+        rotation: -30,
+        tile: true
+    });
+    const [showWatermarkPanel, setShowWatermarkPanel] = useState(false);
+    const watermarkImageInputRef = useRef(null);
+
+    const handleWatermarkImageUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setWatermark(prev => ({ ...prev, imageUrl: ev.target.result, type: 'image' }));
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
 
     // --- Selection & Editing State ---
     const [selectedItemId, setSelectedItemId] = useState(null);
@@ -91,6 +116,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [importText, setImportText] = useState('');
     const [importSectionType, setImportSectionType] = useState('content');
     const [importQuestionType, setImportQuestionType] = useState('objective');
+
+    // --- Question Editor Modal State ---
+    const [editingQuestionId, setEditingQuestionId] = useState(null);
 
     // --- Pagination Hook ---
     const { pageRefs, overflowPages, isPageOverflow } = useAutoPagination(pages, setPages, replacePages);
@@ -163,6 +191,32 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             )
         })));
     }, [setPages]);
+
+    // --- Question Editor Handlers ---
+    const handleEditQuestion = useCallback((questionId) => {
+        setEditingQuestionId(questionId);
+    }, []);
+
+    const editingQuestionData = editingQuestionId ? (() => {
+        for (const page of pages) {
+            const q = page.questions.find(q => q.id === editingQuestionId);
+            if (q) return q;
+        }
+        return null;
+    })() : null;
+
+    const handleSaveEditedQuestion = useCallback((updatedData) => {
+        if (!editingQuestionId) return;
+        setPages(prevPages => prevPages.map(page => ({
+            ...page,
+            questions: page.questions.map(q =>
+                q.id === editingQuestionId
+                    ? { ...q, question: updatedData.question, options: updatedData.options, solution: updatedData.solution }
+                    : q
+            )
+        })));
+        setEditingQuestionId(null);
+    }, [editingQuestionId, setPages]);
 
     // --- Smart Distribution Algorithm ---
     const distributeBlocksToPages = useCallback((blocks) => {
@@ -547,7 +601,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
         return (
             <ErrorBoundary key={q.id}>
-                <QuestionItem {...commonProps} no={qCountSinceReset + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} svg={q.svg} questionImage={q.questionImage} spaceNeeded={q.spaceNeeded} fontSize={globalFontSize} showSolution={showSolution} />
+                <QuestionItem {...commonProps} no={qCountSinceReset + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} svg={q.svg} questionImage={q.questionImage} spaceNeeded={q.spaceNeeded} fontSize={globalFontSize} showSolution={showSolution} onEdit={handleEditQuestion} />
             </ErrorBoundary>
         );
     };
@@ -617,8 +671,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             </header>
 
             <div className="flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
-                <main className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12 custom-scrollbar bg-slate-100/50 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowGridMenu(false); }}>
-                    <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}>
+                <main className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12 custom-scrollbar bg-slate-100/50 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); }}>
+                    <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
                                 <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`w-[210mm] min-h-[297mm] bg-white shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden ${showGrid ? 'grid-active' : ''}`}>
@@ -634,6 +688,41 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                                 backgroundSize: `${{ small: '5mm 5mm', medium: '8mm 8mm', large: '12mm 12mm' }[gridSize]}`,
                                             }}
                                         />
+                                    )}
+                                    {/* Watermark Overlay */}
+                                    {watermark.enabled && (
+                                        <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden watermark-overlay" style={{ opacity: watermark.opacity / 100 }}>
+                                            {watermark.type === 'text' && watermark.text && (
+                                                watermark.tile ? (
+                                                    <div className="absolute inset-0" style={{ transform: `rotate(${watermark.rotation}deg)`, transformOrigin: 'center center' }}>
+                                                        <div className="absolute" style={{ top: '-50%', left: '-50%', right: '-50%', bottom: '-50%', display: 'flex', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'center', gap: `${Math.max(40, watermark.fontSize * 1.5)}px ${Math.max(60, watermark.fontSize * 2)}px` }}>
+                                                            {Array.from({ length: 64 }).map((_, i) => (
+                                                                <span key={i} className="select-none whitespace-nowrap text-gray-900" style={{ fontSize: `${watermark.fontSize}px`, fontWeight: 700, fontFamily: "'Prompt', 'Noto Sans Thai', sans-serif" }}>{watermark.text}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <span className="select-none whitespace-nowrap text-gray-900" style={{ fontSize: `${watermark.fontSize * 2}px`, fontWeight: 700, transform: `rotate(${watermark.rotation}deg)`, fontFamily: "'Prompt', 'Noto Sans Thai', sans-serif" }}>{watermark.text}</span>
+                                                    </div>
+                                                )
+                                            )}
+                                            {watermark.type === 'image' && watermark.imageUrl && (
+                                                watermark.tile ? (
+                                                    <div className="absolute inset-0" style={{ transform: `rotate(${watermark.rotation}deg)`, transformOrigin: 'center center' }}>
+                                                        <div className="absolute" style={{ top: '-50%', left: '-50%', right: '-50%', bottom: '-50%', display: 'flex', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'center', gap: `${Math.max(40, watermark.fontSize)}px` }}>
+                                                            {Array.from({ length: 36 }).map((_, i) => (
+                                                                <img key={i} src={watermark.imageUrl} alt="" className="select-none" style={{ width: `${watermark.fontSize * 2}px`, height: 'auto', objectFit: 'contain' }} draggable={false} />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <img src={watermark.imageUrl} alt="" className="select-none" style={{ width: `${watermark.fontSize * 4}px`, height: 'auto', objectFit: 'contain', transform: `rotate(${watermark.rotation}deg)` }} draggable={false} />
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
                                     )}
                                     <div className="absolute top-4 left-4 text-[10px] text-gray-300 font-bold print:hidden">PAGE {pIdx + 1}</div>
                                     {/* A4 Boundary Guide Line - visual indicator of printable area */}
@@ -702,6 +791,158 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     </div>
                 </main>
 
+                {/* Hidden file input for watermark image */}
+                <input
+                    ref={watermarkImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleWatermarkImageUpload}
+                />
+
+                {/* Watermark Settings Panel */}
+                {showWatermarkPanel && (
+                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 print:hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="bg-white/95 backdrop-blur-xl border border-gray-100 shadow-2xl rounded-2xl p-5 w-[380px] animate-in slide-in-from-bottom-2 duration-200">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                    <Droplets size={16} className="text-cyan-500" />
+                                    ลายน้ำ (Watermark)
+                                </h3>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={watermark.enabled}
+                                        onChange={(e) => setWatermark(prev => ({ ...prev, enabled: e.target.checked }))}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                                </label>
+                            </div>
+
+                            {/* Type selector */}
+                            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-4">
+                                <button
+                                    onClick={() => setWatermark(prev => ({ ...prev, type: 'text' }))}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${watermark.type === 'text' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    📝 ข้อความ
+                                </button>
+                                <button
+                                    onClick={() => setWatermark(prev => ({ ...prev, type: 'image' }))}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${watermark.type === 'image' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    🖼️ รูปภาพ
+                                </button>
+                            </div>
+
+                            {/* Text input or Image upload */}
+                            {watermark.type === 'text' ? (
+                                <div className="mb-4">
+                                    <label className="block text-[11px] font-medium text-gray-500 mb-1.5">ข้อความลายน้ำ</label>
+                                    <input
+                                        type="text"
+                                        value={watermark.text}
+                                        onChange={(e) => setWatermark(prev => ({ ...prev, text: e.target.value }))}
+                                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 outline-none transition-all"
+                                        placeholder="ข้อความลายน้ำ..."
+                                    />
+                                </div>
+                            ) : (
+                                <div className="mb-4">
+                                    <label className="block text-[11px] font-medium text-gray-500 mb-1.5">รูปภาพลายน้ำ</label>
+                                    {watermark.imageUrl ? (
+                                        <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl border border-gray-100">
+                                            <img src={watermark.imageUrl} alt="watermark" className="w-12 h-12 object-contain rounded-lg bg-white border border-gray-200 p-1" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] text-gray-400 truncate">รูปภาพที่เลือก</p>
+                                            </div>
+                                            <button
+                                                onClick={() => watermarkImageInputRef.current?.click()}
+                                                className="text-[10px] text-cyan-600 font-bold hover:underline"
+                                            >เปลี่ยน</button>
+                                            <button
+                                                onClick={() => setWatermark(prev => ({ ...prev, imageUrl: '' }))}
+                                                className="text-[10px] text-red-500 font-bold hover:underline"
+                                            >ลบ</button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => watermarkImageInputRef.current?.click()}
+                                            className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:text-cyan-500 hover:border-cyan-300 transition-all flex items-center justify-center gap-2 text-xs font-medium"
+                                        >
+                                            <Upload size={16} />
+                                            เลือกรูปภาพ
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Opacity slider */}
+                            <div className="mb-3">
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-[11px] font-medium text-gray-500">ความเข้ม</label>
+                                    <span className="text-[11px] font-bold text-gray-400">{watermark.opacity}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="40"
+                                    value={watermark.opacity}
+                                    onChange={(e) => setWatermark(prev => ({ ...prev, opacity: Number(e.target.value) }))}
+                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                                />
+                            </div>
+
+                            {/* Size slider */}
+                            <div className="mb-3">
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-[11px] font-medium text-gray-500">ขนาด</label>
+                                    <span className="text-[11px] font-bold text-gray-400">{watermark.fontSize}px</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="16"
+                                    max="120"
+                                    value={watermark.fontSize}
+                                    onChange={(e) => setWatermark(prev => ({ ...prev, fontSize: Number(e.target.value) }))}
+                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                                />
+                            </div>
+
+                            {/* Rotation slider */}
+                            <div className="mb-3">
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-[11px] font-medium text-gray-500">มุมเอียง</label>
+                                    <span className="text-[11px] font-bold text-gray-400">{watermark.rotation}°</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="-90"
+                                    max="90"
+                                    value={watermark.rotation}
+                                    onChange={(e) => setWatermark(prev => ({ ...prev, rotation: Number(e.target.value) }))}
+                                    className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                                />
+                            </div>
+
+                            {/* Tile toggle */}
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                <span className="text-[11px] font-medium text-gray-500">เรียงซ้ำเต็มหน้า</span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={watermark.tile}
+                                        onChange={(e) => setWatermark(prev => ({ ...prev, tile: e.target.checked }))}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden floating-toolbar">
                     <div className="bg-white/95 backdrop-blur-xl border border-gray-100 shadow-2xl rounded-2xl p-2.5 flex items-center gap-2">
                         {!selectedItemId ? (
@@ -723,6 +964,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <button onClick={() => setIsViewOnly(!isViewOnly)} className={`p-3 rounded-xl transition-all ${isViewOnly ? 'bg-orange-50 text-orange-600' : 'text-gray-400 hover:bg-gray-100'}`} title={isViewOnly ? "โหมดมุมมอง (ดูอย่างเดียว)" : "โหมดแก้ไข"}>{isViewOnly ? <Hand size={20} /> : <MousePointer2 size={20} />}</button>
                                 <button onClick={() => setShowSolution(!showSolution)} className={`p-3 rounded-xl transition-all ${showSolution ? 'bg-blue-50 text-blue-600' : 'text-gray-400'}`} title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={20} /> : <EyeOff size={20} />}</button>
                                 <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={`p-3 rounded-xl transition-all ${showGrid ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:bg-gray-100'}`} title="เปิด/ปิดตารางกริด"><Grid3X3 size={20} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={`p-3 rounded-xl transition-all ${watermark.enabled ? 'bg-cyan-50 text-cyan-600' : 'text-gray-400 hover:bg-gray-100'}`} title="ลายน้ำ"><Droplets size={20} /></button>
                                 <button onClick={() => window.print()} className="p-3 hover:bg-gray-100 text-gray-400 rounded-xl" title="พิมพ์"><Printer size={20} /></button>
                             </>
                         ) : (
@@ -867,6 +1109,14 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                         </div>
                     </div>
                 )}
+
+                {/* Question Editor Modal */}
+                <QuestionEditorModal
+                    isOpen={!!editingQuestionId}
+                    onClose={() => setEditingQuestionId(null)}
+                    onSave={handleSaveEditedQuestion}
+                    initialData={editingQuestionData}
+                />
             </div>
         </div>
     );

@@ -118,9 +118,16 @@
     page-break-after: auto !important;
   }
 
-  /* Reset inline transform/zoom for print - override inline styles */
-  [style*="transform"] {
+  /* Reset zoom transform for print - only target the zoom container, NOT watermarks */
+  .zoom-container {
     transform: none !important;
+  }
+
+  /* Preserve watermark transforms in print */
+  .watermark-overlay,
+  .watermark-overlay * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Hide floating toolbar and other fixed overlays */
