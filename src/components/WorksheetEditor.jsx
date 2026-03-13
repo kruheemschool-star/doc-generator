@@ -177,11 +177,46 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         setTimeout(() => setSelectedItemId(newQuestion.id), 50);
     }, [setPages]);
 
-    const handleAddText = () => handleAddQuestion({ id: uuidv4(), type: 'text', content: '', size: 'medium' });
-    const handleAddImage = () => handleAddQuestion({ id: uuidv4(), type: 'image', src: '', size: 'medium' });
-    const handleAddSpacer = () => handleAddQuestion({ id: uuidv4(), type: 'spacer', height: 100 });
-    const handleAddDivider = () => handleAddQuestion({ id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' });
-    const handleAddMarkdown = () => handleAddQuestion({ id: uuidv4(), type: 'markdown', content: '> พิมพ์เนื้อหา Markdown ที่นี่...', size: 'medium' });
+    const handleAddText = () => {
+        const newItem = { id: uuidv4(), type: 'text', content: '', size: 'medium' };
+        if (selectedItemId) {
+            handleAddQuestionBelow(selectedItemId, newItem);
+        } else {
+            handleAddQuestion(newItem);
+        }
+    };
+    const handleAddImage = () => {
+        const newItem = { id: uuidv4(), type: 'image', src: '', size: 'medium' };
+        if (selectedItemId) {
+            handleAddQuestionBelow(selectedItemId, newItem);
+        } else {
+            handleAddQuestion(newItem);
+        }
+    };
+    const handleAddSpacer = () => {
+        const newItem = { id: uuidv4(), type: 'spacer', height: 100 };
+        if (selectedItemId) {
+            handleAddQuestionBelow(selectedItemId, newItem);
+        } else {
+            handleAddQuestion(newItem);
+        }
+    };
+    const handleAddDivider = () => {
+        const newItem = { id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' };
+        if (selectedItemId) {
+            handleAddQuestionBelow(selectedItemId, newItem);
+        } else {
+            handleAddQuestion(newItem);
+        }
+    };
+    const handleAddMarkdown = () => {
+        const newItem = { id: uuidv4(), type: 'markdown', content: '> พิมพ์เนื้อหา Markdown ที่นี่...', size: 'medium' };
+        if (selectedItemId) {
+            handleAddQuestionBelow(selectedItemId, newItem);
+        } else {
+            handleAddQuestion(newItem);
+        }
+    };
 
     const handleUpdateItem = useCallback((itemId, updates) => {
         setPages(prevPages => prevPages.map(page => ({
