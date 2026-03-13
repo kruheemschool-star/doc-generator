@@ -1026,11 +1026,15 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
 
-                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'spacer', height: 100 })} className="p-3 hover:bg-amber-50 text-gray-500 hover:text-amber-600 rounded-xl transition-all" title="แทรกช่องว่าง"><MoveVertical size={20} /></button>
+                                <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 hover:text-blue-600 rounded-xl transition-all" title="แทรกข้อความ"><Type size={20} /></button>
+
+                                <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 hover:text-teal-600 rounded-xl transition-all" title="แทรก Markdown"><FileText size={20} /></button>
+
+                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 hover:text-purple-600 rounded-xl transition-all" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
 
                                 <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' })} className="p-3 hover:bg-rose-50 text-gray-500 hover:text-rose-600 rounded-xl transition-all" title="แทรกเส้นคั่น"><Minus size={20} /></button>
 
-                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 hover:text-purple-600 rounded-xl transition-all" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
+                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'spacer', height: 100 })} className="p-3 hover:bg-amber-50 text-gray-500 hover:text-amber-600 rounded-xl transition-all" title="แทรกช่องว่าง"><MoveVertical size={20} /></button>
 
                                 <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" title="แทรกเนื้อหาตรงนี้"><Plus size={20} /></button>
 
