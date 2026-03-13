@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { savePromptSettings, loadPromptSettings } from '../firebase';
 import {
     Sparkles, Copy, Check, Terminal, Zap, FileText,
-    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar, Image as ImageIcon, ScanText, AlertCircle, Loader2, Save, ClipboardCopy, Globe, Award
+    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar, Image as ImageIcon, ScanText, AlertCircle, Loader2, Save, ClipboardCopy, Globe, Award, Shapes
 } from 'lucide-react';
 import { IPST_CURRICULUM, getChapters, getChapterObject } from '../data/thaiMathCurriculum';
 import { useDebounce } from '../hooks/useDebounce';
@@ -19,6 +19,7 @@ const MODE_ALLOWED_OPTIONS = {
     web_quiz: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     gifted_quiz: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     svg_question: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
+    math_figure: [],
     transcribe: [],
     summary: ['bulletPoints', 'comparisonTable', 'stepByStep'],
     mistake: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
@@ -324,6 +325,7 @@ const PromptBuilderPage = () => {
                                 { id: 'web_quiz', label: 'แนวข้อสอบเว็บ', icon: <Globe size={16} />, color: 'sky' },
                                 { id: 'gifted_quiz', label: 'Gifted เว็บ', icon: <Award size={16} />, color: 'orange' },
                                 { id: 'svg_question', label: 'โจทย์+รูป', icon: <ImageIcon size={16} />, color: 'purple' },
+                                { id: 'math_figure', label: 'สร้างรูป', icon: <Shapes size={16} />, color: 'pink' },
                                 { id: 'transcribe', label: 'พิมพ์ตาม', icon: <ScanText size={16} />, color: 'cyan' },
                                 { id: 'summary', label: 'สรุปสูตร', icon: <Zap size={16} />, color: 'amber' },
                                 { id: 'mistake', label: 'วิเคราะห์', icon: <Brain size={16} />, color: 'rose' },
@@ -348,8 +350,8 @@ const PromptBuilderPage = () => {
                             ))}
                         </div>
 
-                        {/* Main Grid - Hidden for Transcribe */}
-                        {formData.mode !== 'transcribe' && (<>
+                        {/* Main Grid - Hidden for Transcribe and Math Figure */}
+                        {!['transcribe', 'math_figure'].includes(formData.mode) && (<>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                 <SelectWrapper
                                     label="ระดับชั้น"
@@ -460,6 +462,59 @@ const PromptBuilderPage = () => {
                                 )}
                             </div>
                         </>)}
+
+                        {/* Math Figure mode: Figure category + instructions */}
+                        {formData.mode === 'math_figure' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <div className="p-5 bg-pink-50/50 border border-pink-200 rounded-2xl">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Shapes size={18} className="text-pink-600" />
+                                        <span className="text-sm font-bold text-pink-800">โหมดสร้างรูปคณิตศาสตร์ — แนบรูปต้นฉบับใน Gemini</span>
+                                    </div>
+                                    <p className="text-xs text-pink-600 leading-relaxed">
+                                        ระบบจะสร้างโค้ด SVG ตามรูปต้นฉบับที่แนบมา เพื่อให้ได้รูปทางคณิตศาสตร์ที่สวยงาม เส้นหนา ตัวอักษรไม่ซ้อนทับเส้น สามารถนำโค้ดไปวางในระบบเพื่อแสดงผลได้ทันที
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
+                                        หมวดหมู่รูปภาพ (Figure Category)
+                                    </label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+                                        {[
+                                            { id: 'geometry', label: 'เรขาคณิต', desc: 'สามเหลี่ยม สี่เหลี่ยม วงกลม', icon: '📐' },
+                                            { id: 'graph', label: 'กราฟ', desc: 'เส้นตรง พาราโบลา พิกัด', icon: '📈' },
+                                            { id: 'number_line', label: 'เส้นจำนวน', desc: 'Number Line', icon: '📏' },
+                                            { id: 'diagram', label: 'แผนภาพ', desc: 'Venn, Tree Diagram', icon: '🔀' },
+                                            { id: 'construction', label: 'การสร้าง', desc: 'วงเวียน สันตรง', icon: '🔧' },
+                                            { id: 'mixed', label: 'ตามรูปต้นฉบับ', desc: 'ให้ AI วิเคราะห์เอง', icon: '🎨' },
+                                        ].map(t => (
+                                            <button
+                                                key={t.id}
+                                                onClick={() => handleChange('svgImageType', t.id)}
+                                                className={`p-3 rounded-2xl border-2 text-left transition-all
+                                                    ${formData.svgImageType === t.id
+                                                        ? 'border-pink-600 bg-pink-50/20 ring-4 ring-pink-500/5'
+                                                        : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200'
+                                                    } `}
+                                            >
+                                                <span className="text-lg">{t.icon}</span>
+                                                <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-pink-600' : 'text-slate-700'}`}>{t.label}</div>
+                                                <div className="text-[9px] font-bold text-slate-400 leading-tight">{t.desc}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 p-4 bg-amber-50/50 border border-amber-200 rounded-2xl">
+                                    <Paperclip size={18} className="text-amber-600 shrink-0" />
+                                    <div>
+                                        <span className="text-xs font-bold text-amber-800">อย่าลืมแนบรูปต้นฉบับ!</span>
+                                        <p className="text-[10px] text-amber-600 mt-0.5">คัดลอกคำสั่งด้านขวา แล้วแนบรูปต้นฉบับใน Gemini เพื่อให้ AI สร้าง SVG ตามรูปนั้น</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Transcribe-only: Range inputs */}
                         {formData.mode === 'transcribe' && (
@@ -597,8 +652,8 @@ const PromptBuilderPage = () => {
                         </div>
                     )}
 
-                    {/* Section 3: Fine-Tuning - Hidden for Transcribe */}
-                    {formData.mode !== 'transcribe' && (
+                    {/* Section 3: Fine-Tuning - Hidden for Transcribe and Math Figure */}
+                    {!['transcribe', 'math_figure'].includes(formData.mode) && (
                         <section className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card overflow-hidden relative">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl -mr-16 -mt-16 rounded-full" />
 
