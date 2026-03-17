@@ -170,9 +170,17 @@ export const usePromptGenerator = (formData) => {
             ? 'สอบ Gifted ม.1'
             : formData.grade.replace('M', 'มัธยมศึกษาปีที่ ');
 
-        let promptText = `รับบทเป็น "ครูฮีม" ครูสอนคณิตศาสตร์ที่${toneDesc} `;
-        promptText += `แทนตัวเองว่า "ครูฮีม" เวลาพูดกับนักเรียน `;
-        promptText += `ช่วยสร้างเนื้อหาการสอนวิชาคณิตศาสตร์ `;
+        const isQuestionMode = ['exam', 'web_quiz', 'gifted_quiz', 'practice', 'svg_question'].includes(mode);
+
+        let promptText = '';
+        if (isQuestionMode) {
+            promptText += `รับบทเป็นนักออกแบบโจทย์คณิตศาสตร์มืออาชีพ `;
+            promptText += `ช่วยออกแบบโจทย์วิชาคณิตศาสตร์ `;
+        } else {
+            promptText += `รับบทเป็น "ครูฮีม" ครูสอนคณิตศาสตร์ที่${toneDesc} `;
+            promptText += `แทนตัวเองว่า "ครูฮีม" เวลาพูดกับนักเรียน `;
+            promptText += `ช่วยสร้างเนื้อหาการสอนวิชาคณิตศาสตร์ `;
+        }
         promptText += `เรื่อง "${formData.chapter}" `;
         if (topic) promptText += `หัวข้อเจาะจง "${topic}" `;
         promptText += `สำหรับ${gradeLabel}${['ENTRANCE_M1', 'GIFTED_M1'].includes(formData.grade) ? '' : ' (หลักสูตร สสวท.)'}\n\n`;
