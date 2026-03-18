@@ -365,6 +365,11 @@ export const usePromptGenerator = (formData) => {
             ? "(ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)"
             : "(ใช้ Markdown ตาม Style Guide ด้านบน โดยแสดงวิธีทำสั้นๆ กระชับ)";
 
+        // Web-specific suffix: overrides Style Guide callout/header rules for web_quiz & gifted_quiz
+        const webSolutionTemplateSuffix = isDetailed
+            ? "(เขียนเฉลยละเอียด: 1) หลักการคิด 2) วิธีทำทีละขั้นตอน 3) จุดที่ควรระวัง 4) จุดที่ผิดบ่อย — ห้ามใช้ Callout Block ห้ามใช้ > emoji หัวข้อ # ใช้แค่ **ตัวหนา** เน้นคำสำคัญ)"
+            : "(เฉลยสั้นกระชับ: แสดงวิธีทำ 3-4 บรรทัด ห้ามใช้ Callout Block ห้ามใช้ > emoji หัวข้อ #)";
+
         if (mode === 'svg_question') {
             const isSubjective = formData.questionType === 'subjective';
             if (isSubjective) {
@@ -411,11 +416,18 @@ export const usePromptGenerator = (formData) => {
   {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
     "answer": "คำตอบที่ถูกต้อง",
-    "solution": "${solutionTypeDesc} ${solutionTemplateSuffix}"
+    "solution": "${solutionTypeDesc} ${webSolutionTemplateSuffix}"
   }
 ]
 **สำคัญ:** ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย (แสดงวิธีทำ) ไม่มีตัวเลือก
-**ห้ามใส่ "space"** เพราะเป็น JSON สำหรับเว็บไซต์ไม่ต้องเว้นที่`;
+**ห้ามใส่ "space"** เพราะเป็น JSON สำหรับเว็บไซต์ไม่ต้องเว้นที่
+
+**กฎเหล็กสำหรับเว็บไซต์ (Web Formatting Rules) — สำคัญมาก:**
+- **ห้ามเว้นบรรทัดเกินจำเป็น:** เขียนเฉลยให้กระชับต่อเนื่องกัน ไม่ต้องเว้นบรรทัดว่างระหว่างขั้นตอน
+- **ห้ามใช้ Callout Block:** ห้ามใช้ >, ห้ามใช้ emoji นำหน้า (เช่น "> 📘", "> ⚠️", "> 💡") ใน question และ solution
+- **เขียนเฉลยให้กระชับ:** solution ต้องเขียนต่อเนื่องกันไม่ตัดคำหรือเว้นบรรทัดโดยไม่จำเป็น เขียนวิธีทำเป็นปกติเหมือนแสดงในเว็บไซต์
+- **ห้ามใช้หัวข้อ Markdown (#, ##):** ใน question และ solution ให้เขียนข้อความธรรมดาเท่านั้น ใช้แค่ **ตัวหนา** สำหรับเน้นคำสำคัญ
+- **ใช้ LaTeX สำหรับสมการ:** ทุกสมการต้องอยู่ใน $ ... $ หรือ $$ ... $$ เสมอ`;
             } else {
                 promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
 [
@@ -423,7 +435,7 @@ export const usePromptGenerator = (formData) => {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
     "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
     "answer": "2. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก 1/2/3/4 ที่ถูกต้อง สุ่มตำแหน่ง)",
-    "solution": "**คำตอบ: ข้อ 2.** [แสดงวิธีทำกระชับ + อธิบายว่าทำไมตัวเลือกอื่นผิด] ${solutionTemplateSuffix}"
+    "solution": "**คำตอบ: ข้อ 2.** [แสดงวิธีทำกระชับ + อธิบายว่าทำไมตัวเลือกอื่นผิด] ${webSolutionTemplateSuffix}"
   }
 ]
 **สำคัญ:**
