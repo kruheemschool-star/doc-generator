@@ -356,19 +356,25 @@ export const usePromptGenerator = (formData) => {
 `;
         promptText += `**สิ่งที่ต้องส่งกลับมา (Output Requirements):**\n`;
 
-        const isDetailed = formData.contentLength === 'very_long';
-        const solutionTypeDesc = isDetailed
-            ? "เฉลยแบบละเอียด: ต้องมีส่วนประกอบ 1) **หลักการคิด (Principle)** 2) **วิธีทำอย่างละเอียดเป็นขั้นตอน** 3) **สรุปจุดที่ควรระวัง (Precautions)** และ 4) **Danger Zone (จุดที่ผิดบ่อย)**"
-            : "เฉลยแบบสั้น: ให้เน้นการเฉลยแสดงวิธีทำอย่างเดียว ไม่ต้องพูดถึงหลักการคิดหรือข้อควรระวัง โดยให้ความยาวของการเฉลยประมาณ 3-4 บรรทัด";
+        const solLevel = formData.contentLength; // 'short' | 'medium' | 'detailed' (question modes) or 'long' | 'very_long' (content modes)
 
-        const solutionTemplateSuffix = isDetailed
-            ? "(ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)"
-            : "(ใช้ Markdown ตาม Style Guide ด้านบน โดยแสดงวิธีทำสั้นๆ กระชับ)";
+        let solutionTypeDesc;
+        let solutionTemplateSuffix;
+        let webSolutionTemplateSuffix;
 
-        // Web-specific suffix: overrides Style Guide callout/header rules for web_quiz & gifted_quiz
-        const webSolutionTemplateSuffix = isDetailed
-            ? "(เขียนเฉลยละเอียด: 1) หลักการคิด 2) วิธีทำทีละขั้นตอน 3) จุดที่ควรระวัง 4) จุดที่ผิดบ่อย — ห้ามใช้ Callout Block ห้ามใช้ > emoji หัวข้อ # ใช้แค่ **ตัวหนา** เน้นคำสำคัญ)"
-            : "(เฉลยสั้นกระชับ: แสดงวิธีทำ 3-4 บรรทัด ห้ามใช้ Callout Block ห้ามใช้ > emoji หัวข้อ #)";
+        if (solLevel === 'detailed' || solLevel === 'very_long') {
+            solutionTypeDesc = "เฉลยแบบละเอียดทุกขั้นตอน: ต้องมีส่วนประกอบ 1) **หลักการคิด (Principle)** — อธิบายว่าโจทย์นี้ใช้หลักการอะไร 2) **วิธีทำอย่างละเอียดเป็นขั้นตอน** — อธิบายทุกบรรทัดว่าทำอะไรและทำไม 3) **สรุปจุดที่ควรระวัง (Precautions)** 4) **Danger Zone (จุดที่ผิดบ่อย)**";
+            solutionTemplateSuffix = "(ใช้ Markdown ตาม Style Guide ด้านบน เช่น มีกล่อง > 📘 หลักการ, > ⚠️ ข้อควรระวัง, และวิธีทำเป็นขั้นตอน)";
+            webSolutionTemplateSuffix = "(เขียนเฉลยละเอียดทุกขั้นตอน: 1) หลักการคิด 2) วิธีทำทีละขั้นตอน อธิบายทุกบรรทัด 3) จุดที่ควรระวัง 4) จุดที่ผิดบ่อย — ห้ามใช้ Callout Block ห้ามใช้ > emoji หัวข้อ # ใช้แค่ **ตัวหนา** เน้นคำสำคัญ)";
+        } else if (solLevel === 'medium' || solLevel === 'long') {
+            solutionTypeDesc = "เฉลยแบบปานกลาง: แสดงวิธีทำเป็นขั้นตอนชัดเจน พร้อมอธิบายเหตุผลสำคัญในแต่ละขั้นตอน ไม่ต้องมีหลักการคิดหรือ Danger Zone แยก แต่ถ้ามีจุดสำคัญให้แทรกไว้ในวิธีทำ ความยาวประมาณ 5-8 บรรทัด";
+            solutionTemplateSuffix = "(ใช้ Markdown ตาม Style Guide ด้านบน แสดงวิธีทำเป็นขั้นตอนพร้อมอธิบายเหตุผล)";
+            webSolutionTemplateSuffix = "(เฉลยปานกลาง: แสดงวิธีทำเป็นขั้นตอน 5-8 บรรทัด พร้อมเหตุผลสำคัญ ห้ามใช้ Callout Block ห้ามใช้ > emoji หัวข้อ #)";
+        } else {
+            solutionTypeDesc = "เฉลยแบบสั้น: ให้เน้นการเฉลยแสดงวิธีทำอย่างเดียว ไม่ต้องพูดถึงหลักการคิดหรือข้อควรระวัง โดยให้ความยาวของการเฉลยประมาณ 2-3 บรรทัด";
+            solutionTemplateSuffix = "(ใช้ Markdown ตาม Style Guide ด้านบน โดยแสดงวิธีทำสั้นๆ กระชับ)";
+            webSolutionTemplateSuffix = "(เฉลยสั้นกระชับ: แสดงวิธีทำ 2-3 บรรทัด ห้ามใช้ Callout Block ห้ามใช้ > emoji หัวข้อ #)";
+        }
 
         if (mode === 'svg_question') {
             const isSubjective = formData.questionType === 'subjective';

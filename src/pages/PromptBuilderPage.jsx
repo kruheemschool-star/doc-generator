@@ -167,10 +167,12 @@ const PromptBuilderPage = () => {
                         newComponents[key] = false;
                     }
                 });
+                const isQMode = ['exam', 'web_quiz', 'gifted_quiz', 'practice', 'svg_question', 'mistake'].includes(value);
                 return {
                     ...prev,
                     mode: value,
                     ...MODE_DEFAULTS,
+                    contentLength: isQMode ? 'medium' : 'long',
                     components: newComponents,
                     ...(value === 'gifted_quiz' ? { grade: 'GIFTED_M1' } : {}),
                 };
@@ -864,42 +866,42 @@ const PromptBuilderPage = () => {
                             )}
 
                             {/* Complexity Toggle - Hidden for Summary */}
-                            {formData.mode !== 'summary' && (
-                                <div className="mt-8">
-                                    <label className="block text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest pl-1">
-                                        {(['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode))
-                                            ? 'ระดับความละเอียดของเฉลย'
-                                            : 'ระดับความลึกของเนื้อหา'}
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {[
-                                            {
-                                                id: 'long',
-                                                label: (['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode)) ? 'เฉลยแบบสั้น (Short Solution)' : 'Standard Depth',
-                                                desc: (['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode)) ? 'เน้นการเฉลยที่สั้น กระชับ และเข้าใจง่าย' : 'ครอบคลุมทุกจุดสำคัญ (PDF 1-3 หน้า)'
-                                            },
-                                            {
-                                                id: 'very_long',
-                                                label: (['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode)) ? 'เฉลยแบบละเอียด (Detailed Solution)' : 'Ultimate Master',
-                                                desc: (['practice', 'exam', 'web_quiz', 'gifted_quiz', 'mistake'].includes(formData.mode)) ? 'เฉลยละเอียด มีหลักการคิด วิธีทำ และสรุปจุดที่ควรระวัง' : 'เจาะลึกทุกรายละเอียด (PDF 4+ หน้า)'
-                                            },
-                                        ].map(len => (
-                                            <button
-                                                key={len.id}
-                                                onClick={() => handleChange('contentLength', len.id)}
-                                                className={`p-5 rounded-2xl border-2 text-left transition-all h-full
-                                        ${formData.contentLength === len.id
-                                                        ? 'border-blue-600 bg-blue-50/10 ring-4 ring-blue-500/5'
-                                                        : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200 hover:bg-white'
-                                                    } `}
-                                            >
-                                                <div className={`font-black text-xs mb-1 uppercase tracking-tight ${formData.contentLength === len.id ? 'text-blue-600' : 'text-slate-800'} `}>{len.label}</div>
-                                                <div className="text-[10px] font-bold text-slate-400 leading-tight">{len.desc}</div>
-                                            </button>
-                                        ))}
+                            {formData.mode !== 'summary' && (() => {
+                                const isQMode = ['practice', 'exam', 'web_quiz', 'gifted_quiz', 'svg_question', 'mistake'].includes(formData.mode);
+                                const options = isQMode
+                                    ? [
+                                        { id: 'short', label: 'สั้น (Short)', desc: 'แสดงวิธีทำสั้นๆ 2-3 บรรทัด ตรงประเด็น' },
+                                        { id: 'medium', label: 'กลาง (Medium)', desc: 'แสดงวิธีทำเป็นขั้นตอน พร้อมอธิบายเหตุผลสำคัญ' },
+                                        { id: 'detailed', label: 'ละเอียด (Detailed)', desc: 'เฉลยละเอียดทุกขั้นตอน มีหลักการคิด จุดที่ควรระวัง และอธิบายทุกบรรทัด' },
+                                    ]
+                                    : [
+                                        { id: 'long', label: 'Standard Depth', desc: 'ครอบคลุมทุกจุดสำคัญ (PDF 1-3 หน้า)' },
+                                        { id: 'very_long', label: 'Ultimate Master', desc: 'เจาะลึกทุกรายละเอียด (PDF 4+ หน้า)' },
+                                    ];
+                                return (
+                                    <div className="mt-8">
+                                        <label className="block text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest pl-1">
+                                            {isQMode ? 'ระดับความละเอียดของเฉลย' : 'ระดับความลึกของเนื้อหา'}
+                                        </label>
+                                        <div className={`grid gap-3 ${isQMode ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                                            {options.map(len => (
+                                                <button
+                                                    key={len.id}
+                                                    onClick={() => handleChange('contentLength', len.id)}
+                                                    className={`p-5 rounded-2xl border-2 text-left transition-all h-full
+                                                        ${formData.contentLength === len.id
+                                                            ? 'border-blue-600 bg-blue-50/10 ring-4 ring-blue-500/5'
+                                                            : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200 hover:bg-white'
+                                                        } `}
+                                                >
+                                                    <div className={`font-black text-xs mb-1 uppercase tracking-tight ${formData.contentLength === len.id ? 'text-blue-600' : 'text-slate-800'}`}>{len.label}</div>
+                                                    <div className="text-[10px] font-bold text-slate-400 leading-tight">{len.desc}</div>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </section>
                     )}
                 </div>
