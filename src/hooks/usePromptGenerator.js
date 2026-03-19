@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { generateTagsFromSelection } from '../utils/tagGenerator';
 
 /**
  * Custom hook that generates the AI prompt text based on form data.
@@ -171,6 +172,12 @@ export const usePromptGenerator = (formData) => {
             : formData.grade.replace('M', 'มัธยมศึกษาปีที่ ');
 
         const isQuestionMode = ['exam', 'web_quiz', 'gifted_quiz', 'practice', 'svg_question'].includes(mode);
+
+        // Auto-generate tags for question modes
+        const autoTags = isQuestionMode
+            ? generateTagsFromSelection(formData.chapter, topic, formData.grade)
+            : [];
+        const tagsJsonStr = autoTags.length > 0 ? JSON.stringify(autoTags, null, 0) : '[]';
 
         let promptText = '';
         if (isQuestionMode) {
@@ -386,11 +393,13 @@ export const usePromptGenerator = (formData) => {
     "svg": "<svg viewBox=\\\\"0 0 300 250\\\\" width=\\\\"300\\\\" height=\\\\"250\\\\" xmlns=\\\\"http://www.w3.org/2000/svg\\\\">...</svg>",
     "answer": "คำตอบที่ถูกต้อง",
     "solution": "**คำตอบ: [คำตอบที่ถูกต้อง]** แล้วจึงแสดงวิธีทำ... ${solutionTemplateSuffix}",
+    "tags": ${tagsJsonStr},
     "space": "large"
   }
 ]
 **สำคัญ:**
 - **"solution" ต้องเริ่มด้วยการบอกคำตอบที่ถูกต้องก่อนเสมอ** เช่น "**คำตอบ: 25**" แล้วจึงแสดงวิธีทำ
+- **"tags" ต้องใส่ตามที่กำหนดให้ทุกข้อเหมือนกันห้ามเปลี่ยนแปลง**
 - ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย (แสดงวิธีทำ) ไม่มีตัวเลือก
 - **"svg" ต้องเป็น SVG code string สมบูรณ์** ที่ปฏิบัติตามกฎเหล็ก SVG ด้านบนทุกข้อ
 - ทุกข้อต้องมี "svg" field เสมอ ห้ามเว้น`;
@@ -403,6 +412,7 @@ export const usePromptGenerator = (formData) => {
     "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
     "answer": "2. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก 1/2/3/4 ที่ถูกต้อง สุ่มตำแหน่ง)",
     "solution": "**คำตอบ: ข้อ 2.** [แสดงวิธีทำทีละขั้นตอน + อธิบายว่าทำไมตัวเลือกอื่นผิด] ${solutionTemplateSuffix}",
+    "tags": ${tagsJsonStr},
     "space": "medium"
   }
 ]
@@ -411,6 +421,7 @@ export const usePromptGenerator = (formData) => {
 - ต้องมี "options" ครบ 4 ตัวเลือก โดย **3 ตัวเป็นตัวเลือกหลอกจากข้อผิดพลาดที่พบบ่อย**
 - **ห้ามใส่ prefix "1." "2." "3." "4." นำหน้าตัวเลือก** ระบบจะใส่ให้อัตโนมัติ
 - **"answer" ต้องระบุ 1./2./3./4.** ตามตำแหน่งที่คำตอบถูกอยู่จริง
+- **"tags" ต้องใส่ตามที่กำหนดให้ทุกข้อเหมือนกันห้ามเปลี่ยนแปลง**
 - **"svg" ต้องเป็น SVG code string สมบูรณ์** ตามกฎเหล็ก SVG ด้านบน
 - ทุกข้อต้องมี "svg" field เสมอ ห้ามเว้น`;
             }
@@ -423,11 +434,13 @@ export const usePromptGenerator = (formData) => {
   {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
     "answer": "คำตอบที่ถูกต้อง",
-    "solution": "**คำตอบ: [คำตอบที่ถูกต้อง]** แล้วจึงแสดงวิธีทำ... ${webSolutionTemplateSuffix}"
+    "solution": "**คำตอบ: [คำตอบที่ถูกต้อง]** แล้วจึงแสดงวิธีทำ... ${webSolutionTemplateSuffix}",
+    "tags": ${tagsJsonStr}
   }
 ]
 **สำคัญ:**
 - **"solution" ต้องเริ่มด้วยการบอกคำตอบที่ถูกต้องก่อนเสมอ** เช่น "**คำตอบ: 25**" แล้วจึงแสดงวิธีทำ
+- **"tags" ต้องใส่ตามที่กำหนดให้ทุกข้อเหมือนกันห้ามเปลี่ยนแปลง**
 - ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย (แสดงวิธีทำ) ไม่มีตัวเลือก
 **ห้ามใส่ "space"** เพราะเป็น JSON สำหรับเว็บไซต์ไม่ต้องเว้นที่
 
@@ -444,7 +457,8 @@ export const usePromptGenerator = (formData) => {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
     "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
     "answer": "2. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก 1/2/3/4 ที่ถูกต้อง สุ่มตำแหน่ง)",
-    "solution": "**คำตอบ: ข้อ 2.** [แสดงวิธีทำกระชับ + อธิบายว่าทำไมตัวเลือกอื่นผิด] ${webSolutionTemplateSuffix}"
+    "solution": "**คำตอบ: ข้อ 2.** [แสดงวิธีทำกระชับ + อธิบายว่าทำไมตัวเลือกอื่นผิด] ${webSolutionTemplateSuffix}",
+    "tags": ${tagsJsonStr}
   }
 ]
 **สำคัญ:**
@@ -452,6 +466,7 @@ export const usePromptGenerator = (formData) => {
 - ต้องมี "options" ครบ 4 ตัวเลือก โดย **3 ตัวเป็นตัวเลือกหลอกจากข้อผิดพลาดที่พบบ่อย**
 - **ห้ามใส่ prefix "1." "2." "3." "4." นำหน้าตัวเลือก** ระบบจะใส่ให้อัตโนมัติ
 - **"answer" ต้องระบุ 1./2./3./4.** ตามตำแหน่งที่คำตอบถูกอยู่จริง
+- **"tags" ต้องใส่ตามที่กำหนดให้ทุกข้อเหมือนกันห้ามเปลี่ยนแปลง**
 - **ห้ามใส่ "space"** เพราะเป็น JSON สำหรับเว็บไซต์ไม่ต้องเว้นที่
 - **"solution" ต้องเริ่มด้วย "คำตอบ: ข้อ [1/2/3/4]"** แสดงวิธีทำ + อธิบายว่าทำไมตัวเลือกอื่นผิด
 
@@ -472,11 +487,13 @@ export const usePromptGenerator = (formData) => {
     "question": "โจทย์ (ใช้ LaTeX สำหรับสมการ)",
     "answer": "คำตอบที่ถูกต้อง",
     "solution": "**คำตอบ: [คำตอบที่ถูกต้อง]** แล้วจึงแสดงวิธีทำ... ${solutionTemplateSuffix}",
+    "tags": ${tagsJsonStr},
     "space": "large" (เว้นที่ว่างสำหรับเขียนวิธีทำ: small/medium/large)
   }
 ]
 **สำคัญ:**
 - **"solution" ต้องเริ่มด้วยการบอกคำตอบที่ถูกต้องก่อนเสมอ** เช่น "**คำตอบ: 25**" แล้วจึงแสดงวิธีทำ
+- **"tags" ต้องใส่ตามที่กำหนดให้ทุกข้อเหมือนกันห้ามเปลี่ยนแปลง**
 - ห้ามใส่ "options" เพราะเป็นข้อสอบอัตนัย (แสดงวิธีทำ) ไม่มีตัวเลือก`;
             } else {
                 promptText += `ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น (โปรดใส่ Markdown Code Block \`\`\`json ... \`\`\` ครอบผลลัพธ์เพื่อความสะดวกในการคัดลอก) ตามโครงสร้างนี้:
@@ -486,6 +503,7 @@ export const usePromptGenerator = (formData) => {
     "options": ["เนื้อหาตัวเลือกที่ 1", "เนื้อหาตัวเลือกที่ 2", "เนื้อหาตัวเลือกที่ 3", "เนื้อหาตัวเลือกที่ 4"],
     "answer": "3. [คำตอบที่ถูกต้อง] (ระบุตัวเลือก 1/2/3/4 ที่ถูกต้อง สุ่มตำแหน่ง)",
     "solution": "**คำตอบ: ข้อ 3.** [แสดงวิธีทำทีละขั้นตอน + อธิบายว่าทำไมตัวเลือกอื่นผิด] ${solutionTemplateSuffix}",
+    "tags": ${tagsJsonStr},
     "space": "medium" (เว้นที่ว่าง: small/medium/large)
   }
 ]
@@ -494,6 +512,7 @@ export const usePromptGenerator = (formData) => {
 - ต้องมี "options" ครบ 4 ตัวเลือก โดย **3 ตัวเป็นตัวเลือกหลอกจากข้อผิดพลาดที่พบบ่อย**
 - **ห้ามใส่ prefix "1." "2." "3." "4." นำหน้าตัวเลือก** ระบบจะใส่ให้อัตโนมัติ
 - **"answer" ต้องระบุ 1./2./3./4.** ตามตำแหน่งที่คำตอบถูกอยู่จริง
+- **"tags" ต้องใส่ตามที่กำหนดให้ทุกข้อเหมือนกันห้ามเปลี่ยนแปลง**
 - **"solution" ต้องเริ่มด้วย "คำตอบ: ข้อ [1/2/3/4]"** แสดงวิธีทำ + อธิบายว่าทำไมตัวเลือกอื่นผิด`;
             }
         } else {
