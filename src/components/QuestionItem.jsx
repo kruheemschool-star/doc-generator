@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useRef } from 'react';
+import React, { memo, useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import MarkdownRenderer from './MarkdownRenderer';
 import SvgRenderer from './SvgRenderer';
@@ -39,6 +39,14 @@ const cleanQuestionText = (text) => {
 
 const QuestionItem = React.memo(({ id, index, no, question, options, solution, type, svg, questionImage, spaceNeeded, layoutColumn, isSelected, onSelect, onMove, canMoveUp, canMoveDown, onUpdate, onEdit, isViewOnly, fontSize, showSolution, onDelete }) => {
   const imageInputRef = useRef(null);
+  const solutionRef = useRef(null);
+  const [solutionHeight, setSolutionHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    if (showSolution && solutionRef.current) {
+      setSolutionHeight(solutionRef.current.offsetHeight);
+    }
+  }, [showSolution, solution]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
@@ -227,13 +235,17 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
             </div>
           </div>
 
-          {/* Solution Section - only show when toggled on and has content */}
-          {showSolution && solution && (
-            <div className="mt-4 ml-9 relative z-10 rounded-lg transition-all bg-green-50/50 border border-green-100 print:border-transparent print:bg-transparent">
-              <div className={`p-4 ${getSizeClass()}`}>
-                <MarkdownRenderer content={solution} />
+          {/* Solution Section - preserve height when hidden for print spacing */}
+          {solution && (
+            showSolution ? (
+              <div ref={solutionRef} className="mt-4 ml-9 relative z-10 rounded-lg transition-all bg-green-50/50 border border-green-100 print:border-transparent print:bg-transparent">
+                <div className={`p-4 ${getSizeClass()}`}>
+                  <MarkdownRenderer content={solution} />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="mt-4 ml-9" style={{ minHeight: solutionHeight > 0 ? solutionHeight : undefined }} />
+            )
           )}
 
         </div>

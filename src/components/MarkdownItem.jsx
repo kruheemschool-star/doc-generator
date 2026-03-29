@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useCallback, useRef, useId } from 'react';
+import React, { memo, useState, useEffect, useLayoutEffect, useCallback, useRef, useId } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
@@ -44,6 +44,14 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
     const [showPreview, setShowPreview] = useState(false);
     const textAreaRef = useRef(null);
     const textareaId = useId();
+    const answerRef = useRef(null);
+    const [answerHeight, setAnswerHeight] = useState(0);
+
+    useLayoutEffect(() => {
+        if (showSolution && answerRef.current) {
+            setAnswerHeight(answerRef.current.offsetHeight);
+        }
+    }, [showSolution, content]);
 
     const EDUCATION_ICONS = [
         '📚', '📖', '✏️', '📝', '📐', '📏', '🎒', '🎓', '💡', '🧠',
@@ -231,14 +239,13 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
                                 <div className={`prose max-w-none ${getSizeClass()}`}>
                                     <SafeMarkdownPreview content={mainContent || '> *Empty Markdown Content*'} getSizeClass={getSizeClass} />
                                     {answerContent && (
-                                        <div className={`relative transition-all ${showSolution ? '' : 'mt-2'}`}>
+                                        <div className="relative transition-all">
                                             {showSolution ? (
-                                                <SafeMarkdownPreview content={answerContent} getSizeClass={getSizeClass} />
-                                            ) : (
-                                                <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 text-sm">
-                                                    <EyeOff size={14} />
-                                                    <span>เฉลยถูกซ่อนอยู่</span>
+                                                <div ref={answerRef}>
+                                                    <SafeMarkdownPreview content={answerContent} getSizeClass={getSizeClass} />
                                                 </div>
+                                            ) : (
+                                                <div style={{ minHeight: answerHeight > 0 ? answerHeight : undefined }} />
                                             )}
                                         </div>
                                     )}
