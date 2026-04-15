@@ -16,6 +16,7 @@ const MODE_ALLOWED_OPTIONS = {
     content: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     practice: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     exam: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
+    flashcard: ['realWorldApp', 'addHint', 'crossChapter', 'mistake', 'stepByStep'],
     web_quiz: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     gifted_quiz: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     svg_question: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
@@ -31,6 +32,8 @@ const MODE_DEFAULTS = {
     wordProblemType: 'objective',
     questionCount: 10,
     svgImageType: 'geometry',
+    flashcardFocus: 'mixed',
+    flashcardAnswerStyle: 'balanced',
 };
 
 const DEFAULT_FORM_DATA = {
@@ -39,9 +42,11 @@ const DEFAULT_FORM_DATA = {
     term: '1',
     subjectType: 'Basic',
     source: 'ai-free',
+    courseName: '',
     chapter: '',
     selectedTopic: '',
     customTopic: '',
+    chapterDetails: '',
     tone: 'friendly',
     difficulty: 'medium',
     components: {
@@ -59,6 +64,8 @@ const DEFAULT_FORM_DATA = {
     questionCount: 10,
     questionType: 'objective',
     wordProblemType: 'objective',
+    flashcardFocus: 'mixed',
+    flashcardAnswerStyle: 'balanced',
     transcribePageRange: '',
     transcribeQuestionRange: '',
     summaryLength: 'medium'
@@ -185,6 +192,19 @@ const PromptBuilderPage = () => {
 
     // Item 9: Get allowed options for current mode
     const allowedComponents = MODE_ALLOWED_OPTIONS[formData.mode] || [];
+
+    const derivedCourseLabel = (() => {
+        if (formData.grade === 'ENTRANCE_M1') return 'คอร์สสอบเข้า ม.1';
+        if (formData.grade === 'GIFTED_M1') return 'คอร์ส Gifted ม.1';
+        const gradeLabel = formData.grade?.replace('M', 'ม.') || 'ม.1';
+        const termLabel = ['ENTRANCE_M1', 'GIFTED_M1'].includes(formData.grade) ? '' : ` เทอม ${formData.term}`;
+        const subjectLabel = ['M1', 'M2', 'M3', 'ENTRANCE_M1', 'GIFTED_M1'].includes(formData.grade)
+            ? ''
+            : formData.subjectType === 'Additional'
+                ? ' วิชาเพิ่มเติม'
+                : ' วิชาพื้นฐาน';
+        return `คอร์ส${gradeLabel}${termLabel}${subjectLabel}`;
+    })();
 
     const handleComponentChange = (comp) => {
         // Item 9: Only allow toggling components that are allowed for current mode
@@ -324,6 +344,7 @@ const PromptBuilderPage = () => {
                                 { id: 'content', label: 'บทเรียน', icon: <BookOpen size={16} />, color: 'blue' },
                                 { id: 'practice', label: 'แบบฝึกหัด', icon: <PenTool size={16} />, color: 'teal' },
                                 { id: 'exam', label: 'ข้อสอบ', icon: <FileText size={16} />, color: 'indigo' },
+                                { id: 'flashcard', label: 'แฟลชการ์ด', icon: <ClipboardCopy size={16} />, color: 'emerald' },
                                 { id: 'web_quiz', label: 'แนวข้อสอบเว็บ', icon: <Globe size={16} />, color: 'sky' },
                                 { id: 'gifted_quiz', label: 'Gifted เว็บ', icon: <Award size={16} />, color: 'orange' },
                                 { id: 'svg_question', label: 'โจทย์+รูป', icon: <ImageIcon size={16} />, color: 'purple' },
@@ -459,6 +480,91 @@ const PromptBuilderPage = () => {
                                             <span className={`text-[10px] font-bold ${formData.customTopic.length >= 180 ? 'text-amber-500' : 'text-slate-300'}`}>
                                                 {formData.customTopic.length}/200
                                             </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.mode === 'flashcard' && (
+                                    <div className="space-y-5 animate-in fade-in slide-in-from-top-4 duration-500">
+                                        <div className="rounded-3xl border border-emerald-100 bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(59,130,246,0.05))] p-5">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
+                                                        <ClipboardCopy size={12} />
+                                                        Flashcard Blueprint
+                                                    </div>
+                                                    <h3 className="mt-3 text-lg font-black text-slate-900">กำหนดคอร์สและรายละเอียดบทให้ชัดก่อนสร้างการ์ด</h3>
+                                                    <p className="mt-1 text-sm font-medium leading-relaxed text-slate-500">
+                                                        ระบบจะยึดคอร์สเรียนของแต่ละชั้นเป็นบริบทหลัก แล้วแตกการ์ดตามบทและหัวข้อย่อย เพื่อให้ได้การ์ดที่สอนเป็นลำดับจริงใช้งานจริง
+                                                    </p>
+                                                </div>
+                                                <div className="rounded-2xl bg-white/80 px-4 py-3 text-right shadow-sm">
+                                                    <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Course Snapshot</div>
+                                                    <div className="mt-1 text-sm font-black text-slate-800">{derivedCourseLabel}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+                                                    ชื่อคอร์ส <span className="text-rose-400">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full p-3.5 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-300"
+                                                    placeholder={derivedCourseLabel}
+                                                    value={formData.courseName}
+                                                    onChange={(e) => handleChange('courseName', e.target.value)}
+                                                    aria-label="ชื่อคอร์ส"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+                                                    แนวการ์ด
+                                                </label>
+                                                <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                                    {[
+                                                        { id: 'concept', label: 'คอนเซปต์', desc: 'นิยามและกฎเท่านั้น' },
+                                                        { id: 'mixed', label: 'ผสม', desc: 'นิยาม + โจทย์สั้น' },
+                                                        { id: 'problem', label: 'โจทย์', desc: 'สั้นกระชับ เน้นวิธีคิด' },
+                                                    ].map(option => (
+                                                        <button
+                                                            key={option.id}
+                                                            onClick={() => handleChange('flashcardFocus', option.id)}
+                                                            className={`rounded-xl px-3 py-3 text-left transition-all ${formData.flashcardFocus === option.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-white hover:text-slate-800'}`}
+                                                        >
+                                                            <div className="text-xs font-black">{option.label}</div>
+                                                            <div className={`mt-1 text-[9px] font-bold ${formData.flashcardFocus === option.id ? 'text-slate-400' : 'text-slate-300'}`}>{option.desc}</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+                                                รายละเอียดของบท <span className="text-rose-400">*</span>
+                                            </label>
+                                            <textarea
+                                                className="w-full min-h-[120px] p-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-medium text-slate-700 placeholder:text-slate-300 resize-y"
+                                                placeholder="เช่น เริ่มจากนิยามสมการ, ตัวแปร, การย้ายข้าง, สมการ 2 ขั้นตอน, โจทย์ประยุกต์ และจุดที่นักเรียนมักสับสนในบทนี้"
+                                                value={formData.chapterDetails}
+                                                onChange={(e) => handleChange('chapterDetails', e.target.value)}
+                                                aria-label="รายละเอียดของบท"
+                                            />
+                                            <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                {[
+                                                    { title: 'คอร์ส', text: formData.courseName || derivedCourseLabel },
+                                                    { title: 'บท', text: formData.chapter === 'custom' ? formData.customTopic || 'ระบุบทเอง' : formData.chapter || 'ยังไม่ได้เลือกบท' },
+                                                    { title: 'หัวข้อย่อย', text: formData.selectedTopic === 'custom' ? formData.customTopic || 'กำหนดเอง' : formData.selectedTopic || 'ครอบคลุมทั้งบท' },
+                                                ].map((item) => (
+                                                    <div key={item.title} className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3">
+                                                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{item.title}</div>
+                                                        <div className="mt-1 text-sm font-bold text-slate-700 leading-snug">{item.text}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -666,7 +772,11 @@ const PromptBuilderPage = () => {
                                 <div>
                                     <h2 className="text-xl font-extrabold text-slate-800 font-outfit tracking-tight">Advanced Config</h2>
                                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-0.5">
-                                        {formData.mode === 'summary' ? 'ปรับแต่งความยาวของสรุป' : 'ปรับแต่งระดับความยากและส่วนประกอบ'}
+                                        {formData.mode === 'summary'
+                                            ? 'ปรับแต่งความยาวของสรุป'
+                                            : formData.mode === 'flashcard'
+                                                ? 'ตั้งค่าจำนวนการ์ดและความลึกของคำตอบ'
+                                                : 'ปรับแต่งระดับความยากและส่วนประกอบ'}
                                     </p>
                                 </div>
                             </div>
@@ -727,6 +837,46 @@ const PromptBuilderPage = () => {
                                         <div className="absolute top-0 left-0 w-full flex justify-between pointer-events-none px-1">
                                             {[0, 1, 2, 3].map(i => (
                                                 <div key={i} className={`w-1.5 h-1.5 rounded-full mt-2.5 ${i <= ['easy', 'medium', 'hard', 'exam'].indexOf(formData.difficulty) ? 'bg-slate-900' : 'bg-slate-200'} `} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {formData.mode === 'flashcard' && (
+                                <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-6 items-start p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100 animate-in zoom-in-95 duration-500">
+                                    <div className="space-y-3">
+                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">จำนวนแฟลชการ์ด</label>
+                                        <div className="flex items-center gap-4">
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                max={50}
+                                                className="w-24 p-4 bg-white border-2 border-slate-200 rounded-2xl text-2xl font-black text-slate-900 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all shadow-sm"
+                                                value={formData.questionCount}
+                                                onChange={(e) => handleChange('questionCount', e.target.value)}
+                                                aria-label="จำนวนแฟลชการ์ด"
+                                            />
+                                            <span className="font-bold text-slate-400">CARDS</span>
+                                            <span className="text-[9px] font-bold text-slate-300">(1-50)</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">รูปแบบด้านหลังการ์ด</label>
+                                        <div className="grid grid-cols-3 gap-2 p-1.5 bg-white rounded-2xl border border-slate-100">
+                                            {[
+                                                { id: 'concise', label: 'สั้น', desc: 'ไม่เกิน 20 คำ' },
+                                                { id: 'balanced', label: 'สมดุล', desc: 'ประมาณ 30 คำ' },
+                                                { id: 'stepwise', label: 'ละเอียด', desc: 'ประมาณ 40 คำ' },
+                                            ].map(option => (
+                                                <button
+                                                    key={option.id}
+                                                    onClick={() => handleChange('flashcardAnswerStyle', option.id)}
+                                                    className={`rounded-xl px-3 py-3 text-left transition-all ${formData.flashcardAnswerStyle === option.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}
+                                                >
+                                                    <div className="text-xs font-black">{option.label}</div>
+                                                    <div className={`mt-1 text-[9px] font-bold ${formData.flashcardAnswerStyle === option.id ? 'text-slate-400' : 'text-slate-300'}`}>{option.desc}</div>
+                                                </button>
                                             ))}
                                         </div>
                                     </div>
@@ -866,7 +1016,7 @@ const PromptBuilderPage = () => {
                             )}
 
                             {/* Complexity Toggle - Hidden for Summary */}
-                            {formData.mode !== 'summary' && (() => {
+                            {!['summary', 'flashcard'].includes(formData.mode) && (() => {
                                 const isQMode = ['practice', 'exam', 'web_quiz', 'gifted_quiz', 'svg_question', 'mistake'].includes(formData.mode);
                                 const options = isQMode
                                     ? [

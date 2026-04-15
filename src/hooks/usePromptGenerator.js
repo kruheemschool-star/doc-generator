@@ -14,6 +14,15 @@ export const usePromptGenerator = (formData) => {
     useEffect(() => {
         const topic = formData.selectedTopic === 'custom' ? formData.customTopic : formData.selectedTopic;
         const mode = formData.mode;
+        const courseName = formData.courseName?.trim() || (
+            formData.grade === 'ENTRANCE_M1'
+                ? 'คอร์สสอบเข้า ม.1'
+                : formData.grade === 'GIFTED_M1'
+                    ? 'คอร์ส Gifted ม.1'
+                    : `คอร์ส${formData.grade?.replace('M', 'ม.') || 'ม.1'}${['ENTRANCE_M1', 'GIFTED_M1'].includes(formData.grade) ? '' : ` เทอม ${formData.term}`}`
+        );
+        const chapterTitle = formData.chapter === 'custom' ? (formData.customTopic || 'บทที่กำหนดเอง') : (formData.chapter || 'บทที่ต้องการ');
+        const chapterDetails = formData.chapterDetails?.trim() || 'ให้ AI วิเคราะห์ลำดับเนื้อหาที่เหมาะสมภายในบทนี้ แล้วกระจายแฟลชการ์ดจากพื้นฐานไปสู่การประยุกต์';
 
         // --- Transcribe mode: standalone simplified prompt ---
         if (mode === 'transcribe') {
@@ -153,6 +162,99 @@ export const usePromptGenerator = (formData) => {
 
             setGeneratedPrompt(promptText);
             return; // Early return for math_figure mode
+        }
+
+        if (mode === 'flashcard') {
+            const gradeLabel = formData.grade === 'ENTRANCE_M1'
+                ? 'สอบเข้า ม.1'
+                : formData.grade === 'GIFTED_M1'
+                    ? 'สอบ Gifted ม.1'
+                    : formData.grade.replace('M', 'มัธยมศึกษาปีที่ ');
+            const focusMap = {
+                concept: 'เน้นนิยามและกฎเท่านั้น — ถามเฉพาะคำนิยาม สูตร หลักการ และคำศัพท์สำคัญ ห้ามใส่โจทย์คำนวณ',
+                mixed: 'ผสมนิยามและโจทย์สั้น — คละการ์ดนิยาม/กฎกับโจทย์สั้นง่ายๆ โจทย์ต้องสั้นพอใส่ในการ์ดได้',
+                problem: 'เน้นโจทย์สั้นกระชับ — ทั้งคำถามและคำตอบรวมกันต้องไม่เกิน 40 คำ ตอบด้วยวิธีคิดสั้นๆ'
+            };
+            const answerStyleMap = {
+                concise: 'ตอบสั้นกระชับตรงประเด็น ไม่เกิน 20 คำต่อการ์ด',
+                balanced: 'ตอบสมดุลพอดี มีคำตอบและเหตุผล ประมาณ 30 คำต่อการ์ด',
+                stepwise: 'ตอบละเอียดมีขั้นตอนคิด ประมาณ 40 คำต่อการ์ด'
+            };
+            const flashcardSkeleton = [
+                'บริบทคอร์ส: ชื่อคอร์สต้องสะท้อนระดับชั้น/เทอม/ประเภทวิชา',
+                'บริบทบทเรียน: ทุกการ์ดต้องอิงจากบทและหัวข้อย่อยที่เลือก',
+                'การเรียงลำดับ: เริ่มจากพื้นฐาน -> ขั้นตอน -> การประยุกต์',
+                'คุณภาพคำตอบ: ใช้ LaTeX เมื่อมีสมการ และไม่เขียนคำตอบกำกวม',
+            ];
+
+            let promptText = `รับบทเป็นครูผู้ออกแบบแฟลชการ์ดคณิตศาสตร์สำหรับใช้งานจริงในห้องเรียนและทบทวนบทเรียน\n`;
+            promptText += `ช่วยสร้างแฟลชการ์ดวิชาคณิตศาสตร์สำหรับ${gradeLabel}${['ENTRANCE_M1', 'GIFTED_M1'].includes(formData.grade) ? '' : ' (หลักสูตร สสวท.)'}\n`;
+            promptText += `ชื่อคอร์ส: "${courseName}"\n`;
+            promptText += `บทเรียนหลัก: "${chapterTitle}"\n`;
+            if (topic) promptText += `หัวข้อย่อยที่โฟกัส: "${topic}"\n`;
+            promptText += `จำนวนแฟลชการ์ด: ${formData.questionCount || 10} ใบ\n`;
+            promptText += `แนวการ์ด: ${focusMap[formData.flashcardFocus] || focusMap.mixed}\n`;
+            promptText += `รูปแบบคำตอบด้านหลัง: ${answerStyleMap[formData.flashcardAnswerStyle] || answerStyleMap.balanced}\n`;
+            promptText += `รายละเอียดของบท:\n${chapterDetails}\n`;
+
+            if (formData.components?.realWorldApp || formData.components?.addHint || formData.components?.crossChapter || formData.components?.mistake || formData.components?.stepByStep) {
+                const activeComponents = [];
+                if (formData.components?.realWorldApp) activeComponents.push('เพิ่มตัวอย่างเชื่อมโยงชีวิตจริงใน note เมื่อเหมาะสม');
+                if (formData.components?.addHint) activeComponents.push('เพิ่ม note เป็นคำใบ้สั้น ๆ สำหรับการ์ดที่ยาก');
+                if (formData.components?.crossChapter) activeComponents.push('เชื่อมโยงความรู้ข้ามบทเมื่อจำเป็น');
+                if (formData.components?.mistake) activeComponents.push('ระบุจุดที่นักเรียนมักผิดใน note');
+                if (formData.components?.stepByStep) activeComponents.push('คำตอบฝั่งหลังควรมีลำดับขั้นตอนคิด');
+                promptText += `\nองค์ประกอบเพิ่มเติมที่ต้องมี:\n- ${activeComponents.join('\n- ')}\n`;
+            }
+
+            promptText += `
+---
+**Flashcard Design Framework**
+
+กฎเหล็ก:
+1. ทุกการ์ดต้องสังกัดคอร์ส "${courseName}" และบท "${chapterTitle}" อย่างชัดเจน
+2. ใช้ field "topic" เพื่อระบุหัวข้อย่อยของการ์ด เช่น นิยาม, การแก้สมการพื้นฐาน, โจทย์ประยุกต์
+3. ด้านหน้า ("question") ต้องถามชัด ตรงประเด็น และใช้ได้จริงสำหรับการทบทวน
+4. ด้านหลัง ("answer") ต้องตอบถูกต้อง กระชับ และถ้ามีสมการให้ใช้ LaTeX เสมอ
+5. field "note" เป็นส่วนเสริม ไม่จำเป็นต้องมีทุกใบ แต่ถ้ามีควรใช้กับ:
+   - จุดที่นักเรียนมักผิด
+   - คำใบ้สั้น ๆ
+   - เทคนิคจำ
+   - ตัวอย่างชีวิตจริง
+6. หลีกเลี่ยงคำถามซ้ำความหมายกัน และกระจายระดับจากง่ายไปยาก
+7. ถ้าเป็นการ์ดโจทย์ ให้ตอบด้วยวิธีคิดที่สั้นพอสำหรับด้านหลังการ์ด แต่ยังครบเหตุผลหลัก
+
+สิ่งที่ต้องวิเคราะห์ก่อนสร้าง:
+- ${flashcardSkeleton.join('\n- ')}
+
+ข้อกำหนดด้านภาษาและรูปแบบ:
+- ใช้ภาษาไทยชัดเจน เหมาะกับนักเรียนระดับนี้
+- หากมีสมการ/เศษส่วน/ราก/ยกกำลัง ต้องเขียนด้วย LaTeX เช่น $$x+3=5$$
+- ห้ามใส่ข้อความเกริ่นนำ คำอธิบายก่อน JSON หรือคำปิดท้าย
+- ส่งออกเป็น Markdown code block \`\`\`json ... \`\`\` เท่านั้น
+---
+
+ส่งผลลัพธ์เป็น **JSON Array** เท่านั้น ตามโครงสร้างนี้:
+[
+  {
+    "id": 1,
+    "topic": "หัวข้อย่อยของการ์ด",
+    "question": "คำถามด้านหน้าแฟลชการ์ด",
+    "answer": "คำตอบด้านหลังแฟลชการ์ด",
+    "note": "หมายเหตุเสริม หรือเว้นเป็นค่าว่างถ้าไม่จำเป็น"
+  }
+]
+
+**สำคัญมาก:**
+- ต้องสร้างจำนวน ${formData.questionCount || 10} ใบ
+- ทุกใบต้องสอดคล้องกับคอร์ส "${courseName}" และบท "${chapterTitle}"
+- ถ้าไม่ได้ระบุหัวข้อย่อย ให้ AI กระจายหัวข้อย่อยให้ครอบคลุมทั้งบท
+- คำถามควรเป็นไปตามแนวการ์ดที่กำหนด (คอนเซปต์/ผสม/โจทย์)
+- **จำกัดจำนวนคำ:** ทั้ง question และ answer ของแต่ละการ์ดต้องไม่เกินจำนวนคำที่กำหนดในรูปแบบคำตอบด้านหลัง
+- "note" ถ้าไม่มี ให้ใส่เป็น "" ไม่ต้องตัด field ทิ้ง`;
+
+            setGeneratedPrompt(promptText);
+            return;
         }
 
         // --- All other modes ---
@@ -545,6 +647,18 @@ export const usePromptGenerator = (formData) => {
  */
 export const getOutputSkeleton = (mode, questionType, wordProblemType) => {
     const isSubjective = questionType === 'subjective' || (questionType === 'word_problem' && wordProblemType === 'subjective');
+
+    if (mode === 'flashcard') {
+        return JSON.stringify([
+            {
+                id: 1,
+                topic: "นิยามสมการ",
+                question: "สมการคืออะไร และมีสัญลักษณ์ใดเป็นตัวบ่งบอก?",
+                answer: "สมการคือประโยคสัญลักษณ์ที่แสดงการเท่ากันของจำนวน โดยมีสัญลักษณ์ $$ = $$ เป็นตัวบ่งบอก",
+                note: "ใช้เป็นการ์ดเปิดบทเพื่อปูพื้นฐาน"
+            }
+        ], null, 2);
+    }
 
     if (mode === 'content' || mode === 'summary' || mode === 'mistake') {
         return JSON.stringify({

@@ -66,7 +66,7 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
     const getModeLabel = (mode) => {
         const labels = {
             content: 'บทเรียน', practice: 'แบบฝึกหัด', exam: 'ข้อสอบ',
-            svg_question: 'โจทย์+รูป', transcribe: 'พิมพ์ตาม', summary: 'สรุปสูตร', mistake: 'วิเคราะห์'
+            flashcard: 'แฟลชการ์ด', svg_question: 'โจทย์+รูป', transcribe: 'พิมพ์ตาม', summary: 'สรุปสูตร', mistake: 'วิเคราะห์'
         };
         return labels[mode] || mode;
     };
