@@ -13,6 +13,7 @@
     "@google/generative-ai": "^0.24.1",
     "@hello-pangea/dnd": "^18.0.1",
     "clsx": "^2.1.1",
+    "dompurify": "^3.4.5",
     "firebase": "^12.9.0",
     "html2pdf.js": "^0.14.0",
     "katex": "^0.16.28",

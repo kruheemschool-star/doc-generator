@@ -41,7 +41,7 @@ const PromptPreview = ({
                     </div>
                     <div>
                         <h3 className="text-white font-black font-outfit text-xs tracking-widest leading-none">PREVIEW</h3>
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter mt-1 block">Live AI Instruction</span>
+                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter mt-1 block">Live AI Instruction</span>
                     </div>
                 </div>
                 <div className="flex gap-2.5">
@@ -105,7 +105,7 @@ const PromptPreview = ({
                     role="tab"
                     aria-selected={activeTab === 'preview'}
                     className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all
-                        ${activeTab === 'preview' ? 'text-blue-400 border-b-2 border-blue-400 bg-white/5' : 'text-slate-600 hover:text-slate-400'}`}
+                        ${activeTab === 'preview' ? 'text-blue-400 border-b-2 border-blue-400 bg-white/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-400'}`}
                 >
                     <Eye size={12} /> Prompt Preview
                 </button>
@@ -115,7 +115,7 @@ const PromptPreview = ({
                     role="tab"
                     aria-selected={activeTab === 'output'}
                     className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all
-                        ${activeTab === 'output' ? 'text-emerald-400 border-b-2 border-emerald-400 bg-white/5' : 'text-slate-600 hover:text-slate-400'}`}
+                        ${activeTab === 'output' ? 'text-emerald-400 border-b-2 border-emerald-400 bg-white/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-400'}`}
                 >
                     <Code size={12} /> Expected Output
                 </button>
@@ -148,7 +148,7 @@ const PromptPreview = ({
                             </div>
                         </div>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-700 gap-6 opacity-30 select-none">
+                        <div className="h-full flex flex-col items-center justify-center text-slate-700 dark:text-slate-300 gap-6 opacity-30 select-none">
                             <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center animate-[spin_10s_linear_infinite]">
                                 <Terminal size={32} />
                             </div>
@@ -167,7 +167,7 @@ const PromptPreview = ({
                             <Code size={14} className="text-emerald-400" />
                             <span className="text-emerald-400 font-bold text-xs uppercase tracking-widest">JSON Output Structure</span>
                         </div>
-                        <p className="text-slate-500 text-[11px] font-medium mb-4 leading-relaxed">
+                        <p className="text-slate-500 dark:text-slate-400 text-[11px] font-medium mb-4 leading-relaxed">
                             AI จะส่งผลลัพธ์กลับมาในรูปแบบ JSON ตามโครงสร้างด้านล่าง คุณสามารถนำไป import เข้าระบบได้ทันที
                         </p>
                         <pre className="font-mono text-[12px] leading-relaxed text-emerald-300/80 whitespace-pre-wrap bg-black/30 rounded-2xl p-6 border border-emerald-500/10">
@@ -178,7 +178,7 @@ const PromptPreview = ({
             </div>
 
             {/* Status Bar — Save status indicator */}
-            <div className="p-4 bg-black/40 backdrop-blur-xl text-[9px] font-bold text-slate-500 flex justify-between px-6 lg:px-8 border-t border-white/5 relative z-10">
+            <div className="p-4 bg-black/40 backdrop-blur-xl text-[9px] font-bold text-slate-500 dark:text-slate-400 flex justify-between px-6 lg:px-8 border-t border-white/5 relative z-10">
                 <div className="flex gap-6">
                     <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> ENGINE: GPT-4/GEMINI READY</span>
                     <span>LENGTH: ~{generatedPrompt.length} chars</span>
@@ -188,7 +188,7 @@ const PromptPreview = ({
                         {saveStatus === 'saving' && <><Loader2 size={10} className="animate-spin text-blue-400" /> SAVING...</>}
                         {saveStatus === 'saved' && <><Save size={10} className="text-emerald-400" /> SAVED</>}
                         {saveStatus === 'error' && <><AlertCircle size={10} className="text-rose-400" /> SAVE FAILED</>}
-                        {saveStatus === 'idle' && <><Save size={10} className="text-slate-600" /> AUTO-SAVE</>}
+                        {saveStatus === 'idle' && <><Save size={10} className="text-slate-600 dark:text-slate-400" /> AUTO-SAVE</>}
                     </span>
                     <span>LOCALE: TH_TH / EN_US</span>
                 </div>

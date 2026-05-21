@@ -14,6 +14,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // --- Document CRUD ---
+// Mutations throw on failure so callers can show user-facing errors.
+// Reads return safe defaults but also log to console.
+
 export const saveDocument = async (docData) => {
   try {
     await setDoc(doc(db, "documents", docData.id), {
@@ -22,6 +25,7 @@ export const saveDocument = async (docData) => {
     });
   } catch (error) {
     console.error("Error saving document:", error);
+    throw error;
   }
 };
 
@@ -40,6 +44,7 @@ export const deleteDocument = async (docId) => {
     await deleteDoc(doc(db, "documents", docId));
   } catch (error) {
     console.error("Error deleting document:", error);
+    throw error;
   }
 };
 
@@ -49,6 +54,7 @@ export const saveFolders = async (folders) => {
     await setDoc(doc(db, "settings", "folders"), { data: folders });
   } catch (error) {
     console.error("Error saving folders:", error);
+    throw error;
   }
 };
 
@@ -68,6 +74,7 @@ export const saveActiveDocId = async (activeId) => {
     await setDoc(doc(db, "settings", "activeDoc"), { id: activeId || null });
   } catch (error) {
     console.error("Error saving active doc:", error);
+    throw error;
   }
 };
 
@@ -87,6 +94,7 @@ export const saveTrash = async (trashedDocs) => {
     await setDoc(doc(db, "settings", "trash"), { data: trashedDocs });
   } catch (error) {
     console.error("Error saving trash:", error);
+    throw error;
   }
 };
 
@@ -106,6 +114,7 @@ export const savePromptSettings = async (settings) => {
     await setDoc(doc(db, "settings", "promptSettings"), { data: settings });
   } catch (error) {
     console.error("Error saving prompt settings:", error);
+    throw error;
   }
 };
 

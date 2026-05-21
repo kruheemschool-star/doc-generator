@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Mitr:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=K2D:wght@300;400;500;600;700&family=Pridi:wght@300;400;500;600;700&family=Trirong:wght@300;400;500;600;700&family=Mali:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,8 +6,9 @@
 
 @layer base {
   body {
-    @apply font-sans text-gray-900 bg-gray-50;
+    @apply font-sans text-gray-900 bg-gray-50 dark:bg-slate-950 dark:text-slate-200;
     font-family: 'Prompt', 'Outfit', sans-serif;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
   h1,
@@ -17,6 +18,18 @@
   h5,
   h6 {
     font-family: 'Prompt', sans-serif;
+  }
+
+  /* Smooth color transitions for all themed surfaces (but not transforms/zoom) */
+  body, body * {
+    transition-property: background-color, border-color, color;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
+  }
+
+  /* Disable transitions inside the A4 paper — those need to render instantly when typing */
+  .zoom-container, .zoom-container * {
+    transition: none;
   }
 }
 
@@ -57,6 +70,16 @@
     background-color: #f8fafc;
     /* Slate-50 */
   }
+  .dark body {
+    background-color: #020617;
+    /* Slate-950 */
+  }
+}
+
+/* Force font inheritance inside paper — override Quill's hard-coded font-family */
+.zoom-container .ql-editor,
+.zoom-container .ql-editor * {
+  font-family: inherit !important;
 }
 
 /* When grid overlay is active, make content item backgrounds transparent */

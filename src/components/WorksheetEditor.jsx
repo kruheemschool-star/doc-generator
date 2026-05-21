@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -11,8 +11,14 @@ import DividerItem from './DividerItem';
 import MarkdownItem from './MarkdownItem';
 import QuestionEditorModal from './QuestionEditorModal';
 import ErrorBoundary from './ErrorBoundary';
+import TemplatePicker from './TemplatePicker';
+import FontPicker from './FontPicker';
+import { useToast, ToastContainer } from './Toast';
 import useAutoPagination from '../hooks/useAutoPagination';
 import useHistory from '../hooks/useHistory';
+import { useModalA11y } from '../hooks/useModalA11y';
+import { expandDocumentTemplate } from '../data/pageTemplates';
+import { DEFAULT_FONT_ID, getFontStack } from '../data/documentFonts';
 
 const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // --- History State Management ---
@@ -39,6 +45,16 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             ]
     );
 
+    // --- Document Font State (persisted on document) ---
+    const [fontId, setFontId] = useState(activeDocument?.fontId || DEFAULT_FONT_ID);
+    const fontStack = getFontStack(fontId);
+
+    // --- Toast notifications ---
+    const { toasts, addToast, removeToast } = useToast();
+
+    // --- Import Modal A11y ---
+    const importModalRef = useModalA11y(showImportModal, () => setShowImportModal(false));
+
     // --- Manual Save State ---
     const [saveStatus, setSaveStatus] = useState('saved');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -47,14 +63,21 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     useEffect(() => {
         setHasUnsavedChanges(true);
         setSaveStatus('unsaved');
-    }, [pages]);
+    }, [pages, fontId]);
 
     const handleManualSave = () => {
         if (onSave && pages) {
-            setSaveStatus('saving');
-            onSave(pages, documentTitle); // Pass subtitle to save
-            setSaveStatus('saved');
-            setHasUnsavedChanges(false);
+            try {
+                setSaveStatus('saving');
+                onSave(pages, documentTitle, { fontId }); // Pass subtitle + settings
+                setSaveStatus('saved');
+                setHasUnsavedChanges(false);
+                addToast('บันทึกเรียบร้อย', 'success', 2000);
+            } catch (e) {
+                console.error('Manual save failed:', e);
+                setSaveStatus('error');
+                addToast('บันทึกไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 4000);
+            }
         }
     };
 
@@ -70,7 +93,14 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
     // View Mode & Zoom
     const [showSolution, setShowSolution] = useState(true);
-    const [zoomLevel, setZoomLevel] = useState(100);
+    const [zoomLevel, setZoomLevel] = useState(() => {
+        // Auto-fit on mobile: A4 = 210mm ≈ 793px. On viewport < 800px, scale down.
+        if (typeof window === 'undefined') return 100;
+        const vw = window.innerWidth;
+        if (vw < 480) return Math.max(50, Math.round((vw - 32) / 793 * 100));
+        if (vw < 800) return Math.max(60, Math.round((vw - 64) / 793 * 100));
+        return 100;
+    });
     const [globalFontSize, setGlobalFontSize] = useState('medium');
     const [showDebug, setShowDebug] = useState(false);
     const [showGrid, setShowGrid] = useState(false);
@@ -95,6 +125,18 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const handleWatermarkImageUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        // Validate size — base64 DataURL inflates ~33%, limit raw to 2MB
+        const MAX_SIZE = 2 * 1024 * 1024;
+        if (file.size > MAX_SIZE) {
+            addToast(`ไฟล์ใหญ่เกินไป (${(file.size / 1024 / 1024).toFixed(1)}MB) — โปรดเลือกไฟล์ไม่เกิน 2MB`, 'error', 4000);
+            e.target.value = '';
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            addToast('โปรดเลือกไฟล์รูปภาพเท่านั้น (PNG, JPG, SVG)', 'error', 4000);
+            e.target.value = '';
+            return;
+        }
         const reader = new FileReader();
         reader.onload = (ev) => {
             setWatermark(prev => ({ ...prev, imageUrl: ev.target.result, type: 'image' }));
@@ -116,6 +158,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [importText, setImportText] = useState('');
     const [importSectionType, setImportSectionType] = useState('content');
     const [importQuestionType, setImportQuestionType] = useState('objective');
+
+    // --- Template Picker State ---
+    const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
     // --- Question Editor Modal State ---
     const [editingQuestionId, setEditingQuestionId] = useState(null);
@@ -386,13 +431,15 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         });
     }, [setPages]);
 
-    const handleDeleteQuestion = (questionId) => {
+    const handleDeleteQuestion = useCallback((questionId) => {
         setPages((prevPages) => prevPages.map(page => ({
             ...page,
             questions: page.questions.filter(q => q.id !== questionId)
         })));
-        if (selectedItemId === questionId) setSelectedItemId(null);
-    };
+        setSelectedItemId(prev => prev === questionId ? null : prev);
+    }, [setPages]);
+
+    const handleEditEnd = useCallback(() => setEditingItemId(null), []);
 
     const handleDeletePage = useCallback((pageIndex) => {
         if (!window.confirm("คุณแน่ใจหรือไม่ที่จะลบหน้านี้? การกระทำนี้ไม่สามารถย้อนกลับได้")) return;
@@ -446,9 +493,55 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         });
     }, [setPages, selectedItemId]);
 
+    // --- Template Insertion Helpers ---
+    const assignIdsToItems = (items) => items.map(it => ({ ...it, id: uuidv4() }));
+
+    // A: Section — แทรกหลัง item ที่เลือก (หรือท้ายเอกสาร)
+    const handleInsertSectionTemplate = useCallback((template) => {
+        if (!template?.items?.length) return;
+        const newItems = assignIdsToItems(template.items);
+        insertItemsIntoPages(newItems);
+    }, [insertItemsIntoPages]);
+
+    // B: Page — เพิ่มเป็นหน้าใหม่ต่อท้าย (ถ้าหน้าสุดท้ายว่างก็แทนที่หน้าสุดท้าย)
+    const handleInsertPageTemplate = useCallback((template) => {
+        if (!template?.items?.length) return;
+        const newPageItems = assignIdsToItems(template.items);
+        setPages(prev => {
+            const lastIdx = prev.length - 1;
+            const lastEmpty = lastIdx >= 0 && (prev[lastIdx]?.questions?.length ?? 0) === 0;
+            if (lastEmpty) {
+                const next = prev.map((p, i) => i === lastIdx ? { ...p, questions: newPageItems } : p);
+                return next;
+            }
+            return [...prev, { id: uuidv4(), questions: newPageItems }];
+        });
+    }, [setPages]);
+
+    // C: Document — สร้างหลายหน้า แทนที่หน้าว่างปัจจุบันถ้ามี
+    const handleInsertDocumentTemplate = useCallback((template) => {
+        const pageItemArrays = expandDocumentTemplate(template);
+        if (!pageItemArrays.length) return;
+        const newPages = pageItemArrays
+            .filter(items => items && items.length > 0)
+            .map(items => ({ id: uuidv4(), questions: assignIdsToItems(items) }));
+
+        setPages(prev => {
+            // ถ้าเอกสารปัจจุบันมีเพียงหน้าว่าง 1 หน้า ให้แทนที่ทั้งหมด
+            const onlyEmpty = prev.length === 1 && (prev[0]?.questions?.length ?? 0) === 0;
+            if (onlyEmpty) return newPages;
+
+            // ถ้าหน้าสุดท้ายว่าง drop มันก่อนค่อย append
+            const lastIdx = prev.length - 1;
+            const cleaned = (lastIdx >= 0 && (prev[lastIdx]?.questions?.length ?? 0) === 0)
+                ? prev.slice(0, lastIdx)
+                : prev;
+            return [...cleaned, ...newPages];
+        });
+    }, [setPages]);
+
     const handleImport = () => {
         if (!importText.trim()) return;
-        console.group("🚀 Import Process");
 
         try {
             let jsonString = importText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -537,8 +630,6 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 setShowImportModal(false);
                 setImportText('');
             }
-        } finally {
-            console.groupEnd();
         }
     };
 
@@ -576,7 +667,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             isSelected: q.id === selectedItemId,
             onSelect: setSelectedItemId,
             isExplicitEditing: q.id === editingItemId,
-            onEditEnd: () => setEditingItemId(null),
+            onEditEnd: handleEditEnd,
             canMoveUp: !isFirstItem,
             canMoveDown: !isLastItem,
             isViewOnly
@@ -662,7 +753,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     })();
 
     return (
-        <div className="min-h-screen bg-[#f1f5f9] font-sans print:bg-white relative">
+        <div className="min-h-screen bg-[#f1f5f9] dark:bg-slate-950 font-sans print:bg-white relative">
             {/* Debug Overlay */}
             {showDebug && (
                 <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md p-8 overflow-y-auto">
@@ -682,7 +773,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <FileJson size={14} /> LOG TO CONSOLE
                             </button>
                         </div>
-                        <div className="mb-4 p-3 bg-gray-800 rounded-lg text-xs text-gray-400 border-l-4 border-blue-500">
+                        <div className="mb-4 p-3 bg-gray-800 rounded-lg text-xs text-gray-400 dark:text-slate-500 border-l-4 border-blue-500">
                             💡 <strong>Tip:</strong> หากเห็นหน้าจอว่างเปล่า ให้กดปุ่ม <strong>TRIM EMPTY PAGES</strong> เพื่อลบหน้าที่ว่างทิ้ง ข้อมูลจะกลับมาแสดงผลปกติ
                         </div>
                         <pre className="custom-scrollbar overflow-x-auto whitespace-pre-wrap rounded bg-black/30 p-4 border border-white/5">{JSON.stringify(pages, null, 2)}</pre>
@@ -690,11 +781,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 </div>
             )}
 
-            <header className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40 h-14 sm:h-16 shadow-sm print:hidden">
+            <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 sticky top-0 z-40 h-14 sm:h-16 shadow-sm print:hidden">
                 <div className="max-w-[1600px] mx-auto px-3 sm:px-6 h-full flex justify-between items-center">
                     <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                        <button onClick={handleBackWithConfirmation} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors flex-shrink-0"><ArrowLeft size={20} /></button>
-                        <h1 className="text-sm sm:text-lg font-bold text-gray-800 flex items-center gap-2 font-outfit truncate">
+                        <button onClick={handleBackWithConfirmation} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 dark:text-slate-500 transition-colors flex-shrink-0"><ArrowLeft size={20} /></button>
+                        <h1 className="text-sm sm:text-lg font-bold text-gray-800 dark:text-slate-200 flex items-center gap-2 font-outfit truncate">
                             <Layout size={18} className="text-blue-600 flex-shrink-0" />
                             <span className="truncate">{activeDocument?.title || 'Untitled'}</span>
                         </h1>
@@ -706,8 +797,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             </header>
 
             <div className="flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
-                <main className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12 custom-scrollbar bg-slate-100/50 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); }}>
-                    <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}>
+                <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 lg:p-12 custom-scrollbar bg-slate-100/50 dark:bg-slate-950 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); }}>
+                    <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
                                 <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`w-[210mm] min-h-[297mm] bg-white shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden ${showGrid ? 'grid-active' : ''}`}>
@@ -732,13 +823,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                                     <div className="absolute inset-0" style={{ transform: `rotate(${watermark.rotation}deg)`, transformOrigin: 'center center' }}>
                                                         <div className="absolute" style={{ top: '-50%', left: '-50%', right: '-50%', bottom: '-50%', display: 'flex', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'center', gap: `${Math.max(40, watermark.fontSize * 1.5)}px ${Math.max(60, watermark.fontSize * 2)}px` }}>
                                                             {Array.from({ length: 64 }).map((_, i) => (
-                                                                <span key={i} className="select-none whitespace-nowrap text-gray-900" style={{ fontSize: `${watermark.fontSize}px`, fontWeight: 700, fontFamily: "'Prompt', 'Noto Sans Thai', sans-serif" }}>{watermark.text}</span>
+                                                                <span key={i} className="select-none whitespace-nowrap text-gray-900 dark:text-slate-100" style={{ fontSize: `${watermark.fontSize}px`, fontWeight: 700, fontFamily: "'Prompt', 'Noto Sans Thai', sans-serif" }}>{watermark.text}</span>
                                                             ))}
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <div className="absolute inset-0 flex items-center justify-center">
-                                                        <span className="select-none whitespace-nowrap text-gray-900" style={{ fontSize: `${watermark.fontSize * 2}px`, fontWeight: 700, transform: `rotate(${watermark.rotation}deg)`, fontFamily: "'Prompt', 'Noto Sans Thai', sans-serif" }}>{watermark.text}</span>
+                                                        <span className="select-none whitespace-nowrap text-gray-900 dark:text-slate-100" style={{ fontSize: `${watermark.fontSize * 2}px`, fontWeight: 700, transform: `rotate(${watermark.rotation}deg)`, fontFamily: "'Prompt', 'Noto Sans Thai', sans-serif" }}>{watermark.text}</span>
                                                     </div>
                                                 )
                                             )}
@@ -759,11 +850,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             )}
                                         </div>
                                     )}
-                                    <div className="absolute top-4 left-4 text-[10px] text-gray-300 font-bold print:hidden">PAGE {pIdx + 1}</div>
+                                    <div className="absolute top-4 left-4 text-[10px] text-gray-300 dark:text-slate-600 font-bold print:hidden">PAGE {pIdx + 1}</div>
                                     {/* A4 Boundary Guide Line - visual indicator of printable area */}
                                     <div className="absolute left-0 right-0 pointer-events-none print:hidden" style={{ top: '287mm' }}>
                                         <div className="border-t-2 border-dashed border-rose-300/50 mx-[10mm]" />
-                                        <span className="absolute right-[12mm] -top-[14px] text-[9px] text-rose-400/70 font-medium select-none bg-white px-1">ขอบ A4 ↓</span>
+                                        <span className="absolute right-[12mm] -top-[14px] text-[9px] text-rose-400/70 font-medium select-none bg-white dark:bg-slate-900 px-1">ขอบ A4 ↓</span>
                                     </div>
                                     {/* Overflow Warning Badge */}
                                     {isPageOverflow(page.id) && (
@@ -796,8 +887,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             <span className="text-[9px] text-black/40 font-medium select-none">{pIdx + 1}</span>
                                             <button
                                                 onClick={() => handleDeletePage(pIdx)}
-                                                className="ml-1 p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors print:hidden"
-                                                title="ลบหน้านี้"
+                                                className="ml-1 p-1 text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors print:hidden"
+                                                aria-label="ลบหน้านี้" title="ลบหน้านี้"
                                             >
                                                 <Trash2 size={12} />
                                             </button>
@@ -808,7 +899,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             {(provided, snapshot) => (
                                                 <div {...provided.droppableProps} ref={provided.innerRef} className={`min-h-[200px] rounded-xl transition-all ${snapshot.isDraggingOver ? 'bg-blue-50/50 ring-2 ring-blue-200 ring-dashed' : ''}`}>
                                                     {page.questions.length === 0 ? (
-                                                        <div className="h-64 border-2 border-dashed border-gray-100 rounded-2xl flex flex-col items-center justify-center text-gray-300">
+                                                        <div className="h-64 border-2 border-dashed border-gray-100 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center text-gray-300 dark:text-slate-600">
                                                             <Plus size={32} className="mb-2" />
                                                             <p className="text-sm font-medium">Empty Page - Add items or import</p>
                                                         </div>
@@ -838,9 +929,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 {/* Watermark Settings Panel */}
                 {showWatermarkPanel && (
                     <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 print:hidden" onClick={(e) => e.stopPropagation()}>
-                        <div className="bg-white/95 backdrop-blur-xl border border-gray-100 shadow-2xl rounded-2xl p-5 w-[380px] animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-gray-100 dark:border-slate-800 shadow-2xl rounded-2xl p-5 w-[380px] animate-in slide-in-from-bottom-2 duration-200">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200 flex items-center gap-2">
                                     <Droplets size={16} className="text-cyan-500" />
                                     ลายน้ำ (Watermark)
                                 </h3>
@@ -856,16 +947,16 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             </div>
 
                             {/* Type selector */}
-                            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-4">
+                            <div className="flex gap-1 p-1 bg-gray-100 dark:bg-slate-800 rounded-xl mb-4">
                                 <button
                                     onClick={() => setWatermark(prev => ({ ...prev, type: 'text' }))}
-                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${watermark.type === 'text' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${watermark.type === 'text' ? 'bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600'}`}
                                 >
                                     📝 ข้อความ
                                 </button>
                                 <button
                                     onClick={() => setWatermark(prev => ({ ...prev, type: 'image' }))}
-                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${watermark.type === 'image' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${watermark.type === 'image' ? 'bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600'}`}
                                 >
                                     🖼️ รูปภาพ
                                 </button>
@@ -874,23 +965,23 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             {/* Text input or Image upload */}
                             {watermark.type === 'text' ? (
                                 <div className="mb-4">
-                                    <label className="block text-[11px] font-medium text-gray-500 mb-1.5">ข้อความลายน้ำ</label>
+                                    <label className="block text-[11px] font-medium text-gray-500 dark:text-slate-400 mb-1.5">ข้อความลายน้ำ</label>
                                     <input
                                         type="text"
                                         value={watermark.text}
                                         onChange={(e) => setWatermark(prev => ({ ...prev, text: e.target.value }))}
-                                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 outline-none transition-all"
+                                        className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 outline-none transition-all"
                                         placeholder="ข้อความลายน้ำ..."
                                     />
                                 </div>
                             ) : (
                                 <div className="mb-4">
-                                    <label className="block text-[11px] font-medium text-gray-500 mb-1.5">รูปภาพลายน้ำ</label>
+                                    <label className="block text-[11px] font-medium text-gray-500 dark:text-slate-400 mb-1.5">รูปภาพลายน้ำ</label>
                                     {watermark.imageUrl ? (
-                                        <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl border border-gray-100">
-                                            <img src={watermark.imageUrl} alt="watermark" className="w-12 h-12 object-contain rounded-lg bg-white border border-gray-200 p-1" />
+                                        <div className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800">
+                                            <img src={watermark.imageUrl} alt="watermark" className="w-12 h-12 object-contain rounded-lg bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 p-1" />
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-[10px] text-gray-400 truncate">รูปภาพที่เลือก</p>
+                                                <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate">รูปภาพที่เลือก</p>
                                             </div>
                                             <button
                                                 onClick={() => watermarkImageInputRef.current?.click()}
@@ -904,7 +995,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                     ) : (
                                         <button
                                             onClick={() => watermarkImageInputRef.current?.click()}
-                                            className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:text-cyan-500 hover:border-cyan-300 transition-all flex items-center justify-center gap-2 text-xs font-medium"
+                                            className="w-full py-3 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl text-gray-400 dark:text-slate-500 hover:text-cyan-500 hover:border-cyan-300 transition-all flex items-center justify-center gap-2 text-xs font-medium"
                                         >
                                             <Upload size={16} />
                                             เลือกรูปภาพ
@@ -916,8 +1007,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             {/* Opacity slider */}
                             <div className="mb-3">
                                 <div className="flex justify-between items-center mb-1">
-                                    <label className="text-[11px] font-medium text-gray-500">ความเข้ม</label>
-                                    <span className="text-[11px] font-bold text-gray-400">{watermark.opacity}%</span>
+                                    <label className="text-[11px] font-medium text-gray-500 dark:text-slate-400">ความเข้ม</label>
+                                    <span className="text-[11px] font-bold text-gray-400 dark:text-slate-500">{watermark.opacity}%</span>
                                 </div>
                                 <input
                                     type="range"
@@ -932,8 +1023,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             {/* Size slider */}
                             <div className="mb-3">
                                 <div className="flex justify-between items-center mb-1">
-                                    <label className="text-[11px] font-medium text-gray-500">ขนาด</label>
-                                    <span className="text-[11px] font-bold text-gray-400">{watermark.fontSize}px</span>
+                                    <label className="text-[11px] font-medium text-gray-500 dark:text-slate-400">ขนาด</label>
+                                    <span className="text-[11px] font-bold text-gray-400 dark:text-slate-500">{watermark.fontSize}px</span>
                                 </div>
                                 <input
                                     type="range"
@@ -948,8 +1039,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             {/* Rotation slider */}
                             <div className="mb-3">
                                 <div className="flex justify-between items-center mb-1">
-                                    <label className="text-[11px] font-medium text-gray-500">มุมเอียง</label>
-                                    <span className="text-[11px] font-bold text-gray-400">{watermark.rotation}°</span>
+                                    <label className="text-[11px] font-medium text-gray-500 dark:text-slate-400">มุมเอียง</label>
+                                    <span className="text-[11px] font-bold text-gray-400 dark:text-slate-500">{watermark.rotation}°</span>
                                 </div>
                                 <input
                                     type="range"
@@ -962,8 +1053,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             </div>
 
                             {/* Tile toggle */}
-                            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                <span className="text-[11px] font-medium text-gray-500">เรียงซ้ำเต็มหน้า</span>
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-800">
+                                <span className="text-[11px] font-medium text-gray-500 dark:text-slate-400">เรียงซ้ำเต็มหน้า</span>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -978,39 +1069,44 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     </div>
                 )}
 
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden floating-toolbar">
-                    <div className="bg-white/95 backdrop-blur-xl border border-gray-100 shadow-2xl rounded-2xl p-2.5 flex items-center gap-2">
+                <div className="fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden floating-toolbar max-w-[calc(100vw-1rem)]">
+                    <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-gray-100 dark:border-slate-800 shadow-2xl rounded-2xl p-2 sm:p-2.5 flex items-center gap-1 sm:gap-2 overflow-x-auto custom-scrollbar">
                         {!selectedItemId ? (
                             <>
-                                <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 hover:text-blue-600 rounded-xl transition-all" title="เพิ่มกล่องข้อความ"><Type size={20} /></button>
-                                <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 hover:text-teal-600 rounded-xl transition-all" title="เพิ่ม Markdown"><FileText size={20} /></button>
-                                <button onClick={handleAddImage} className="p-3 hover:bg-purple-50 text-gray-500 hover:text-purple-600 rounded-xl transition-all" title="เพิ่มรูปภาพ"><ImageIcon size={20} /></button>
-                                <button onClick={handleAddDivider} className="p-3 hover:bg-rose-50 text-gray-500 hover:text-rose-600 rounded-xl transition-all" title="เพิ่มเส้นคั่น"><Minus size={20} /></button>
-                                <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" title="Import จาก Gemini"><FileJson size={20} /></button>
-                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
-                                <button onClick={undo} disabled={!canUndo} className={`p-3 rounded-xl transition-all ${canUndo ? 'hover:bg-amber-50 text-gray-500 hover:text-amber-600' : 'text-gray-200 cursor-not-allowed'}`} title="ย้อนกลับ (Undo)"><RotateCcw size={20} /></button>
-                                <button onClick={redo} disabled={!canRedo} className={`p-3 rounded-xl transition-all ${canRedo ? 'hover:bg-amber-50 text-gray-500 hover:text-amber-600' : 'text-gray-200 cursor-not-allowed'}`} title="ทำซ้ำ (Redo)"><RotateCw size={20} /></button>
-                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
-                                <button onClick={() => setZoomLevel(z => Math.max(50, z - 10))} className="p-3 hover:bg-gray-100 text-gray-500 rounded-xl transition-all" title="ซูมออก"><ZoomOut size={20} /></button>
-                                <span className="text-xs text-gray-400 font-medium min-w-[40px] text-center select-none">{zoomLevel}%</span>
-                                <button onClick={() => setZoomLevel(z => Math.min(150, z + 10))} className="p-3 hover:bg-gray-100 text-gray-500 rounded-xl transition-all" title="ซูมเข้า"><ZoomIn size={20} /></button>
+                                <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 dark:text-slate-400 hover:text-blue-600 rounded-xl transition-all" aria-label="เพิ่มกล่องข้อความ" title="เพิ่มกล่องข้อความ"><Type size={20} /></button>
+                                <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 dark:text-slate-400 hover:text-teal-600 rounded-xl transition-all" aria-label="เพิ่ม Markdown" title="เพิ่ม Markdown"><FileText size={20} /></button>
+                                <button onClick={handleAddImage} className="p-3 hover:bg-purple-50 text-gray-500 dark:text-slate-400 hover:text-purple-600 rounded-xl transition-all" aria-label="เพิ่มรูปภาพ" title="เพิ่มรูปภาพ"><ImageIcon size={20} /></button>
+                                <button onClick={handleAddDivider} className="p-3 hover:bg-rose-50 text-gray-500 dark:text-slate-400 hover:text-rose-600 rounded-xl transition-all" aria-label="เพิ่มเส้นคั่น" title="เพิ่มเส้นคั่น"><Minus size={20} /></button>
+                                <button onClick={() => setShowTemplatePicker(true)} className="p-3 hover:bg-green-50 text-gray-500 dark:text-slate-400 hover:text-green-700 rounded-xl transition-all" aria-label="เทมเพลตหน้า (Templates)" title="เทมเพลตหน้า (Templates)"><LayoutTemplate size={20} /></button>
+                                <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" aria-label="Import จาก Gemini" title="Import จาก Gemini"><FileJson size={20} /></button>
+                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+                                <button onClick={undo} disabled={!canUndo} className={`p-3 rounded-xl transition-all ${canUndo ? 'hover:bg-amber-50 text-gray-500 dark:text-slate-400 hover:text-amber-600' : 'text-gray-200 cursor-not-allowed'}`} aria-label="ย้อนกลับ (Undo)" title="ย้อนกลับ (Undo)"><RotateCcw size={20} /></button>
+                                <button onClick={redo} disabled={!canRedo} className={`p-3 rounded-xl transition-all ${canRedo ? 'hover:bg-amber-50 text-gray-500 dark:text-slate-400 hover:text-amber-600' : 'text-gray-200 cursor-not-allowed'}`} aria-label="ทำซ้ำ (Redo)" title="ทำซ้ำ (Redo)"><RotateCw size={20} /></button>
+                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+                                <button onClick={() => setZoomLevel(z => Math.max(50, z - 10))} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 rounded-xl transition-all" aria-label="ซูมออก" title="ซูมออก"><ZoomOut size={20} /></button>
+                                <span className="text-xs text-gray-400 dark:text-slate-500 font-medium min-w-[40px] text-center select-none">{zoomLevel}%</span>
+                                <button onClick={() => setZoomLevel(z => Math.min(150, z + 10))} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 rounded-xl transition-all" aria-label="ซูมเข้า" title="ซูมเข้า"><ZoomIn size={20} /></button>
 
-                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
-                                <button onClick={() => setIsViewOnly(!isViewOnly)} className={`p-3 rounded-xl transition-all ${isViewOnly ? 'bg-orange-50 text-orange-600' : 'text-gray-400 hover:bg-gray-100'}`} title={isViewOnly ? "โหมดมุมมอง (ดูอย่างเดียว)" : "โหมดแก้ไข"}>{isViewOnly ? <Hand size={20} /> : <MousePointer2 size={20} />}</button>
-                                <button onClick={() => setShowSolution(!showSolution)} className={`p-3 rounded-xl transition-all ${showSolution ? 'bg-blue-50 text-blue-600' : 'text-gray-400'}`} title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={20} /> : <EyeOff size={20} />}</button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={`p-3 rounded-xl transition-all ${showGrid ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:bg-gray-100'}`} title="เปิด/ปิดตารางกริด"><Grid3X3 size={20} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={`p-3 rounded-xl transition-all ${watermark.enabled ? 'bg-cyan-50 text-cyan-600' : 'text-gray-400 hover:bg-gray-100'}`} title="ลายน้ำ"><Droplets size={20} /></button>
-                                <button onClick={() => window.print()} className="p-3 hover:bg-gray-100 text-gray-400 rounded-xl" title="พิมพ์"><Printer size={20} /></button>
+                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+
+                                <FontPicker value={fontId} onChange={setFontId} />
+
+                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+                                <button onClick={() => setIsViewOnly(!isViewOnly)} className={`p-3 rounded-xl transition-all ${isViewOnly ? 'bg-orange-50 text-orange-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} title={isViewOnly ? "โหมดมุมมอง (ดูอย่างเดียว)" : "โหมดแก้ไข"}>{isViewOnly ? <Hand size={20} /> : <MousePointer2 size={20} />}</button>
+                                <button onClick={() => setShowSolution(!showSolution)} className={`p-3 rounded-xl transition-all ${showSolution ? 'bg-blue-50 text-blue-600' : 'text-gray-400 dark:text-slate-500'}`} aria-label="ซ่อน/แสดงเฉลย" title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={20} /> : <EyeOff size={20} />}</button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={`p-3 rounded-xl transition-all ${showGrid ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} aria-label="เปิด/ปิดตารางกริด" title="เปิด/ปิดตารางกริด"><Grid3X3 size={20} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={`p-3 rounded-xl transition-all ${watermark.enabled ? 'bg-cyan-50 text-cyan-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} aria-label="ลายน้ำ" title="ลายน้ำ"><Droplets size={20} /></button>
+                                <button onClick={() => window.print()} className="p-3 hover:bg-gray-100 text-gray-400 dark:text-slate-500 rounded-xl" aria-label="พิมพ์" title="พิมพ์"><Printer size={20} /></button>
                             </>
                         ) : (
                             <>
-                                <button onClick={() => setSelectedItemId(null)} className="p-2 bg-gray-100 text-gray-400 rounded-lg mr-2 hover:bg-gray-200 transition-colors"><X size={16} /></button>
+                                <button onClick={() => setSelectedItemId(null)} className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 rounded-lg mr-2 hover:bg-gray-200 transition-colors"><X size={16} /></button>
 
                                 <button
                                     onClick={() => handleMoveItem(selectedItemId, 'up')}
                                     disabled={!selectedItemStatus.up}
                                     className={`p-3 rounded-xl transition-all ${selectedItemStatus.up ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'text-gray-200 cursor-not-allowed'}`}
-                                    title="Move Up"
+                                    aria-label="Move Up" title="Move Up"
                                 >
                                     <ChevronUp size={20} />
                                 </button>
@@ -1019,36 +1115,38 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                     onClick={() => handleMoveItem(selectedItemId, 'down')}
                                     disabled={!selectedItemStatus.down}
                                     className={`p-3 rounded-xl transition-all ${selectedItemStatus.down ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'text-gray-200 cursor-not-allowed'}`}
-                                    title="Move Down"
+                                    aria-label="Move Down" title="Move Down"
                                 >
                                     <ChevronDown size={20} />
                                 </button>
 
-                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
+                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
 
-                                <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 hover:text-blue-600 rounded-xl transition-all" title="แทรกข้อความ"><Type size={20} /></button>
+                                <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 dark:text-slate-400 hover:text-blue-600 rounded-xl transition-all" aria-label="แทรกข้อความ" title="แทรกข้อความ"><Type size={20} /></button>
 
-                                <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 hover:text-teal-600 rounded-xl transition-all" title="แทรก Markdown"><FileText size={20} /></button>
+                                <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 dark:text-slate-400 hover:text-teal-600 rounded-xl transition-all" aria-label="แทรก Markdown" title="แทรก Markdown"><FileText size={20} /></button>
 
-                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 hover:text-purple-600 rounded-xl transition-all" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
+                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 dark:text-slate-400 hover:text-purple-600 rounded-xl transition-all" aria-label="แทรกรูปภาพ" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
 
-                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' })} className="p-3 hover:bg-rose-50 text-gray-500 hover:text-rose-600 rounded-xl transition-all" title="แทรกเส้นคั่น"><Minus size={20} /></button>
+                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' })} className="p-3 hover:bg-rose-50 text-gray-500 dark:text-slate-400 hover:text-rose-600 rounded-xl transition-all" aria-label="แทรกเส้นคั่น" title="แทรกเส้นคั่น"><Minus size={20} /></button>
 
-                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'spacer', height: 100 })} className="p-3 hover:bg-amber-50 text-gray-500 hover:text-amber-600 rounded-xl transition-all" title="แทรกช่องว่าง"><MoveVertical size={20} /></button>
+                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'spacer', height: 100 })} className="p-3 hover:bg-amber-50 text-gray-500 dark:text-slate-400 hover:text-amber-600 rounded-xl transition-all" aria-label="แทรกช่องว่าง" title="แทรกช่องว่าง"><MoveVertical size={20} /></button>
 
-                                <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" title="แทรกเนื้อหาตรงนี้"><Plus size={20} /></button>
+                                <button onClick={() => setShowTemplatePicker(true)} className="p-3 hover:bg-green-50 text-gray-500 dark:text-slate-400 hover:text-green-700 rounded-xl transition-all" aria-label="แทรกเทมเพลต (Templates)" title="แทรกเทมเพลต (Templates)"><LayoutTemplate size={20} /></button>
 
-                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
+                                <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" aria-label="แทรกเนื้อหาตรงนี้" title="แทรกเนื้อหาตรงนี้"><Plus size={20} /></button>
 
-                                <button onClick={() => handleDuplicateItem(selectedItemId)} className="p-3 hover:bg-gray-100 text-gray-500 hover:text-gray-700 rounded-xl transition-all" title="ทำสำเนา (Duplicate)"><Copy size={20} /></button>
+                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
 
-                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
+                                <button onClick={() => handleDuplicateItem(selectedItemId)} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 hover:text-gray-700 rounded-xl transition-all" aria-label="ทำสำเนา (Duplicate)" title="ทำสำเนา (Duplicate)"><Copy size={20} /></button>
 
-                                <button onClick={() => handleDeleteQuestion(selectedItemId)} className="p-3 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-all" title="Delete"><Trash2 size={20} /></button>
+                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+
+                                <button onClick={() => handleDeleteQuestion(selectedItemId)} className="p-3 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-all" aria-label="Delete" title="Delete"><Trash2 size={20} /></button>
                             </>
                         )}
 
-                        <div className="w-px h-8 bg-gray-100 mx-1"></div>
+                        <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
 
                         <div className="flex items-center gap-2 pr-1">
                             <button
@@ -1056,9 +1154,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 disabled={!hasUnsavedChanges}
                                 className={`h-11 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 ${hasUnsavedChanges
                                     ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
-                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 cursor-not-allowed'
                                     }`}
-                                title="บันทึกการเปลี่ยนแปลง"
+                                aria-label="บันทึกการเปลี่ยนแปลง" title="บันทึกการเปลี่ยนแปลง"
                             >
                                 <Save size={18} />
                                 บันทึก
@@ -1074,26 +1172,33 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 {/* Import Modal */}
                 {showImportModal && (
                     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6" onClick={(e) => e.target === e.currentTarget && setShowImportModal(false)}>
-                        <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in duration-200">
+                        <div
+                            ref={importModalRef}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="นำเข้าเนื้อหาจาก Gemini"
+                            tabIndex={-1}
+                            className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in duration-200"
+                        >
                             {/* Header */}
                             <div className="px-8 pt-8 pb-5">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <h3 className="text-xl font-bold text-gray-900 font-outfit flex items-center gap-2.5">
+                                        <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100 font-outfit flex items-center gap-2.5">
                                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
                                                 <Sparkles size={16} className="text-white" />
                                             </div>
                                             นำเข้าเนื้อหา
                                         </h3>
-                                        <p className="text-xs text-gray-400 mt-1.5 ml-[46px]">วางข้อมูลจาก Gemini AI แล้วเลือกประเภท</p>
+                                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5 ml-[46px]">วางข้อมูลจาก Gemini AI แล้วเลือกประเภท</p>
                                     </div>
-                                    <button onClick={() => setShowImportModal(false)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-300 hover:text-gray-500 transition-colors"><X size={18} /></button>
+                                    <button onClick={() => setShowImportModal(false)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-300 dark:text-slate-600 hover:text-gray-500 transition-colors"><X size={18} /></button>
                                 </div>
                             </div>
 
                             <div className="px-8 pb-6 space-y-5">
                                 {/* Section Type Selector - Pill style like Image 2 */}
-                                <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-2xl">
+                                <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-slate-800 rounded-2xl">
                                     {[
                                         { id: 'content', icon: BookOpen, label: 'บทเรียน' },
                                         { id: 'practice', icon: PenTool, label: 'แบบฝึกหัด' },
@@ -1105,7 +1210,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                         const isActive = importSectionType === s.id;
                                         return (
                                             <button key={s.id} onClick={() => setImportSectionType(s.id)}
-                                                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-slate-800 text-white shadow-lg' : 'text-gray-400 hover:text-gray-600'}`}>
+                                                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-slate-800 text-white shadow-lg' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600'}`}>
                                                 <Icon size={14} strokeWidth={isActive ? 2.5 : 2} />
                                                 {s.label}
                                             </button>
@@ -1123,7 +1228,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 {/* Textarea */}
                                 <textarea
-                                    className="w-full h-56 p-4 bg-gray-50 border-2 border-gray-100 focus:border-blue-500 rounded-2xl font-mono text-sm outline-none resize-none transition-all placeholder:text-gray-300"
+                                    className="w-full h-56 p-4 bg-gray-50 dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-800 focus:border-blue-500 rounded-2xl font-mono text-sm outline-none resize-none transition-all placeholder:text-gray-300"
                                     placeholder="วางข้อมูล JSON หรือข้อความจาก Gemini ที่นี่..."
                                     value={importText}
                                     onChange={e => setImportText(e.target.value)}
@@ -1132,14 +1237,14 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             </div>
 
                             {/* Footer */}
-                            <div className="px-8 py-5 bg-gray-50/80 border-t border-gray-100 flex justify-between items-center">
-                                <span className="text-[10px] text-gray-300 font-medium">
+                            <div className="px-8 py-5 bg-gray-50/80 border-t border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                                <span className="text-[10px] text-gray-300 dark:text-slate-600 font-medium">
                                     {!selectedItemId ? 'วางท้ายเอกสาร' : '📌 แทรกที่ตำแหน่ง'}
                                 </span>
                                 <div className="flex gap-3">
-                                    <button onClick={() => setShowImportModal(false)} className="px-5 py-2.5 rounded-xl text-gray-400 font-bold hover:bg-gray-200 transition-all text-xs">ยกเลิก</button>
+                                    <button onClick={() => setShowImportModal(false)} className="px-5 py-2.5 rounded-xl text-gray-400 dark:text-slate-500 font-bold hover:bg-gray-200 transition-all text-xs">ยกเลิก</button>
                                     <button onClick={handleImport} disabled={!importText.trim()}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 flex items-center gap-2 ${importText.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 flex items-center gap-2 ${importText.trim() ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700' : 'bg-gray-200 text-gray-400 dark:text-slate-500 cursor-not-allowed'}`}>
                                         <Sparkles size={14} />
                                         นำเข้า
                                     </button>
@@ -1156,6 +1261,18 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     onSave={handleSaveEditedQuestion}
                     initialData={editingQuestionData}
                 />
+
+                {/* Template Picker Modal */}
+                <TemplatePicker
+                    isOpen={showTemplatePicker}
+                    onClose={() => setShowTemplatePicker(false)}
+                    onInsertSection={handleInsertSectionTemplate}
+                    onInsertPage={handleInsertPageTemplate}
+                    onInsertDocument={handleInsertDocumentTemplate}
+                />
+
+                {/* Toast Notifications */}
+                <ToastContainer toasts={toasts} removeToast={removeToast} />
             </div>
         </div>
     );

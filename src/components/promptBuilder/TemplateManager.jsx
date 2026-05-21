@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, FileText, Loader2, Plus, Download } from 'lucide-react';
 import { savePromptTemplate, loadPromptTemplates, deletePromptTemplate } from '../../firebase';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 /**
  * TemplateManager — Modal for managing saved prompt presets (Item 5)
@@ -71,18 +72,25 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
         return labels[mode] || mode;
     };
 
+    const modalRef = useModalA11y(isOpen, onClose);
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] flex items-center justify-center p-4" onClick={onClose}>
             <div
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden animate-in zoom-in-95 fade-in duration-300"
+                ref={modalRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label="จัดการ Template"
+                tabIndex={-1}
+                className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden animate-in zoom-in-95 fade-in duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-100">
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
                     <div>
-                        <h2 className="text-lg font-black text-slate-900">Prompt Templates</h2>
+                        <h2 className="text-lg font-black text-slate-900 dark:text-slate-100">Prompt Templates</h2>
                         <p className="text-xs text-slate-400 font-semibold mt-0.5">บันทึกและเรียกใช้ค่าที่ตั้งไว้</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors" aria-label="ปิด">
@@ -91,7 +99,7 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                 </div>
 
                 {/* Save new template */}
-                <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50">
                     {showSaveForm ? (
                         <div className="flex gap-2">
                             <input
@@ -100,7 +108,7 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                                 value={templateName}
                                 onChange={(e) => setTemplateName(e.target.value)}
                                 maxLength={60}
-                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                                 autoFocus
                                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                                 aria-label="ชื่อ Template"
@@ -123,7 +131,7 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                     ) : (
                         <button
                             onClick={() => setShowSaveForm(true)}
-                            className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:border-blue-300 hover:text-blue-500 transition-all flex items-center justify-center gap-2"
+                            className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-400 hover:border-blue-300 hover:text-blue-500 transition-all flex items-center justify-center gap-2"
                         >
                             <Plus size={16} /> บันทึกค่าปัจจุบันเป็น Template
                         </button>
@@ -146,19 +154,19 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                         templates.map(tmpl => (
                             <div
                                 key={tmpl.id}
-                                className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 hover:shadow-md transition-all group"
+                                className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-blue-200 hover:shadow-md transition-all group"
                             >
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-sm text-slate-800 truncate">{tmpl.name}</div>
+                                    <div className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{tmpl.name}</div>
                                     <div className="flex gap-2 mt-1.5 flex-wrap">
                                         <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold">
                                             {getModeLabel(tmpl.formData?.mode)}
                                         </span>
-                                        <span className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md text-[10px] font-bold">
+                                        <span className="px-2 py-0.5 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-md text-[10px] font-bold">
                                             {tmpl.formData?.grade}
                                         </span>
                                         {tmpl.formData?.chapter && (
-                                            <span className="px-2 py-0.5 bg-slate-50 text-slate-400 rounded-md text-[10px] font-medium truncate max-w-[150px]">
+                                            <span className="px-2 py-0.5 bg-slate-50 dark:bg-slate-900 text-slate-400 rounded-md text-[10px] font-medium truncate max-w-[150px]">
                                                 {tmpl.formData.chapter}
                                             </span>
                                         )}

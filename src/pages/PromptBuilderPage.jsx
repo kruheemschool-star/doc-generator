@@ -145,7 +145,10 @@ const PromptBuilderPage = () => {
     const handleReset = () => {
         if (window.confirm("คุณต้องการล้างการตั้งค่าทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่?")) {
             setFormData(DEFAULT_FORM_DATA);
-            savePromptSettings(DEFAULT_FORM_DATA);
+            savePromptSettings(DEFAULT_FORM_DATA).catch(e => {
+                console.error('Reset save failed:', e);
+                addToast('รีเซ็ตเรียบร้อย แต่บันทึกค่าไม่สำเร็จ', 'error');
+            });
             addToast('รีเซ็ตค่าทั้งหมดเรียบร้อย', 'success');
         }
     };
@@ -245,8 +248,8 @@ const PromptBuilderPage = () => {
                     {Icon ? <Icon size={16} strokeWidth={2.5} /> : <Layers size={16} strokeWidth={2.5} />}
                 </div>
                 <select
-                    className={`w-full p-3 pl-11 pr-10 bg-white border border-slate-200 rounded-xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold text-slate-700 text-sm shadow-sm
-                    ${disabled ? 'cursor-not-allowed bg-slate-50' : 'hover:border-blue-300 cursor-pointer'} `}
+                    className={`w-full p-3 pl-11 pr-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold text-slate-700 dark:text-slate-300 text-sm shadow-sm
+                    ${disabled ? 'cursor-not-allowed bg-slate-50 dark:bg-slate-900' : 'hover:border-blue-300 cursor-pointer'} `}
                     value={value}
                     onChange={onChange}
                     disabled={disabled}
@@ -265,17 +268,17 @@ const PromptBuilderPage = () => {
     // Item 1: Loading state
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-[#F1F5F9]">
+            <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-[#F1F5F9] dark:bg-slate-950">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 size={40} className="text-blue-600 animate-spin" />
-                    <p className="text-slate-500 font-semibold text-sm">กำลังโหลดค่าที่บันทึกไว้...</p>
+                    <p className="text-slate-500 dark:text-slate-400 font-semibold text-sm">กำลังโหลดค่าที่บันทึกไว้...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-[#F1F5F9] font-sans selection:bg-blue-600 selection:text-white">
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-[#F1F5F9] dark:bg-slate-950 font-sans selection:bg-blue-600 selection:text-white">
             {/* Item 1: Toast Container */}
             <ToastContainer toasts={toasts} removeToast={removeToast} />
             {/* Item 5: Template Manager Modal */}
@@ -299,14 +302,14 @@ const PromptBuilderPage = () => {
                                     <Sparkles size={12} fill="currentColor" />
                                     <span>Advanced AI Prompt Architecture</span>
                                 </div>
-                                <h1 className="text-4xl font-extrabold text-slate-900 leading-[1.1] font-outfit tracking-tight">
+                                <h1 className="text-4xl font-extrabold text-slate-900 dark:text-slate-100 leading-[1.1] font-outfit tracking-tight">
                                     MathCraft <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500">AI</span>
                                 </h1>
                             </div>
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleReset}
-                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm active:scale-95"
+                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm active:scale-95"
                                 >
                                     <Undo2 size={14} className="group-hover:-rotate-45 transition-transform" />
                                     RESET
@@ -314,32 +317,32 @@ const PromptBuilderPage = () => {
                                 <button
                                     onClick={() => setIsTemplateOpen(true)}
                                     aria-label="เปิด Templates"
-                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm active:scale-95"
+                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm active:scale-95"
                                 >
                                     <FileText size={14} />
                                     TEMPLATES
                                 </button>
                             </div>
                         </div>
-                        <p className="text-slate-500 max-w-xl text-[15px] font-medium leading-relaxed">
+                        <p className="text-slate-500 dark:text-slate-400 max-w-xl text-[15px] font-medium leading-relaxed">
                             สร้างคำสั่งที่ทรงพลังเพื่อเปลี่ยน AI ให้เป็นผู้ช่วยเตรียมเนื้อหาและข้อสอบตามหลักสูตร สสวท. อย่างมืออาชีพ
                         </p>
                     </div>
 
                     {/* Section 1: Core Configuration */}
-                    <section className="bg-white/80 backdrop-blur-2xl p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white transition-all hover:shadow-[0_20px_50px_rgba(59,130,246,0.08)] group/card">
+                    <section className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white transition-all hover:shadow-[0_20px_50px_rgba(59,130,246,0.08)] group/card">
                         <div className="flex items-center gap-4 mb-8">
                             <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30 group-hover/card:scale-110 transition-transform duration-500">
                                 <Layers size={22} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h2 className="text-xl font-extrabold text-slate-800 font-outfit tracking-tight">Core Context</h2>
+                                <h2 className="text-xl font-extrabold text-slate-800 dark:text-slate-200 font-outfit tracking-tight">Core Context</h2>
                                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-0.5">ข้อมูลพื้นฐานของเอกสาร</p>
                             </div>
                         </div>
 
                         {/* Mode Switcher */}
-                        <div className="flex flex-wrap gap-2.5 mb-8 bg-slate-50/50 p-2 rounded-2xl border border-slate-100" role="tablist" aria-label="เลือกโหมดการสร้างคำสั่ง">
+                        <div className="flex flex-wrap gap-2.5 mb-8 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-2xl border border-slate-100 dark:border-slate-800" role="tablist" aria-label="เลือกโหมดการสร้างคำสั่ง">
                             {[
                                 { id: 'content', label: 'บทเรียน', icon: <BookOpen size={16} />, color: 'blue' },
                                 { id: 'practice', label: 'แบบฝึกหัด', icon: <PenTool size={16} />, color: 'teal' },
@@ -362,7 +365,7 @@ const PromptBuilderPage = () => {
                                     className={`flex-1 min-w-[100px] py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2.5 
                                     ${formData.mode === item.id
                                             ? `bg-slate-900 text-white shadow-xl shadow-slate-900/20 scale-[1.03]`
-                                            : 'text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-md'
+                                            : 'text-slate-500 dark:text-slate-400 hover:bg-white hover:text-slate-800 hover:shadow-md'
                                         } `}
                                 >
                                     <span className={`transition-transform duration-300 ${formData.mode === item.id ? 'scale-110 text-blue-400' : 'text-slate-400'} `}>
@@ -415,7 +418,7 @@ const PromptBuilderPage = () => {
                                             <BookOpen size={18} strokeWidth={2.5} />
                                         </div>
                                         <select
-                                            className="w-full p-4 pl-12 pr-10 bg-white border border-slate-200 rounded-2xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-base font-bold text-slate-800 shadow-sm hover:border-blue-300 cursor-pointer"
+                                            className="w-full p-4 pl-12 pr-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-base font-bold text-slate-800 dark:text-slate-200 shadow-sm hover:border-blue-300 cursor-pointer"
                                             value={formData.chapter}
                                             onChange={(e) => handleChange('chapter', e.target.value)}
                                             aria-label="เลือกบทเรียน"
@@ -441,7 +444,7 @@ const PromptBuilderPage = () => {
                                                 <List size={18} strokeWidth={2.5} />
                                             </div>
                                             <select
-                                                className="w-full p-3.5 pl-12 pr-10 bg-slate-50/50 border border-slate-200 rounded-2xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-semibold text-slate-600 hover:border-blue-300 cursor-pointer"
+                                                className="w-full p-3.5 pl-12 pr-10 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-semibold text-slate-600 dark:text-slate-400 hover:border-blue-300 cursor-pointer"
                                                 value={formData.selectedTopic}
                                                 onChange={(e) => handleChange('selectedTopic', e.target.value)}
                                             >
@@ -493,14 +496,14 @@ const PromptBuilderPage = () => {
                                                         <ClipboardCopy size={12} />
                                                         Flashcard Blueprint
                                                     </div>
-                                                    <h3 className="mt-3 text-lg font-black text-slate-900">กำหนดคอร์สและรายละเอียดบทให้ชัดก่อนสร้างการ์ด</h3>
-                                                    <p className="mt-1 text-sm font-medium leading-relaxed text-slate-500">
+                                                    <h3 className="mt-3 text-lg font-black text-slate-900 dark:text-slate-100">กำหนดคอร์สและรายละเอียดบทให้ชัดก่อนสร้างการ์ด</h3>
+                                                    <p className="mt-1 text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
                                                         ระบบจะยึดคอร์สเรียนของแต่ละชั้นเป็นบริบทหลัก แล้วแตกการ์ดตามบทและหัวข้อย่อย เพื่อให้ได้การ์ดที่สอนเป็นลำดับจริงใช้งานจริง
                                                     </p>
                                                 </div>
-                                                <div className="rounded-2xl bg-white/80 px-4 py-3 text-right shadow-sm">
+                                                <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 px-4 py-3 text-right shadow-sm">
                                                     <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Course Snapshot</div>
-                                                    <div className="mt-1 text-sm font-black text-slate-800">{derivedCourseLabel}</div>
+                                                    <div className="mt-1 text-sm font-black text-slate-800 dark:text-slate-200">{derivedCourseLabel}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -512,7 +515,7 @@ const PromptBuilderPage = () => {
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    className="w-full p-3.5 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-300"
+                                                    className="w-full p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-semibold text-slate-700 dark:text-slate-300 placeholder:text-slate-300"
                                                     placeholder={derivedCourseLabel}
                                                     value={formData.courseName}
                                                     onChange={(e) => handleChange('courseName', e.target.value)}
@@ -523,7 +526,7 @@ const PromptBuilderPage = () => {
                                                 <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
                                                     แนวการ์ด
                                                 </label>
-                                                <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                                <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
                                                     {[
                                                         { id: 'concept', label: 'คอนเซปต์', desc: 'นิยามและกฎเท่านั้น' },
                                                         { id: 'mixed', label: 'ผสม', desc: 'นิยาม + โจทย์สั้น' },
@@ -532,7 +535,7 @@ const PromptBuilderPage = () => {
                                                         <button
                                                             key={option.id}
                                                             onClick={() => handleChange('flashcardFocus', option.id)}
-                                                            className={`rounded-xl px-3 py-3 text-left transition-all ${formData.flashcardFocus === option.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-white hover:text-slate-800'}`}
+                                                            className={`rounded-xl px-3 py-3 text-left transition-all ${formData.flashcardFocus === option.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 dark:text-slate-400 hover:bg-white hover:text-slate-800'}`}
                                                         >
                                                             <div className="text-xs font-black">{option.label}</div>
                                                             <div className={`mt-1 text-[9px] font-bold ${formData.flashcardFocus === option.id ? 'text-slate-400' : 'text-slate-300'}`}>{option.desc}</div>
@@ -547,7 +550,7 @@ const PromptBuilderPage = () => {
                                                 รายละเอียดของบท <span className="text-rose-400">*</span>
                                             </label>
                                             <textarea
-                                                className="w-full min-h-[120px] p-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-medium text-slate-700 placeholder:text-slate-300 resize-y"
+                                                className="w-full min-h-[120px] p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-medium text-slate-700 dark:text-slate-300 placeholder:text-slate-300 resize-y"
                                                 placeholder="เช่น เริ่มจากนิยามสมการ, ตัวแปร, การย้ายข้าง, สมการ 2 ขั้นตอน, โจทย์ประยุกต์ และจุดที่นักเรียนมักสับสนในบทนี้"
                                                 value={formData.chapterDetails}
                                                 onChange={(e) => handleChange('chapterDetails', e.target.value)}
@@ -559,9 +562,9 @@ const PromptBuilderPage = () => {
                                                     { title: 'บท', text: formData.chapter === 'custom' ? formData.customTopic || 'ระบุบทเอง' : formData.chapter || 'ยังไม่ได้เลือกบท' },
                                                     { title: 'หัวข้อย่อย', text: formData.selectedTopic === 'custom' ? formData.customTopic || 'กำหนดเอง' : formData.selectedTopic || 'ครอบคลุมทั้งบท' },
                                                 ].map((item) => (
-                                                    <div key={item.title} className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3">
+                                                    <div key={item.title} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 px-4 py-3">
                                                         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{item.title}</div>
-                                                        <div className="mt-1 text-sm font-bold text-slate-700 leading-snug">{item.text}</div>
+                                                        <div className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-300 leading-snug">{item.text}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -603,11 +606,11 @@ const PromptBuilderPage = () => {
                                                 className={`p-3 rounded-2xl border-2 text-left transition-all
                                                     ${formData.svgImageType === t.id
                                                         ? 'border-pink-600 bg-pink-50/20 ring-4 ring-pink-500/5'
-                                                        : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200'
+                                                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
                                                     } `}
                                             >
                                                 <span className="text-lg">{t.icon}</span>
-                                                <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-pink-600' : 'text-slate-700'}`}>{t.label}</div>
+                                                <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-pink-600' : 'text-slate-700 dark:text-slate-300'}`}>{t.label}</div>
                                                 <div className="text-[9px] font-bold text-slate-400 leading-tight">{t.desc}</div>
                                             </button>
                                         ))}
@@ -644,7 +647,7 @@ const PromptBuilderPage = () => {
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full p-3.5 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-300"
+                                            className="w-full p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all text-sm font-semibold text-slate-700 dark:text-slate-300 placeholder:text-slate-300"
                                             placeholder="เช่น หน้า 1-3 หรือ หน้า 5"
                                             value={formData.transcribePageRange}
                                             onChange={(e) => handleChange('transcribePageRange', e.target.value)}
@@ -657,7 +660,7 @@ const PromptBuilderPage = () => {
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full p-3.5 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-300"
+                                            className="w-full p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all text-sm font-semibold text-slate-700 dark:text-slate-300 placeholder:text-slate-300"
                                             placeholder="เช่น ข้อ 1-5 หรือ ข้อ 3,7,10"
                                             value={formData.transcribeQuestionRange}
                                             onChange={(e) => handleChange('transcribeQuestionRange', e.target.value)}
@@ -669,7 +672,7 @@ const PromptBuilderPage = () => {
                                 {/* Question Type for Transcribe */}
                                 <div>
                                     <label className="block text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest pl-1">ประเภทโจทย์</label>
-                                    <div className="flex gap-2 p-1.5 bg-white rounded-2xl border border-slate-100">
+                                    <div className="flex gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <button
                                             onClick={() => handleChange('questionType', 'objective')}
                                             className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'objective' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'}`}
@@ -694,12 +697,12 @@ const PromptBuilderPage = () => {
                     {formData.mode !== 'transcribe' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Source Card */}
-                            <section className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card h-full flex flex-col">
+                            <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card h-full flex flex-col">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-pink-500/20">
                                         <Paperclip size={18} strokeWidth={2.5} />
                                     </div>
-                                    <h2 className="text-lg font-bold text-slate-800 font-outfit">แหล่งข้อมูล</h2>
+                                    <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 font-outfit">แหล่งข้อมูล</h2>
                                 </div>
                                 <div className="space-y-3 flex-1">
                                     {[
@@ -712,14 +715,14 @@ const PromptBuilderPage = () => {
                                             className={`w-full p-4 rounded-2xl border-2 text-left transition-all flex items-center justify-between group/btn
                                         ${formData.source === src.id
                                                     ? 'border-blue-600 bg-blue-50/20 ring-4 ring-blue-500/5'
-                                                    : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200'
+                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
                                                 } `}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${formData.source === src.id ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400 group-hover/btn:bg-slate-300'} `}>
                                                     {src.icon}
                                                 </div>
-                                                <span className={`font-bold text-xs ${formData.source === src.id ? 'text-slate-900' : 'text-slate-500'} `}>{src.label}</span>
+                                                <span className={`font-bold text-xs ${formData.source === src.id ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'} `}>{src.label}</span>
                                             </div>
                                             {formData.source === src.id && <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse" />}
                                         </button>
@@ -728,12 +731,12 @@ const PromptBuilderPage = () => {
                             </section>
 
                             {/* Tone Card */}
-                            <section className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card h-full flex flex-col">
+                            <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card h-full flex flex-col">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
                                         <Type size={18} strokeWidth={2.5} />
                                     </div>
-                                    <h2 className="text-lg font-bold text-slate-800 font-outfit">น้ำเสียง</h2>
+                                    <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 font-outfit">น้ำเสียง</h2>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 flex-1">
                                     {[
@@ -748,7 +751,7 @@ const PromptBuilderPage = () => {
                                             className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-1.5
                                         ${formData.tone === t.id
                                                     ? 'border-indigo-600 bg-indigo-50/20 shadow-sm'
-                                                    : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200'
+                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
                                                 } `}
                                         >
                                             <span className="text-xl">{t.icon}</span>
@@ -762,7 +765,7 @@ const PromptBuilderPage = () => {
 
                     {/* Section 3: Fine-Tuning - Hidden for Transcribe and Math Figure */}
                     {!['transcribe', 'math_figure'].includes(formData.mode) && (
-                        <section className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card overflow-hidden relative">
+                        <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card overflow-hidden relative">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl -mr-16 -mt-16 rounded-full" />
 
                             <div className="flex items-center gap-4 mb-8">
@@ -770,7 +773,7 @@ const PromptBuilderPage = () => {
                                     <Sliders size={22} strokeWidth={2.5} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-extrabold text-slate-800 font-outfit tracking-tight">Advanced Config</h2>
+                                    <h2 className="text-xl font-extrabold text-slate-800 dark:text-slate-200 font-outfit tracking-tight">Advanced Config</h2>
                                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-0.5">
                                         {formData.mode === 'summary'
                                             ? 'ปรับแต่งความยาวของสรุป'
@@ -799,11 +802,11 @@ const PromptBuilderPage = () => {
                                                 className={`p-4 rounded-2xl border-2 text-center transition-all
                                                 ${formData.summaryLength === len.id
                                                         ? 'border-amber-500 bg-amber-50/20 ring-4 ring-amber-500/5'
-                                                        : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200'
+                                                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
                                                     } `}
                                             >
                                                 <span className="text-2xl">{len.icon}</span>
-                                                <div className={`font-black text-sm mt-1.5 ${formData.summaryLength === len.id ? 'text-amber-600' : 'text-slate-700'}`}>{len.label}</div>
+                                                <div className={`font-black text-sm mt-1.5 ${formData.summaryLength === len.id ? 'text-amber-600' : 'text-slate-700 dark:text-slate-300'}`}>{len.label}</div>
                                                 <div className={`text-xs font-bold mt-0.5 ${formData.summaryLength === len.id ? 'text-amber-500' : 'text-slate-400'}`}>{len.words}</div>
                                                 <div className="text-[9px] font-bold text-slate-400 leading-tight mt-1">{len.desc}</div>
                                             </button>
@@ -830,7 +833,7 @@ const PromptBuilderPage = () => {
                                         <input
                                             type="range"
                                             min="0" max="3" step="1"
-                                            className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-slate-900"
+                                            className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-slate-900"
                                             value={['easy', 'medium', 'hard', 'exam'].indexOf(formData.difficulty)}
                                             onChange={(e) => handleChange('difficulty', ['easy', 'medium', 'hard', 'exam'][e.target.value])}
                                         />
@@ -852,7 +855,7 @@ const PromptBuilderPage = () => {
                                                 type="number"
                                                 min={1}
                                                 max={50}
-                                                className="w-24 p-4 bg-white border-2 border-slate-200 rounded-2xl text-2xl font-black text-slate-900 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all shadow-sm"
+                                                className="w-24 p-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-2xl font-black text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all shadow-sm"
                                                 value={formData.questionCount}
                                                 onChange={(e) => handleChange('questionCount', e.target.value)}
                                                 aria-label="จำนวนแฟลชการ์ด"
@@ -863,7 +866,7 @@ const PromptBuilderPage = () => {
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">รูปแบบด้านหลังการ์ด</label>
-                                        <div className="grid grid-cols-3 gap-2 p-1.5 bg-white rounded-2xl border border-slate-100">
+                                        <div className="grid grid-cols-3 gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
                                             {[
                                                 { id: 'concise', label: 'สั้น', desc: 'ไม่เกิน 20 คำ' },
                                                 { id: 'balanced', label: 'สมดุล', desc: 'ประมาณ 30 คำ' },
@@ -872,7 +875,7 @@ const PromptBuilderPage = () => {
                                                 <button
                                                     key={option.id}
                                                     onClick={() => handleChange('flashcardAnswerStyle', option.id)}
-                                                    className={`rounded-xl px-3 py-3 text-left transition-all ${formData.flashcardAnswerStyle === option.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}
+                                                    className={`rounded-xl px-3 py-3 text-left transition-all ${formData.flashcardAnswerStyle === option.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 hover:text-slate-800'}`}
                                                 >
                                                     <div className="text-xs font-black">{option.label}</div>
                                                     <div className={`mt-1 text-[9px] font-bold ${formData.flashcardAnswerStyle === option.id ? 'text-slate-400' : 'text-slate-300'}`}>{option.desc}</div>
@@ -903,11 +906,11 @@ const PromptBuilderPage = () => {
                                                 className={`p-3 rounded-2xl border-2 text-left transition-all
                                             ${formData.svgImageType === t.id
                                                         ? 'border-purple-600 bg-purple-50/20 ring-4 ring-purple-500/5'
-                                                        : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200'
+                                                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
                                                     } `}
                                             >
                                                 <span className="text-lg">{t.icon}</span>
-                                                <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-purple-600' : 'text-slate-700'}`}>{t.label}</div>
+                                                <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-purple-600' : 'text-slate-700 dark:text-slate-300'}`}>{t.label}</div>
                                                 <div className="text-[9px] font-bold text-slate-400 leading-tight">{t.desc}</div>
                                             </button>
                                         ))}
@@ -943,7 +946,7 @@ const PromptBuilderPage = () => {
                                             className={`px-4 py-2.5 rounded-2xl border-2 font-bold text-xs transition-all flex items-center gap-2.5 active:scale-95
                                         ${formData.components[comp.id]
                                                     ? `border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/10`
-                                                    : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:border-slate-200'
                                                 } `}
                                         >
                                             <Check size={14} strokeWidth={4} className={`transition-all duration-300 ${formData.components[comp.id] ? 'scale-100 opacity-100' : 'scale-0 opacity-0 w-0'} `} />
@@ -955,7 +958,7 @@ const PromptBuilderPage = () => {
 
                             {/* Quantities for Practice/Exam/SVG Question/Transcribe */}
                             {['practice', 'exam', 'web_quiz', 'gifted_quiz', 'svg_question'].includes(formData.mode) && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 bg-slate-50/80 rounded-3xl border border-slate-100 animate-in zoom-in-95 duration-500">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 bg-slate-50/80 rounded-3xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-500">
                                     <div className="space-y-3">
                                         <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">จำนวนข้อสอบ</label>
                                         <div className="flex items-center gap-4">
@@ -963,7 +966,7 @@ const PromptBuilderPage = () => {
                                                 type="number"
                                                 min={1}
                                                 max={50}
-                                                className="w-24 p-4 bg-white border-2 border-slate-200 rounded-2xl text-2xl font-black text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
+                                                className="w-24 p-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-2xl font-black text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
                                                 value={formData.questionCount}
                                                 onChange={(e) => handleChange('questionCount', e.target.value)}
                                                 aria-label="จำนวนข้อสอบ"
@@ -972,7 +975,7 @@ const PromptBuilderPage = () => {
                                             <span className="text-[9px] font-bold text-slate-300">(1-50)</span>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 p-1.5 bg-white rounded-2xl border border-slate-100">
+                                    <div className="flex gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <button
                                             onClick={() => handleChange('questionType', 'objective')}
                                             className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'objective' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'} `}
@@ -1000,13 +1003,13 @@ const PromptBuilderPage = () => {
                                             <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest self-center px-2">รูปแบบโจทย์ปัญหา:</span>
                                             <button
                                                 onClick={() => handleChange('wordProblemType', 'objective')}
-                                                className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all ${formData.wordProblemType === 'objective' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-500 hover:text-indigo-600'} `}
+                                                className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all ${formData.wordProblemType === 'objective' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-indigo-600'} `}
                                             >
                                                 ปรนัย (มีตัวเลือก)
                                             </button>
                                             <button
                                                 onClick={() => handleChange('wordProblemType', 'subjective')}
-                                                className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all ${formData.wordProblemType === 'subjective' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-500 hover:text-indigo-600'} `}
+                                                className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all ${formData.wordProblemType === 'subjective' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-indigo-600'} `}
                                             >
                                                 อัตนัย (แสดงวิธีทำ)
                                             </button>
@@ -1041,10 +1044,10 @@ const PromptBuilderPage = () => {
                                                     className={`p-5 rounded-2xl border-2 text-left transition-all h-full
                                                         ${formData.contentLength === len.id
                                                             ? 'border-blue-600 bg-blue-50/10 ring-4 ring-blue-500/5'
-                                                            : 'border-slate-100 bg-slate-50/30 text-slate-500 hover:border-slate-200 hover:bg-white'
+                                                            : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200 hover:bg-white'
                                                         } `}
                                                 >
-                                                    <div className={`font-black text-xs mb-1 uppercase tracking-tight ${formData.contentLength === len.id ? 'text-blue-600' : 'text-slate-800'}`}>{len.label}</div>
+                                                    <div className={`font-black text-xs mb-1 uppercase tracking-tight ${formData.contentLength === len.id ? 'text-blue-600' : 'text-slate-800 dark:text-slate-200'}`}>{len.label}</div>
                                                     <div className="text-[10px] font-bold text-slate-400 leading-tight">{len.desc}</div>
                                                 </button>
                                             ))}

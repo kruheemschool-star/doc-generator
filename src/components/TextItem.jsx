@@ -1,9 +1,17 @@
 import React, { memo, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, Check, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import 'react-quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
 import Latex from 'react-latex-next';
+
+// Whitelist tags Quill produces — prevents XSS via pasted/imported HTML
+const SANITIZE_CONFIG = {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'sub', 'sup', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img'],
+    ALLOWED_ATTR: ['class', 'style', 'href', 'src', 'alt', 'title', 'target', 'rel'],
+};
+const sanitize = (html) => DOMPurify.sanitize(html, SANITIZE_CONFIG);
 
 // Custom Toolbar Options
 // Defined outside to prevent re-creation
@@ -161,12 +169,12 @@ const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate
                         ) : (
                             <div className="flex flex-col gap-2 pointer-events-none">
                                 <div
-                                    className={`prose max-w-none font-sarabun text-gray-800 whitespace-pre-wrap cursor-text ql-editor p-0 ${getSizeClass()}`}
-                                    dangerouslySetInnerHTML={{ __html: text || '<span class="text-gray-400 italic">คลิกเพื่อเพิ่มข้อความ...</span>' }}
+                                    className={`prose max-w-none text-gray-800 whitespace-pre-wrap cursor-text ql-editor p-0 ${getSizeClass()}`}
+                                    dangerouslySetInnerHTML={{ __html: text ? sanitize(text) : '<span class="text-gray-400 italic">คลิกเพื่อเพิ่มข้อความ...</span>' }}
                                 />
                                 {/* LaTeX Preview Rendering */}
                                 {hasLatex(text) && (
-                                    <div className="mt-2 pt-2 border-t border-gray-100 text-sm text-gray-600 font-sarabun bg-gray-50/50 p-2 rounded">
+                                    <div className="mt-2 pt-2 border-t border-gray-100 text-sm text-gray-600 bg-gray-50/50 p-2 rounded">
                                         <div className="text-[10px] uppercase font-bold text-gray-400 mb-1">Math Preview</div>
                                         <Latex>{(text || '').replace(/<[^>]+>/g, '')}</Latex>
                                     </div>

@@ -1,11 +1,39 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
-import PromptBuilderPage from './pages/PromptBuilderPage';
-import WorksheetEditor from './components/WorksheetEditor';
 import ErrorBoundary from './components/ErrorBoundary';
 import { v4 as uuidv4 } from 'uuid';
 import { saveDocument, loadDocuments, deleteDocument as fbDeleteDocument, saveFolders, loadFolders, saveActiveDocId, loadActiveDocId, saveTrash, loadTrash } from './firebase';
+import { DEFAULT_FONT_ID } from './data/documentFonts';
+
+/**
+ * Schema migration — ensures older documents loaded from Firestore have all
+ * required fields. Add new fields here whenever the doc schema evolves.
+ */
+const migrateDocument = (doc) => {
+    if (!doc || typeof doc !== 'object') return doc;
+    return {
+        subtitle: '',
+        folderId: null,
+        ...doc,
+        // Guaranteed-valid fields (override even if doc has nullish/invalid values)
+        pages: Array.isArray(doc.pages) ? doc.pages : [],
+        fontId: doc.fontId || DEFAULT_FONT_ID,
+    };
+};
+
+// Code-split heavy routes — PromptBuilderPage (1k+ lines) and WorksheetEditor (1.2k+ lines)
+const PromptBuilderPage = lazy(() => import('./pages/PromptBuilderPage'));
+const WorksheetEditor = lazy(() => import('./components/WorksheetEditor'));
+
+const LoadingScreen = ({ label = 'กำลังโหลด...' }) => (
+    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 dark:bg-slate-950">
+        <div className="text-center">
+            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">{label}</p>
+        </div>
+    </div>
+);
 
 // --- Mock Initial Documents (Fallback) ---
 const MOCK_DOCS = [
@@ -37,9 +65,9 @@ const App = () => {
                     loadActiveDocId(),
                     loadTrash()
                 ]);
-                setDocuments(docs.length > 0 ? docs : MOCK_DOCS);
+                setDocuments(docs.length > 0 ? docs.map(migrateDocument) : MOCK_DOCS);
                 setFolders(flds || []);
-                setTrashedDocs(trash || []);
+                setTrashedDocs((trash || []).map(migrateDocument));
                 if (activeId) setActiveDocumentId(activeId);
             } catch (error) {
                 console.error('Failed to load from Firestore:', error);
@@ -52,25 +80,38 @@ const App = () => {
         loadData();
     }, []);
 
-    // --- Auto-Save to Firestore ---
+    // --- Auto-Save to Firestore (only changed docs to reduce Firestore writes) ---
+    const prevDocumentsRef = useRef([]);
     useEffect(() => {
-        if (isInitialLoad.current || isLoading) return;
-        documents.forEach(doc => saveDocument(doc));
+        if (isInitialLoad.current || isLoading) {
+            prevDocumentsRef.current = documents;
+            return;
+        }
+        const prevMap = new Map(prevDocumentsRef.current.map(d => [d.id, d]));
+        const changedDocs = documents.filter(d => {
+            const prev = prevMap.get(d.id);
+            // Save if new OR content actually changed (cheap reference check first, JSON as fallback)
+            return !prev || (prev !== d && JSON.stringify(prev) !== JSON.stringify(d));
+        });
+        if (changedDocs.length > 0) {
+            changedDocs.forEach(doc => saveDocument(doc).catch(e => console.error('Auto-save failed:', e)));
+        }
+        prevDocumentsRef.current = documents;
     }, [documents, isLoading]);
 
     useEffect(() => {
         if (isInitialLoad.current || isLoading) return;
-        saveFolders(folders);
+        saveFolders(folders).catch(e => console.error('Folder save failed:', e));
     }, [folders, isLoading]);
 
     useEffect(() => {
         if (isInitialLoad.current || isLoading) return;
-        saveTrash(trashedDocs);
+        saveTrash(trashedDocs).catch(e => console.error('Trash save failed:', e));
     }, [trashedDocs, isLoading]);
 
     useEffect(() => {
         if (isInitialLoad.current || isLoading) return;
-        saveActiveDocId(activeDocumentId);
+        saveActiveDocId(activeDocumentId).catch(e => console.error('Active-doc save failed:', e));
     }, [activeDocumentId, isLoading]);
 
     // Derived State
@@ -110,7 +151,11 @@ const App = () => {
         setDocuments(prev => {
             const doc = prev.find(d => d.id === docId);
             if (!doc) return prev;
-            setTrashedDocs(t => [{ ...doc, deletedAt: new Date().toISOString() }, ...t]);
+            setTrashedDocs(t => {
+                // Guard against duplicate trash entries
+                if (t.some(d => d.id === docId)) return t;
+                return [{ ...doc, deletedAt: new Date().toISOString() }, ...t];
+            });
             return prev.filter(d => d.id !== docId);
         });
         setActiveDocumentId(prev => {
@@ -139,12 +184,20 @@ const App = () => {
 
     const handlePermanentDelete = useCallback(async (docId) => {
         setTrashedDocs(prev => prev.filter(d => d.id !== docId));
-        await fbDeleteDocument(docId);
+        try {
+            await fbDeleteDocument(docId);
+        } catch (e) {
+            console.error('Permanent delete failed:', e);
+        }
     }, []);
 
     // Fix: use Promise.all for parallel deletes (was sequential await-in-loop)
     const handleEmptyTrash = useCallback(async () => {
-        await Promise.all(trashedDocs.map(doc => fbDeleteDocument(doc.id)));
+        try {
+            await Promise.all(trashedDocs.map(doc => fbDeleteDocument(doc.id)));
+        } catch (e) {
+            console.error('Empty trash failed:', e);
+        }
         setTrashedDocs([]);
     }, [trashedDocs]);
 
@@ -191,11 +244,11 @@ const App = () => {
         });
     }, []);
 
-    const handleSaveDocument = useCallback((updatedPages, subtitle) => {
+    const handleSaveDocument = useCallback((updatedPages, subtitle, settings = {}) => {
         if (!activeDocumentId) return;
         setDocuments(prev => prev.map(doc => {
             if (doc.id === activeDocumentId) {
-                return { ...doc, pages: updatedPages, subtitle: subtitle || '' };
+                return { ...doc, pages: updatedPages, subtitle: subtitle || '', ...settings };
             }
             return doc;
         }));
@@ -207,17 +260,17 @@ const App = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-500 text-sm font-medium">กำลังโหลดข้อมูล...</p>
+                    <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">กำลังโหลดข้อมูล...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col">
             {/* Navbar */}
             <Navbar currentView={currentView} onViewChange={handleViewChange} />
 
@@ -248,19 +301,23 @@ const App = () => {
 
                 {/* Prompt Builder View */}
                 {currentView === 'prompt-builder' && (
-                    <PromptBuilderPage />
+                    <Suspense fallback={<LoadingScreen label="กำลังโหลด Prompt Builder..." />}>
+                        <PromptBuilderPage />
+                    </Suspense>
                 )}
 
                 {/* Editor View */}
                 {currentView === 'editor' && (
                     <ErrorBoundary>
-                        <WorksheetEditor
-                            key={activeDocumentId}
-                            activeDocument={activeDocument}
-                            initialData={activeDocument?.pages || []}
-                            onSave={handleSaveDocument}
-                            onBack={handleBackToDashboard}
-                        />
+                        <Suspense fallback={<LoadingScreen label="กำลังโหลด Editor..." />}>
+                            <WorksheetEditor
+                                key={activeDocumentId}
+                                activeDocument={activeDocument}
+                                initialData={activeDocument?.pages || []}
+                                onSave={handleSaveDocument}
+                                onBack={handleBackToDashboard}
+                            />
+                        </Suspense>
                     </ErrorBoundary>
                 )}
             </div>
