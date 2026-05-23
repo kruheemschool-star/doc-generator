@@ -459,6 +459,33 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         });
     }, [setPages]);
 
+    // --- Keyboard shortcuts (work even when an item is selected, where the toolbar
+    //     hides undo/redo). Guarded so they never hijack typing inside editors. ---
+    useEffect(() => {
+        const onKeyDown = (e) => {
+            const mod = e.metaKey || e.ctrlKey;
+            if (!mod) return;
+            const k = e.key.toLowerCase();
+            const t = e.target;
+            const isEditing = !!(t && (
+                t.tagName === 'INPUT' ||
+                t.tagName === 'TEXTAREA' ||
+                t.isContentEditable ||
+                (t.closest && t.closest('.ql-editor, math-field, [contenteditable="true"]'))
+            ));
+
+            // Save works even while editing (and stops the browser's own save dialog).
+            if (k === 's') { e.preventDefault(); if (hasUnsavedChanges) handleManualSave(); return; }
+            if (isEditing) return; // let the editor handle its own shortcuts/typing
+
+            if (k === 'z' && !e.shiftKey) { e.preventDefault(); if (canUndo) undo(); return; }
+            if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); if (canRedo) redo(); return; }
+            if (k === 'd' && selectedItemId) { e.preventDefault(); handleDuplicateItem(selectedItemId); return; }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [hasUnsavedChanges, handleManualSave, canUndo, canRedo, undo, redo, selectedItemId, handleDuplicateItem]);
+
     // --- Build Section Header Markdown ---
     const buildSectionHeader = (sectionType, questionType) => {
         const sectionMap = {
@@ -1117,13 +1144,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             </>
                         ) : (
                             <>
-                                <button onClick={() => setSelectedItemId(null)} className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 rounded-lg mr-2 hover:bg-gray-200 transition-colors"><X size={16} /></button>
+                                <button onClick={() => setSelectedItemId(null)} className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 rounded-lg mr-2 hover:bg-gray-200 transition-colors" aria-label="ยกเลิกการเลือก" title="ยกเลิกการเลือก"><X size={16} /></button>
 
                                 <button
                                     onClick={() => handleMoveItem(selectedItemId, 'up')}
                                     disabled={!selectedItemStatus.up}
                                     className={`p-3 rounded-xl transition-all ${selectedItemStatus.up ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'text-gray-200 cursor-not-allowed'}`}
-                                    aria-label="Move Up" title="Move Up"
+                                    aria-label="เลื่อนขึ้น" title="เลื่อนขึ้น"
                                 >
                                     <ChevronUp size={20} />
                                 </button>
@@ -1132,7 +1159,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                     onClick={() => handleMoveItem(selectedItemId, 'down')}
                                     disabled={!selectedItemStatus.down}
                                     className={`p-3 rounded-xl transition-all ${selectedItemStatus.down ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'text-gray-200 cursor-not-allowed'}`}
-                                    aria-label="Move Down" title="Move Down"
+                                    aria-label="เลื่อนลง" title="เลื่อนลง"
                                 >
                                     <ChevronDown size={20} />
                                 </button>
@@ -1174,13 +1201,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 dark:text-slate-400 hover:text-purple-600 rounded-xl transition-all" aria-label="แทรกรูปภาพ" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
 
-                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' })} className="p-3 hover:bg-rose-50 text-gray-500 dark:text-slate-400 hover:text-rose-600 rounded-xl transition-all" aria-label="แทรกเส้นคั่น" title="แทรกเส้นคั่น"><Minus size={20} /></button>
+                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' })} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 hover:text-gray-700 rounded-xl transition-all" aria-label="แทรกเส้นคั่น" title="แทรกเส้นคั่น"><Minus size={20} /></button>
 
                                 <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'spacer', height: 100 })} className="p-3 hover:bg-amber-50 text-gray-500 dark:text-slate-400 hover:text-amber-600 rounded-xl transition-all" aria-label="แทรกช่องว่าง" title="แทรกช่องว่าง"><MoveVertical size={20} /></button>
 
                                 <button onClick={() => setShowTemplatePicker(true)} className="p-3 hover:bg-green-50 text-gray-500 dark:text-slate-400 hover:text-green-700 rounded-xl transition-all" aria-label="แทรกเทมเพลต (Templates)" title="แทรกเทมเพลต (Templates)"><LayoutTemplate size={20} /></button>
 
-                                <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" aria-label="แทรกเนื้อหาตรงนี้" title="แทรกเนื้อหาตรงนี้"><Plus size={20} /></button>
+                                <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" aria-label="แทรกเนื้อหาด้วย AI (Gemini)" title="แทรกเนื้อหาด้วย AI (Gemini)"><Sparkles size={20} /></button>
 
                                 <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
 
@@ -1188,7 +1215,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
 
-                                <button onClick={() => handleDeleteQuestion(selectedItemId)} className="p-3 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-all" aria-label="Delete" title="Delete"><Trash2 size={20} /></button>
+                                <button onClick={() => handleDeleteQuestion(selectedItemId)} className="p-3 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-all" aria-label="ลบรายการ" title="ลบรายการ"><Trash2 size={20} /></button>
                             </>
                         )}
 
@@ -1207,9 +1234,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <Save size={18} />
                                 บันทึก
                             </button>
-                            <div className="flex flex-col min-w-[50px]">
-                                {saveStatus === 'saving' && <span className="text-[9px] text-yellow-600 font-bold animate-pulse uppercase tracking-tighter">Saving...</span>}
-                                {saveStatus === 'saved' && <span className="text-[9px] text-green-600 font-bold uppercase tracking-tighter">Saved</span>}
+                            <div className="flex flex-col min-w-[64px]">
+                                {saveStatus === 'saving' && <span className="text-[11px] text-yellow-600 font-bold animate-pulse">กำลังบันทึก…</span>}
+                                {saveStatus === 'saved' && <span className="text-[11px] text-green-600 font-bold">บันทึกแล้ว</span>}
+                                {saveStatus === 'error' && <span className="text-[11px] text-red-600 font-bold">บันทึกไม่สำเร็จ</span>}
                             </div>
                         </div>
                     </div>
