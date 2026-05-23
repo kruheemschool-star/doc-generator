@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Type, Check, ChevronDown } from 'lucide-react';
 import { DOCUMENT_FONTS, FONT_CATEGORIES, getFontById } from '../data/documentFonts';
 
@@ -6,19 +7,43 @@ const PREVIEW_TEXT = 'การบ้านคณิตศาสตร์ 1234';
 
 const FontPicker = ({ value, onChange }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const wrapperRef = useRef(null);
+    const buttonRef = useRef(null);
+    const dropdownRef = useRef(null);
 
     const currentFont = getFontById(value);
 
+    const updatePosition = useCallback(() => {
+        if (!buttonRef.current) return;
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPos({
+            top: rect.top - 8,
+            left: Math.min(rect.right, window.innerWidth - 12),
+        });
+    }, []);
+
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+            if (
+                wrapperRef.current && !wrapperRef.current.contains(e.target) &&
+                dropdownRef.current && !dropdownRef.current.contains(e.target)
+            ) {
                 setIsOpen(false);
             }
         };
-        if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isOpen]);
+        if (isOpen) {
+            updatePosition();
+            document.addEventListener('mousedown', handleClickOutside);
+            window.addEventListener('resize', updatePosition);
+            window.addEventListener('scroll', updatePosition, true);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
+        };
+    }, [isOpen, updatePosition]);
 
     const handleSelect = (fontId) => {
         onChange?.(fontId);
@@ -28,6 +53,7 @@ const FontPicker = ({ value, onChange }) => {
     return (
         <div ref={wrapperRef} className="relative">
             <button
+                ref={buttonRef}
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-gray-100 text-gray-600 dark:text-slate-400 hover:text-gray-900 transition-all"
                 title={`ฟอนต์: ${currentFont.name}`}
@@ -42,8 +68,12 @@ const FontPicker = ({ value, onChange }) => {
                 <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {isOpen && (
-                <div className="absolute bottom-full right-0 mb-2 w-[340px] max-h-[420px] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 custom-scrollbar z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            {isOpen && createPortal(
+                <div
+                    ref={dropdownRef}
+                    className="fixed w-[340px] max-h-[420px] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 custom-scrollbar z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200"
+                    style={{ top: dropdownPos.top, left: dropdownPos.left, transform: 'translate(-100%, -100%)' }}
+                >
                     <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 py-3 z-10">
                         <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2">
                             <Type size={14} className="text-green-600" />
@@ -102,7 +132,8 @@ const FontPicker = ({ value, onChange }) => {
                             </div>
                         );
                     })}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
