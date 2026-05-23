@@ -1245,14 +1245,14 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                 {/* Import Modal */}
                 {showImportModal && (
-                    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6" onClick={(e) => e.target === e.currentTarget && setShowImportModal(false)}>
+                    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4" onClick={(e) => e.target === e.currentTarget && setShowImportModal(false)}>
                         <div
                             ref={importModalRef}
                             role="dialog"
                             aria-modal="true"
                             aria-label="นำเข้าเนื้อหาจาก Gemini"
                             tabIndex={-1}
-                            className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in duration-200"
+                            className="bg-white dark:bg-slate-900 w-full max-w-[1700px] h-[96vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in duration-200"
                         >
                             {/* Header */}
                             <div className="px-8 pt-8 pb-5">
@@ -1270,7 +1270,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 </div>
                             </div>
 
-                            <div className="px-8 pb-6 space-y-5">
+                            <div className="px-8 pb-6 space-y-5 flex-1 flex flex-col min-h-0">
                                 {/* Section Type Selector - Pill style like Image 2 */}
                                 <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-slate-800 rounded-2xl">
                                     {[
@@ -1302,7 +1302,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 {/* Textarea */}
                                 <textarea
-                                    className="w-full h-56 p-4 bg-gray-50 dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-800 focus:border-blue-500 rounded-2xl font-mono text-sm outline-none resize-none transition-all placeholder:text-gray-300"
+                                    className="w-full flex-1 min-h-0 p-4 bg-gray-50 dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-800 focus:border-blue-500 rounded-2xl font-mono text-sm outline-none resize-none transition-all placeholder:text-gray-300"
                                     placeholder="วางข้อมูล JSON หรือข้อความจาก Gemini ที่นี่..."
                                     value={importText}
                                     onChange={e => setImportText(e.target.value)}
