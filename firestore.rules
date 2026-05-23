@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Single-user app with anonymous auth (no login UI). Requiring an authenticated
+    // session closes the previously world-open database: random visitors without a
+    // valid app session can no longer read/overwrite/delete the teacher's content.
+    //
+    // NOTE: anonymous auth is not strict per-person isolation. For a hard production
+    // lock, additionally enable Firebase App Check (reCAPTCHA) and/or restrict to a
+    // specific UID here.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

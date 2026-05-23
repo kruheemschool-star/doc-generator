@@ -1,6 +1,7 @@
 import React, { memo, useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, Image as ImageIcon, Upload, ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
+import { fileToCompressedDataURL } from '../utils/imageCompression';
 
 const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
     // content can be used for caption if needed, src is the image source
@@ -8,75 +9,22 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
     const [uploadError, setUploadError] = useState('');
     const [isUploading, setIsUploading] = useState(false);
 
-    // Compress image before converting to base64
-    const compressImage = (file, maxWidth = 800, quality = 0.7) => {
-        return new Promise((resolve) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-
-            img.onload = () => {
-                // Calculate new dimensions
-                let { width, height } = img;
-                if (width > maxWidth) {
-                    height = (height * maxWidth) / width;
-                    width = maxWidth;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-
-                // Draw and compress
-                ctx.drawImage(img, 0, 0, width, height);
-                canvas.toBlob(resolve, 'image/jpeg', quality);
-            };
-
-            img.src = URL.createObjectURL(file);
-        });
-    };
-
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
+        e.target.value = '';
         if (!file) return;
 
-        // Check file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            setUploadError('รูปภาพใหญ่เกินไป (สูงสุด 5MB)');
-            return;
-        }
-
-        setIsUploading(true);
         setUploadError('');
-
+        setIsUploading(true);
         try {
-            // Compress image
-            const compressedBlob = await compressImage(file);
-
-            // Convert to base64
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64 = reader.result;
-
-                // Check base64 size (Firestore limit ~1MB per document)
-                if (base64.length > 800000) {
-                    setUploadError('รูปภาพยังใหญ่เกินไปหลังบีบอัด ลองใช้รูปที่เล็กกว่า');
-                    setIsUploading(false);
-                    return;
-                }
-
-                onUpdate(id, { src: base64 });
-                setIsUploading(false);
-                setUploadError('');
-            };
-            reader.readAsDataURL(compressedBlob);
+            const dataUrl = await fileToCompressedDataURL(file);
+            onUpdate(id, { src: dataUrl });
         } catch (error) {
-            console.error('Image compression error:', error);
-            setUploadError('ไม่สามารถประมวลผลรูปภาพได้');
+            console.error('Image processing error:', error);
+            setUploadError(error.message || 'ไม่สามารถประมวลผลรูปภาพได้');
+        } finally {
             setIsUploading(false);
         }
-
-        // Reset file input
-        e.target.value = '';
     };
 
     const handleResize = (newSize) => {

@@ -4,10 +4,15 @@ const STORAGE_KEY = 'kruheem-theme';
 
 const getInitialTheme = () => {
     if (typeof window === 'undefined') return 'light';
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
-    // Honor OS preference on first visit
-    if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark';
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored === 'light' || stored === 'dark') return stored;
+        // Honor OS preference on first visit
+        if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark';
+    } catch (_) {
+        // localStorage / matchMedia can throw in privacy modes or sandboxed iframes —
+        // fall through to the safe default instead of white-screening the whole app.
+    }
     return 'light';
 };
 

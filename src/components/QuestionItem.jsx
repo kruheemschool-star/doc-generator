@@ -3,6 +3,7 @@ import { Draggable } from '@hello-pangea/dnd';
 import MarkdownRenderer from './MarkdownRenderer';
 import SvgRenderer from './SvgRenderer';
 import { Trash2, GripVertical, ChevronUp, ChevronDown, X, ImagePlus, Pencil } from 'lucide-react';
+import { fileToCompressedDataURL } from '../utils/imageCompression';
 
 // Estimate visible character length of an option (strip LaTeX/Markdown markers)
 const estimateVisibleLength = (text) => {
@@ -31,7 +32,7 @@ const cleanQuestionText = (text) => {
   // Remove leading question numbers: "ข้อที่ 1:", "ข้อ 1:", "ข้อ 1.", "1.", "1)", "1:" at start
   cleaned = cleaned.replace(/^(ข้อที่\s*\d+\s*[:.]?\s*|ข้อ\s*\d+\s*[:.]?\s*|\d+\s*[.):]?\s*)/, '').trim();
   // Remove blockquote "โจทย์:" prefix lines: "> 📘 โจทย์:" or "> โจทย์:" etc.
-  cleaned = cleaned.replace(/^>\s*[📘📝🔢]*\s*โจทย์\s*[:：]\s*/gm, '').trim();
+  cleaned = cleaned.replace(/^>\s*(?:📘|📝|🔢)*\s*โจทย์\s*[:：]\s*/gm, '').trim();
   // Remove remaining empty blockquote markers at start
   cleaned = cleaned.replace(/^>\s*$/gm, '').trim();
   return cleaned;
@@ -41,6 +42,8 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
   const imageInputRef = useRef(null);
   const solutionRef = useRef(null);
   const [solutionHeight, setSolutionHeight] = useState(0);
+  const [uploadError, setUploadError] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   useLayoutEffect(() => {
     if (showSolution && solutionRef.current) {
@@ -48,15 +51,20 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
     }
   }, [showSolution, solution]);
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !onUpdate) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      onUpdate(id, { questionImage: ev.target.result, svg: '' });
-    };
-    reader.readAsDataURL(file);
     e.target.value = '';
+    if (!file || !onUpdate) return;
+    setUploadError('');
+    setIsUploading(true);
+    try {
+      const dataUrl = await fileToCompressedDataURL(file);
+      onUpdate(id, { questionImage: dataUrl, svg: '' });
+    } catch (err) {
+      setUploadError(err.message || 'ไม่สามารถประมวลผลรูปภาพได้');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const getSizeClass = () => {
@@ -145,6 +153,13 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
             className="hidden"
             onChange={handleImageUpload}
           />
+
+          {/* Image upload feedback (paper is always light, so no dark: variants) */}
+          {(uploadError || isUploading) && (
+            <div className={`mb-2 flex items-center gap-1.5 text-xs rounded-lg px-2 py-1 print:hidden ${uploadError ? 'text-rose-600 bg-rose-50 border border-rose-200' : 'text-gray-500 bg-gray-50 border border-gray-200'}`}>
+              {uploadError ? <><X size={12} /> {uploadError}</> : 'กำลังประมวลผลรูปภาพ...'}
+            </div>
+          )}
 
           {/* Question Content */}
           <div className="mb-4">

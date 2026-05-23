@@ -1,1 +1,14 @@
+# Dependencies
 node_modules
+
+# Build output
+dist
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+*.log

@@ -28,7 +28,13 @@ class ErrorBoundary extends React.Component {
 
     render() {
         if (this.state.hasError) {
-            // You can render any custom fallback UI
+            // Optional compact fallback (element or render fn) overrides the default UI —
+            // lets callers like MarkdownItem reuse this boundary for inline previews.
+            if (this.props.fallback !== undefined) {
+                return typeof this.props.fallback === 'function'
+                    ? this.props.fallback(this.state.error, this.handleReset)
+                    : this.props.fallback;
+            }
             return (
                 <div className="flex flex-col items-center justify-center min-h-[400px] p-8 bg-red-50/50 rounded-xl border border-red-100 text-center">
                     <div className="bg-red-100 p-4 rounded-full mb-4 animate-pulse">

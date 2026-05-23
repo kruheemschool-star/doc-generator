@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastContainer, useToast } from './components/Toast';
 import { v4 as uuidv4 } from 'uuid';
-import { saveDocument, loadDocuments, deleteDocument as fbDeleteDocument, saveFolders, loadFolders, saveActiveDocId, loadActiveDocId, saveTrash, loadTrash } from './firebase';
+import { saveDocument, loadDocuments, deleteDocument as fbDeleteDocument, saveFolders, loadFolders, saveActiveDocId, loadActiveDocId, saveTrash, loadTrash, authReady } from './firebase';
 import { DEFAULT_FONT_ID } from './data/documentFonts';
 
 /**
@@ -27,7 +28,7 @@ const PromptBuilderPage = lazy(() => import('./pages/PromptBuilderPage'));
 const WorksheetEditor = lazy(() => import('./components/WorksheetEditor'));
 
 const LoadingScreen = ({ label = 'กำลังโหลด...' }) => (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-[calc(100vh-56px)] flex items-center justify-center bg-gray-50 dark:bg-[#1e1e2f]">
         <div className="text-center">
             <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">{label}</p>
@@ -55,10 +56,17 @@ const App = () => {
     const [isLoading, setIsLoading] = useState(true);
     const isInitialLoad = useRef(true);
 
+    // Toast notifications (surfaces otherwise-silent Firestore write failures)
+    const { toasts, addToast, removeToast } = useToast();
+    // Content the editor already persisted directly (handleSaveDocument); the
+    // auto-save effect skips these so the same doc isn't written twice.
+    const lastDirectSaveRef = useRef(new Map());
+
     // --- Load Data from Firestore on Startup ---
     useEffect(() => {
         const loadData = async () => {
             try {
+                await authReady; // ensure reads/writes carry an auth token once rules require it
                 const [docs, flds, activeId, trash] = await Promise.all([
                     loadDocuments(),
                     loadFolders(),
@@ -90,24 +98,44 @@ const App = () => {
         const prevMap = new Map(prevDocumentsRef.current.map(d => [d.id, d]));
         const changedDocs = documents.filter(d => {
             const prev = prevMap.get(d.id);
-            // Save if new OR content actually changed (cheap reference check first, JSON as fallback)
-            return !prev || (prev !== d && JSON.stringify(prev) !== JSON.stringify(d));
+            if (prev === d) return false; // unchanged reference → no write
+            const json = JSON.stringify(d);
+            if (lastDirectSaveRef.current.get(d.id) === json) return false; // editor already wrote it
+            return !prev || JSON.stringify(prev) !== json;
         });
-        if (changedDocs.length > 0) {
-            changedDocs.forEach(doc => saveDocument(doc).catch(e => console.error('Auto-save failed:', e)));
-        }
         prevDocumentsRef.current = documents;
-    }, [documents, isLoading]);
+        if (changedDocs.length === 0) return;
+
+        // Surface failures (incl. DocumentTooLargeError) via toast instead of failing
+        // silently and losing the user's work. Covers Dashboard-originated changes
+        // (rename/move/duplicate/delete); editor saves report via handleSaveDocument.
+        let cancelled = false;
+        Promise.allSettled(changedDocs.map(doc => saveDocument(doc))).then(results => {
+            if (cancelled) return;
+            const failed = results.find(r => r.status === 'rejected');
+            if (failed) {
+                console.error('Auto-save failed:', failed.reason);
+                addToast(failed.reason?.message || 'บันทึกไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 6000);
+            }
+        });
+        return () => { cancelled = true; };
+    }, [documents, isLoading, addToast]);
 
     useEffect(() => {
         if (isInitialLoad.current || isLoading) return;
-        saveFolders(folders).catch(e => console.error('Folder save failed:', e));
-    }, [folders, isLoading]);
+        saveFolders(folders).catch(e => {
+            console.error('Folder save failed:', e);
+            addToast('บันทึกโฟลเดอร์ไม่สำเร็จ', 'error', 5000);
+        });
+    }, [folders, isLoading, addToast]);
 
     useEffect(() => {
         if (isInitialLoad.current || isLoading) return;
-        saveTrash(trashedDocs).catch(e => console.error('Trash save failed:', e));
-    }, [trashedDocs, isLoading]);
+        saveTrash(trashedDocs).catch(e => {
+            console.error('Trash save failed:', e);
+            addToast('บันทึกถังขยะไม่สำเร็จ', 'error', 5000);
+        });
+    }, [trashedDocs, isLoading, addToast]);
 
     useEffect(() => {
         if (isInitialLoad.current || isLoading) return;
@@ -183,23 +211,29 @@ const App = () => {
     }, []);
 
     const handlePermanentDelete = useCallback(async (docId) => {
-        setTrashedDocs(prev => prev.filter(d => d.id !== docId));
+        // Delete from Firestore first; only drop from local state on success so a
+        // failed delete doesn't leave a "zombie" that reappears on reload.
         try {
             await fbDeleteDocument(docId);
+            setTrashedDocs(prev => prev.filter(d => d.id !== docId));
         } catch (e) {
             console.error('Permanent delete failed:', e);
+            addToast('ลบถาวรไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 5000);
         }
-    }, []);
+    }, [addToast]);
 
-    // Fix: use Promise.all for parallel deletes (was sequential await-in-loop)
     const handleEmptyTrash = useCallback(async () => {
-        try {
-            await Promise.all(trashedDocs.map(doc => fbDeleteDocument(doc.id)));
-        } catch (e) {
-            console.error('Empty trash failed:', e);
+        const docs = trashedDocs;
+        const results = await Promise.allSettled(docs.map(doc => fbDeleteDocument(doc.id)));
+        // Keep only docs whose Firestore delete actually failed (stay consistent with the DB).
+        const deletedIds = new Set(docs.filter((_, i) => results[i].status === 'fulfilled').map(d => d.id));
+        setTrashedDocs(prev => prev.filter(d => !deletedIds.has(d.id)));
+        const failed = results.filter(r => r.status === 'rejected').length;
+        if (failed > 0) {
+            console.error('Empty trash: some deletes failed', results);
+            addToast(`ลบถาวรไม่สำเร็จ ${failed} รายการ — โปรดลองอีกครั้ง`, 'error', 5000);
         }
-        setTrashedDocs([]);
-    }, [trashedDocs]);
+    }, [trashedDocs, addToast]);
 
     // --- Folder Handlers ---
     const handleCreateFolder = useCallback((folderData) => {
@@ -244,14 +278,26 @@ const App = () => {
         });
     }, []);
 
-    const handleSaveDocument = useCallback((updatedPages, subtitle, settings = {}) => {
+    const handleSaveDocument = useCallback(async (updatedPages, subtitle, settings = {}) => {
         if (!activeDocumentId) return;
+        let updatedDoc = null;
         setDocuments(prev => prev.map(doc => {
             if (doc.id === activeDocumentId) {
-                return { ...doc, pages: updatedPages, subtitle: subtitle || '', ...settings };
+                updatedDoc = { ...doc, pages: updatedPages, subtitle: subtitle || '', ...settings };
+                return updatedDoc;
             }
             return doc;
         }));
+        if (!updatedDoc) return;
+        // Record before awaiting so the auto-save effect (which runs on the resulting
+        // re-render) skips this doc instead of double-writing it.
+        lastDirectSaveRef.current.set(updatedDoc.id, JSON.stringify(updatedDoc));
+        try {
+            await saveDocument(updatedDoc); // throws on failure → editor catches & shows error
+        } catch (e) {
+            lastDirectSaveRef.current.delete(updatedDoc.id); // allow a later edit to retry
+            throw e;
+        }
     }, [activeDocumentId]);
 
     const handleBackToDashboard = useCallback(() => {
@@ -260,7 +306,7 @@ const App = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#1e1e2f] flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                     <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">กำลังโหลดข้อมูล...</p>
@@ -270,12 +316,12 @@ const App = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#1e1e2f] flex flex-col">
             {/* Navbar */}
             <Navbar currentView={currentView} onViewChange={handleViewChange} />
 
             {/* --- Main Content Area --- */}
-            <div className="flex-1 animate-page-fade-in" key={currentView}>
+            <div className={`flex-1 ${currentView !== 'dashboard' ? 'animate-page-fade-in' : ''}`} key={currentView}>
 
                 {/* Dashboard View */}
                 {currentView === 'dashboard' && (
@@ -321,6 +367,8 @@ const App = () => {
                     </ErrorBoundary>
                 )}
             </div>
+
+            <ToastContainer toasts={toasts} removeToast={removeToast} />
         </div>
     );
 };

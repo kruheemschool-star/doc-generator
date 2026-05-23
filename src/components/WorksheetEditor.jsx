@@ -18,18 +18,11 @@ import useAutoPagination from '../hooks/useAutoPagination';
 import useHistory from '../hooks/useHistory';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { expandDocumentTemplate } from '../data/pageTemplates';
-import { DEFAULT_FONT_ID, getFontStack } from '../data/documentFonts';
+import { DEFAULT_FONT_ID, getFontStack, getEffectiveFontPx } from '../data/documentFonts';
 
-// Font-size slider — maps legacy string sizes to a starting px value, and
-// reads the effective px (custom fontScale wins over the class-based size).
-const SIZE_TO_PX = { small: 14, medium: 16, large: 20, xl: 28 };
+// Font-size slider bounds (SIZE_TO_PX + getEffectiveFontPx are shared via documentFonts).
 const FONT_SCALE_MIN = 12;
 const FONT_SCALE_MAX = 96;
-const getEffectiveFontPx = (item) => {
-    if (!item) return 16;
-    if (typeof item.fontScale === 'number') return item.fontScale;
-    return SIZE_TO_PX[item.size] || 16;
-};
 
 const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // --- History State Management ---
@@ -73,19 +66,19 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         setSaveStatus('unsaved');
     }, [pages, fontId]);
 
-    const handleManualSave = () => {
-        if (onSave && pages) {
-            try {
-                setSaveStatus('saving');
-                onSave(pages, documentTitle, { fontId }); // Pass subtitle + settings
-                setSaveStatus('saved');
-                setHasUnsavedChanges(false);
-                addToast('บันทึกเรียบร้อย', 'success', 2000);
-            } catch (e) {
-                console.error('Manual save failed:', e);
-                setSaveStatus('error');
-                addToast('บันทึกไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 4000);
-            }
+    const handleManualSave = async () => {
+        if (!onSave || !pages) return;
+        setSaveStatus('saving');
+        try {
+            // Awaits the real Firestore write so success/failure is reported accurately.
+            await onSave(pages, documentTitle, { fontId });
+            setSaveStatus('saved');
+            setHasUnsavedChanges(false);
+            addToast('บันทึกเรียบร้อย', 'success', 2000);
+        } catch (e) {
+            console.error('Manual save failed:', e);
+            setSaveStatus('error');
+            addToast(e?.message || 'บันทึกไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 5000);
         }
     };
 
@@ -586,16 +579,21 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             const itemsToAdd = [sectionHeaderItem];
 
             if (Array.isArray(parsed)) {
-                parsed.forEach(q => itemsToAdd.push({
-                    id: uuidv4(),
-                    type: 'question',
-                    question: q.question || '*(Question)*',
-                    options: q.options || [],
-                    solution: q.solution || '',
-                    answer: q.answer || '',
-                    svg: q.svg || '',
-                    spaceNeeded: q.space || 'medium'
-                }));
+                // Coerce field shapes — malformed AI output (e.g. options as a string)
+                // must not reach QuestionItem where .map/.length would throw.
+                parsed.forEach(q => {
+                    if (!q || typeof q !== 'object') return;
+                    itemsToAdd.push({
+                        id: uuidv4(),
+                        type: 'question',
+                        question: typeof q.question === 'string' ? q.question : '*(Question)*',
+                        options: Array.isArray(q.options) ? q.options.filter(o => typeof o === 'string') : [],
+                        solution: typeof q.solution === 'string' ? q.solution : '',
+                        answer: typeof q.answer === 'string' ? q.answer : '',
+                        svg: typeof q.svg === 'string' ? q.svg : '',
+                        spaceNeeded: q.space || 'medium'
+                    });
+                });
                 insertItemsIntoPages(itemsToAdd);
             } else if (parsed.type === 'lesson' && parsed.blocks) {
                 const distributed = distributeBlocksToPages(parsed.blocks);
@@ -790,9 +788,6 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             </button>
                             <button onClick={handleTrimEmptyPages} className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2">
                                 <RefreshCw size={14} /> TRIM EMPTY PAGES
-                            </button>
-                            <button onClick={() => { console.log("Current Pages Store:", pages); alert("Logged to Browser Console (F12)"); }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2">
-                                <FileJson size={14} /> LOG TO CONSOLE
                             </button>
                         </div>
                         <div className="mb-4 p-3 bg-gray-800 rounded-lg text-xs text-gray-400 dark:text-slate-500 border-l-4 border-blue-500">

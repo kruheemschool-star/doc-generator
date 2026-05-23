@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, writeBatch } from "firebase/firestore";
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCY4SrCmkjRk82BBB5KNorIVNlxXXqXmdg",
@@ -12,17 +13,55 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Sign in anonymously (no login UI) so Firestore security rules can require an
+// authenticated session and the database is no longer world-open. Resolves either
+// way so the app still loads if the Anonymous provider isn't enabled in the
+// Firebase console yet — enable it under Authentication → Sign-in method.
+export const authReady = signInAnonymously(auth)
+  .then(() => true)
+  .catch((e) => {
+    console.warn('Anonymous auth unavailable (enable it in Firebase console):', e?.code || e);
+    return false;
+  });
 
 // --- Document CRUD ---
 // Mutations throw on failure so callers can show user-facing errors.
 // Reads return safe defaults but also log to console.
 
-export const saveDocument = async (docData) => {
+// Firestore rejects any document larger than 1 MiB. We guard a bit below that
+// so the user gets a clear warning instead of a silent write failure + lost work.
+export const FIRESTORE_DOC_LIMIT = 1048576;        // 1 MiB hard limit
+export const SAFE_DOC_SIZE = 950000;               // headroom below the hard limit
+
+export class DocumentTooLargeError extends Error {
+  constructor(size) {
+    super(`เอกสารมีขนาด ${Math.round(size / 1024)} KB เกินขีดจำกัดของ Firestore (1 MB) — ลองลดจำนวน/ขนาดรูปภาพในเอกสาร`);
+    this.name = 'DocumentTooLargeError';
+    this.code = 'doc-too-large';
+    this.size = size;
+  }
+}
+
+// Byte length of the JSON payload (Blob handles multibyte Thai/base64 correctly).
+const estimateDocSize = (obj) => {
   try {
-    await setDoc(doc(db, "documents", docData.id), {
-      ...docData,
-      updatedAt: new Date().toISOString()
-    });
+    return new Blob([JSON.stringify(obj)]).size;
+  } catch (_) {
+    return JSON.stringify(obj).length; // fallback when Blob is unavailable
+  }
+};
+
+export const saveDocument = async (docData) => {
+  const payload = { ...docData, updatedAt: new Date().toISOString() };
+  const size = estimateDocSize(payload);
+  if (size > SAFE_DOC_SIZE) {
+    // Throw before hitting the network so the UI can warn and the user can act.
+    throw new DocumentTooLargeError(size);
+  }
+  try {
+    await setDoc(doc(db, "documents", docData.id), payload);
   } catch (error) {
     console.error("Error saving document:", error);
     throw error;

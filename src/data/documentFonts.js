@@ -112,6 +112,15 @@ export const getFontById = (id) => DOCUMENT_FONTS.find(f => f.id === id) || DOCU
 
 export const getFontStack = (id) => getFontById(id).stack;
 
+// Font-size mapping shared by the editor slider and Markdown rendering so the
+// rendered size always matches the slider value.
+export const SIZE_TO_PX = { small: 14, medium: 16, large: 20, xl: 28 };
+export const getEffectiveFontPx = (item) => {
+    if (!item) return 16;
+    if (typeof item.fontScale === 'number') return item.fontScale;
+    return SIZE_TO_PX[item.size] || 16;
+};
+
 // Font ids usable as Quill `font` format whitelist + CSS class suffixes (ql-font-<id>)
 export const FONT_WHITELIST = DOCUMENT_FONTS.map(f => f.id);
 

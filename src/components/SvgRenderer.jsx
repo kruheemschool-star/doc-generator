@@ -1,4 +1,5 @@
 import React, { memo, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 
 const SvgRenderer = memo(({ svgString, maxWidth = 300, className = '' }) => {
     const sanitizedSvg = useMemo(() => {
@@ -12,12 +13,11 @@ const SvgRenderer = memo(({ svgString, maxWidth = 300, className = '' }) => {
         if (svgStart === -1 || svgEnd === -1) return null;
         svg = svg.substring(svgStart, svgEnd + 6);
 
-        // Remove any <script> tags for security
-        svg = svg.replace(/<script[\s\S]*?<\/script>/gi, '');
-        // Remove on* event handlers
-        svg = svg.replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, '');
-        // Remove javascript: URLs
-        svg = svg.replace(/javascript\s*:/gi, '');
+        // Sanitize with DOMPurify's SVG profile — robust against the bypasses that
+        // defeat regex stripping (split tags, <foreignObject>, <use href>, namespaced
+        // handlers, encoded javascript:, etc.). SVG comes from AI/imported JSON.
+        svg = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+        if (!svg || svg.indexOf('<svg') === -1) return null;
 
         // Force SVG to be responsive: remove fixed width/height, keep viewBox
         svg = svg.replace(/<svg([^>]*)>/, (match, attrs) => {

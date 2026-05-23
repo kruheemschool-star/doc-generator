@@ -2,30 +2,21 @@ import React, { memo, useState, useEffect, useLayoutEffect, useCallback, useRef,
 import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
+import ErrorBoundary from './ErrorBoundary';
+import { SIZE_TO_PX } from '../data/documentFonts';
 
-// Safe wrapper to prevent MarkdownRenderer crash from taking down the whole component
-class SafeMarkdownPreview extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { hasError: false };
-    }
-    static getDerivedStateFromError() {
-        return { hasError: true };
-    }
-    componentDidCatch(error) {
-        console.error('MarkdownRenderer error:', error);
-    }
-    render() {
-        if (this.state.hasError) {
-            return (
-                <div className="text-red-500 text-sm p-2 bg-red-50 rounded border border-red-200">
-                    ⚠️ ไม่สามารถแสดงผลเนื้อหาได้ ลองแก้ไข Markdown อีกครั้ง
-                </div>
-            );
-        }
-        return <MarkdownRenderer content={this.props.content} />;
-    }
-}
+// Safe wrapper: a bad Markdown string renders a compact inline error instead of
+// crashing the whole item. Reuses the shared ErrorBoundary.
+const markdownFallback = (
+    <div className="text-red-500 text-sm p-2 bg-red-50 rounded border border-red-200">
+        ⚠️ ไม่สามารถแสดงผลเนื้อหาได้ ลองแก้ไข Markdown อีกครั้ง
+    </div>
+);
+const SafeMarkdownPreview = ({ content, baseFontPx }) => (
+    <ErrorBoundary fallback={markdownFallback}>
+        <MarkdownRenderer content={content} baseFontPx={baseFontPx} />
+    </ErrorBoundary>
+);
 
 const splitAnswerContent = (content) => {
     if (!content) return { mainContent: content, answerContent: null };
@@ -101,15 +92,6 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
         setText(content || '');
         setIsEditing(false);
         if (onEditEnd) onEditEnd();
-    };
-
-    const getSizeClass = () => {
-        switch (size) {
-            case 'small': return 'text-sm';
-            case 'large': return 'text-lg';
-            case 'xl': return 'text-xl';
-            case 'medium': default: return 'text-base';
-        }
     };
 
     return (
@@ -210,7 +192,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                                     {showPreview && (
                                         <div className="border border-gray-200 rounded-lg p-3 overflow-auto min-h-[200px] bg-gray-50/50">
                                             <div className="text-[10px] uppercase font-bold text-gray-400 mb-2">ตัวอย่าง</div>
-                                            <SafeMarkdownPreview content={text} getSizeClass={getSizeClass} />
+                                            <SafeMarkdownPreview content={text} />
                                         </div>
                                     )}
                                 </div>
@@ -235,17 +217,16 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                             </div>
                         ) : (() => {
                             const { mainContent, answerContent } = splitAnswerContent(text);
+                            // Effective base size: per-item slider wins, else map from size, else 16
+                            const baseFontPx = typeof fontScale === 'number' ? fontScale : (SIZE_TO_PX[size] || 16);
                             return (
-                                <div
-                                    className={`prose max-w-none ${getSizeClass()}`}
-                                    style={typeof fontScale === 'number' ? { fontSize: `${fontScale}px` } : undefined}
-                                >
-                                    <SafeMarkdownPreview content={mainContent || '> *Empty Markdown Content*'} getSizeClass={getSizeClass} />
+                                <div className="prose max-w-none">
+                                    <SafeMarkdownPreview content={mainContent || '> *Empty Markdown Content*'} baseFontPx={baseFontPx} />
                                     {answerContent && (
                                         <div className="relative transition-all">
                                             {showSolution ? (
                                                 <div ref={answerRef}>
-                                                    <SafeMarkdownPreview content={answerContent} getSizeClass={getSizeClass} />
+                                                    <SafeMarkdownPreview content={answerContent} baseFontPx={baseFontPx} />
                                                 </div>
                                             ) : (
                                                 <div style={{ minHeight: answerHeight > 0 ? answerHeight : undefined }} />

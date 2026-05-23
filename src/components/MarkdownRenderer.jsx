@@ -114,33 +114,42 @@ const getCalloutStyle = (text) => {
     return fallback;
 };
 
-const MarkdownRenderer = ({ content }) => {
+const MarkdownRenderer = ({ content, baseFontPx }) => {
     const safeContent = typeof content === 'string' ? preprocessMarkdown(content) : '';
 
+    // When a per-item font size is set, drive the whole subtree from it.
+    // Headings/tables use em units below so they scale proportionally.
+    const rootStyle = {
+        color: PALETTE.ink,
+        fontFamily: 'inherit',
+        // Default 16px preserves prior `text-base` behavior; per-item slider overrides it.
+        fontSize: `${typeof baseFontPx === 'number' ? baseFontPx : 16}px`,
+    };
+
     return (
-        <div className="text-base leading-relaxed" style={{ color: PALETTE.ink, fontFamily: 'inherit' }}>
+        <div className="leading-relaxed" style={rootStyle}>
             <ReactMarkdown
                 remarkPlugins={[remarkMath, remarkGfm]}
                 rehypePlugins={[[rehypeKatex, { strict: false }]]}
                 components={{
                     h1: ({ node, ...props }) => (
                         <h1
-                            className="text-3xl font-bold mt-2 mb-2 pb-2 border-b-2"
-                            style={{ color: PALETTE.greenDeep, borderColor: PALETTE.green }}
+                            className="font-bold mt-2 mb-2 pb-2 border-b-2"
+                            style={{ color: PALETTE.greenDeep, borderColor: PALETTE.green, fontSize: '1.875em' }}
                             {...props}
                         />
                     ),
                     h2: ({ node, ...props }) => (
                         <h2
-                            className="text-2xl font-semibold mt-2 mb-2"
-                            style={{ color: PALETTE.greenDeep }}
+                            className="font-semibold mt-2 mb-2"
+                            style={{ color: PALETTE.greenDeep, fontSize: '1.5em' }}
                             {...props}
                         />
                     ),
                     h3: ({ node, ...props }) => (
                         <h3
-                            className="text-xl font-medium mt-2 mb-1"
-                            style={{ color: PALETTE.ink }}
+                            className="font-medium mt-2 mb-1"
+                            style={{ color: PALETTE.ink, fontSize: '1.25em' }}
                             {...props}
                         />
                     ),
@@ -211,8 +220,8 @@ const MarkdownRenderer = ({ content }) => {
 
                     table: ({ node, ...props }) => (
                         <table
-                            className="w-full border-collapse my-3 text-sm"
-                            style={{ border: `1px solid ${PALETTE.rule}` }}
+                            className="w-full border-collapse my-3"
+                            style={{ border: `1px solid ${PALETTE.rule}`, fontSize: '0.875em' }}
                             {...props}
                         />
                     ),

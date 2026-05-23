@@ -113,6 +113,8 @@ export const formatText = async (plainText) => {
         return { text: plainText, usedFallback: true, errorMessage: 'ยังไม่ได้ตั้งค่า Gemini API Key' };
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s hard timeout so a hung request can't freeze the AI button
     try {
         const prompt = `คุณคือผู้ช่วยจัดรูปแบบเอกสารคณิตศาสตร์ภาษาไทย
 แปลงข้อความด้านล่างให้เป็น Markdown ที่มีสมการคณิตศาสตร์ในรูปแบบ LaTeX
@@ -129,7 +131,8 @@ ${input}`;
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            signal: controller.signal
         });
 
         if (!response.ok) {
@@ -154,7 +157,12 @@ ${input}`;
         return { text: cleaned, usedFallback: false };
     } catch (error) {
         console.error('Error formatting text:', error);
-        return { text: plainText, usedFallback: true, errorMessage: error.message };
+        const msg = error.name === 'AbortError'
+            ? 'Gemini ใช้เวลานานเกินไป (timeout) — โปรดลองใหม่'
+            : error.message;
+        return { text: plainText, usedFallback: true, errorMessage: msg };
+    } finally {
+        clearTimeout(timeoutId);
     }
 };
 

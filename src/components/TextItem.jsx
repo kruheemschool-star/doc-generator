@@ -7,7 +7,16 @@ import 'react-quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
 import Latex from 'react-latex-next';
 
-// Whitelist tags Quill produces — prevents XSS via pasted/imported HTML
+// Force any target=_blank link to carry rel=noopener (prevents reverse tabnabbing).
+// Registered once at module load; only acts on anchor elements opening new tabs.
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
+        node.setAttribute('rel', 'noopener noreferrer');
+    }
+});
+
+// Whitelist tags Quill produces — prevents XSS via pasted/imported HTML.
+// `style` is kept because Quill stores text/background color as inline styles.
 const SANITIZE_CONFIG = {
     ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'sub', 'sup', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img'],
     ALLOWED_ATTR: ['class', 'style', 'href', 'src', 'alt', 'title', 'target', 'rel'],
