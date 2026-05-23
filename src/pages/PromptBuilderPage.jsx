@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { savePromptSettings, loadPromptSettings } from '../firebase';
 import {
     Sparkles, Copy, Check, Terminal, Zap, FileText,
-    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar, Image as ImageIcon, ScanText, AlertCircle, Loader2, Save, ClipboardCopy, Globe, Award, Shapes
+    BookOpen, Layers, Type, Sliders, Settings, ExternalLink, Brain, ChevronDown, List, PenTool, Paperclip, Undo2, Calendar, Image as ImageIcon, ScanText, AlertCircle, Loader2, Save, ClipboardCopy, Globe, Award, Shapes, Wand2
 } from 'lucide-react';
 import { IPST_CURRICULUM, getChapters, getChapterObject } from '../data/thaiMathCurriculum';
 import { useDebounce } from '../hooks/useDebounce';
@@ -21,6 +21,7 @@ const MODE_ALLOWED_OPTIONS = {
     gifted_quiz: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     svg_question: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
     math_figure: [],
+    figure_from_text: [],
     transcribe: [],
     summary: ['bulletPoints', 'comparisonTable', 'stepByStep'],
     mistake: ['dummyChoice', 'realWorldApp', 'addHint', 'crossChapter', 'mistake'],
@@ -68,7 +69,8 @@ const DEFAULT_FORM_DATA = {
     flashcardAnswerStyle: 'balanced',
     transcribePageRange: '',
     transcribeQuestionRange: '',
-    summaryLength: 'medium'
+    summaryLength: 'medium',
+    figureSourceText: ''
 };
 
 const PromptBuilderPage = () => {
@@ -352,6 +354,7 @@ const PromptBuilderPage = () => {
                                 { id: 'gifted_quiz', label: 'Gifted เว็บ', icon: <Award size={16} />, color: 'orange' },
                                 { id: 'svg_question', label: 'โจทย์+รูป', icon: <ImageIcon size={16} />, color: 'purple' },
                                 { id: 'math_figure', label: 'สร้างรูป', icon: <Shapes size={16} />, color: 'pink' },
+                                { id: 'figure_from_text', label: 'รูปจากโจทย์', icon: <Wand2 size={16} />, color: 'violet' },
                                 { id: 'transcribe', label: 'พิมพ์ตาม', icon: <ScanText size={16} />, color: 'cyan' },
                                 { id: 'summary', label: 'สรุปสูตร', icon: <Zap size={16} />, color: 'amber' },
                                 { id: 'mistake', label: 'วิเคราะห์', icon: <Brain size={16} />, color: 'rose' },
@@ -377,7 +380,7 @@ const PromptBuilderPage = () => {
                         </div>
 
                         {/* Main Grid - Hidden for Transcribe and Math Figure */}
-                        {!['transcribe', 'math_figure'].includes(formData.mode) && (<>
+                        {!['transcribe', 'math_figure', 'figure_from_text'].includes(formData.mode) && (<>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                 <SelectWrapper
                                     label="ระดับชั้น"
@@ -627,6 +630,72 @@ const PromptBuilderPage = () => {
                             </div>
                         )}
 
+                        {/* Figure-from-text mode: paste question -> AI analyzes -> SVG */}
+                        {formData.mode === 'figure_from_text' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <div className="p-5 bg-violet-50/50 border border-violet-200 rounded-2xl">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Wand2 size={18} className="text-violet-600" />
+                                        <span className="text-sm font-bold text-violet-800">โหมดสร้างรูปจากโจทย์ — วาง "ข้อความโจทย์" แล้ว AI วิเคราะห์เอง</span>
+                                    </div>
+                                    <p className="text-xs text-violet-600 leading-relaxed">
+                                        ต่างจากโหมด "สร้างรูป" ที่ต้องแนบรูปต้นฉบับ — โหมดนี้ AI จะ<strong>อ่านและวิเคราะห์เนื้อหาโจทย์</strong> เพื่อออกแบบรูปประกอบที่เหมาะสมขึ้นมาเอง ไม่ต้องมีรูปต้นฉบับ เหมาะกับโจทย์ที่มีแต่ข้อความแต่ยังขาดรูป
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest pl-1">
+                                        ข้อความโจทย์ <span className="text-violet-500 font-medium normal-case">(วางโจทย์ที่ต้องการให้สร้างรูป)</span>
+                                    </label>
+                                    <textarea
+                                        className="w-full h-40 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium text-slate-700 dark:text-slate-300 placeholder:text-slate-300 resize-none leading-relaxed"
+                                        placeholder={'วางโจทย์คณิตศาสตร์ที่นี่ เช่น\n"รูปสามเหลี่ยม ABC มีมุม A = 90°, AB = 3 ซม., AC = 4 ซม. จงหาความยาว BC"\n\nวางได้หลายข้อ — AI จะสร้าง SVG แยกให้แต่ละข้อ'}
+                                        value={formData.figureSourceText}
+                                        onChange={(e) => handleChange('figureSourceText', e.target.value)}
+                                        aria-label="ข้อความโจทย์สำหรับสร้างรูป"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
+                                        หมวดหมู่รูปภาพ (Figure Category)
+                                    </label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+                                        {[
+                                            { id: 'mixed', label: 'วิเคราะห์เอง', desc: 'ให้ AI เลือกจากโจทย์', icon: '🪄' },
+                                            { id: 'geometry', label: 'เรขาคณิต', desc: 'สามเหลี่ยม สี่เหลี่ยม วงกลม', icon: '📐' },
+                                            { id: 'graph', label: 'กราฟ', desc: 'เส้นตรง พาราโบลา พิกัด', icon: '📈' },
+                                            { id: 'number_line', label: 'เส้นจำนวน', desc: 'Number Line', icon: '📏' },
+                                            { id: 'diagram', label: 'แผนภาพ', desc: 'Venn, Tree Diagram', icon: '🔀' },
+                                            { id: 'construction', label: 'การสร้าง', desc: 'วงเวียน สันตรง', icon: '🔧' },
+                                        ].map(t => (
+                                            <button
+                                                key={t.id}
+                                                onClick={() => handleChange('svgImageType', t.id)}
+                                                className={`p-3 rounded-2xl border-2 text-left transition-all
+                                                    ${formData.svgImageType === t.id
+                                                        ? 'border-violet-600 bg-violet-50/20 ring-4 ring-violet-500/5'
+                                                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
+                                                    } `}
+                                            >
+                                                <span className="text-lg">{t.icon}</span>
+                                                <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-violet-600' : 'text-slate-700 dark:text-slate-300'}`}>{t.label}</div>
+                                                <div className="text-[9px] font-bold text-slate-400 leading-tight">{t.desc}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 p-4 bg-violet-50/50 border border-violet-200 rounded-2xl">
+                                    <Wand2 size={18} className="text-violet-600 shrink-0" />
+                                    <div>
+                                        <span className="text-xs font-bold text-violet-800">เคล็ดลับ</span>
+                                        <p className="text-[10px] text-violet-600 mt-0.5">ถ้าวางข้อความโจทย์ในช่องด้านบนแล้ว ไม่ต้องแนบรูปใน Gemini — คัดลอกคำสั่งด้านขวาไปวางได้เลย</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Transcribe-only: Range inputs */}
                         {formData.mode === 'transcribe' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -693,8 +762,8 @@ const PromptBuilderPage = () => {
                         )}
                     </section>
 
-                    {/* Section 2: Smart Selection Cards - Hidden for Transcribe */}
-                    {formData.mode !== 'transcribe' && (
+                    {/* Section 2: Smart Selection Cards - Hidden for Transcribe & Figure-from-text (source/tone unused there) */}
+                    {!['transcribe', 'figure_from_text'].includes(formData.mode) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Source Card */}
                             <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card h-full flex flex-col">
@@ -764,7 +833,7 @@ const PromptBuilderPage = () => {
                     )}
 
                     {/* Section 3: Fine-Tuning - Hidden for Transcribe and Math Figure */}
-                    {!['transcribe', 'math_figure'].includes(formData.mode) && (
+                    {!['transcribe', 'math_figure', 'figure_from_text'].includes(formData.mode) && (
                         <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card overflow-hidden relative">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl -mr-16 -mt-16 rounded-full" />
 
