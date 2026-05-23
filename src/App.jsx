@@ -4,7 +4,7 @@ import Dashboard from './components/Dashboard';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastContainer, useToast } from './components/Toast';
 import { v4 as uuidv4 } from 'uuid';
-import { saveDocument, loadDocuments, deleteDocument as fbDeleteDocument, saveFolders, loadFolders, saveActiveDocId, loadActiveDocId, saveTrash, loadTrash, authReady } from './firebase';
+import { saveDocument, loadDocuments, deleteDocument as fbDeleteDocument, saveFolders, loadFolders, saveActiveDocId, loadActiveDocId, saveTrash, loadTrash } from './firebase';
 import { DEFAULT_FONT_ID } from './data/documentFonts';
 
 /**
@@ -66,7 +66,6 @@ const App = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                await authReady; // ensure reads/writes carry an auth token once rules require it
                 const [docs, flds, activeId, trash] = await Promise.all([
                     loadDocuments(),
                     loadFolders(),

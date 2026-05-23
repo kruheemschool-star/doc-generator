@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, writeBatch } from "firebase/firestore";
-import { getAuth, signInAnonymously } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCY4SrCmkjRk82BBB5KNorIVNlxXXqXmdg",
@@ -13,18 +12,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
-
-// Sign in anonymously (no login UI) so Firestore security rules can require an
-// authenticated session and the database is no longer world-open. Resolves either
-// way so the app still loads if the Anonymous provider isn't enabled in the
-// Firebase console yet — enable it under Authentication → Sign-in method.
-export const authReady = signInAnonymously(auth)
-  .then(() => true)
-  .catch((e) => {
-    console.warn('Anonymous auth unavailable (enable it in Firebase console):', e?.code || e);
-    return false;
-  });
 
 // --- Document CRUD ---
 // Mutations throw on failure so callers can show user-facing errors.
