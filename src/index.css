@@ -76,11 +76,50 @@
   }
 }
 
-/* Force font inheritance inside paper — override Quill's hard-coded font-family */
+/* Force font inheritance inside paper — override Quill's hard-coded font-family.
+   Exclude per-selection font spans (ql-font-*) so explicit font choices win. */
 .zoom-container .ql-editor,
-.zoom-container .ql-editor * {
+.zoom-container .ql-editor *:not([class*="ql-font-"]) {
   font-family: inherit !important;
 }
+
+/* Per-selection document fonts (Quill `font` format) — applies in editor + preview.
+   Class names match DOCUMENT_FONTS ids (ql-font-<id>). */
+.ql-font-sarabun { font-family: 'Sarabun', 'Noto Sans Thai', sans-serif !important; }
+.ql-font-noto-sans-thai { font-family: 'Noto Sans Thai', 'Sarabun', sans-serif !important; }
+.ql-font-ibm-plex-thai { font-family: 'IBM Plex Sans Thai', 'Sarabun', sans-serif !important; }
+.ql-font-prompt { font-family: 'Prompt', 'Noto Sans Thai', sans-serif !important; }
+.ql-font-mitr { font-family: 'Mitr', 'Sarabun', sans-serif !important; }
+.ql-font-kanit { font-family: 'Kanit', 'Noto Sans Thai', sans-serif !important; }
+.ql-font-k2d { font-family: 'K2D', 'Sarabun', sans-serif !important; }
+.ql-font-mali { font-family: 'Mali', 'Sarabun', sans-serif !important; }
+.ql-font-pridi { font-family: 'Pridi', 'Trirong', serif !important; }
+.ql-font-trirong { font-family: 'Trirong', 'Pridi', serif !important; }
+
+/* Font picker dropdown labels — show readable font name rendered in its own font */
+.ql-snow .ql-picker.ql-font { width: 132px; }
+.ql-snow .ql-picker.ql-font .ql-picker-label::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item::before { content: 'ฟอนต์เอกสาร'; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="sarabun"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="sarabun"]::before { content: 'Sarabun'; font-family: 'Sarabun', sans-serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="noto-sans-thai"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="noto-sans-thai"]::before { content: 'Noto Sans Thai'; font-family: 'Noto Sans Thai', sans-serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="ibm-plex-thai"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="ibm-plex-thai"]::before { content: 'IBM Plex Sans Thai'; font-family: 'IBM Plex Sans Thai', sans-serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="prompt"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="prompt"]::before { content: 'Prompt'; font-family: 'Prompt', sans-serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="mitr"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="mitr"]::before { content: 'Mitr'; font-family: 'Mitr', sans-serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="kanit"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="kanit"]::before { content: 'Kanit'; font-family: 'Kanit', sans-serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="k2d"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="k2d"]::before { content: 'K2D'; font-family: 'K2D', sans-serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="mali"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="mali"]::before { content: 'Mali'; font-family: 'Mali', sans-serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="pridi"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="pridi"]::before { content: 'Pridi'; font-family: 'Pridi', serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="trirong"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="trirong"]::before { content: 'Trirong'; font-family: 'Trirong', serif; }
 
 /* RichMathEditor — WYSIWYG editor with inline math */
 .rich-math-editor .ql-editor {

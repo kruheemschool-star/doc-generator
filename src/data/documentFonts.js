@@ -111,3 +111,20 @@ export const FONT_CATEGORIES = [
 export const getFontById = (id) => DOCUMENT_FONTS.find(f => f.id === id) || DOCUMENT_FONTS[0];
 
 export const getFontStack = (id) => getFontById(id).stack;
+
+// Font ids usable as Quill `font` format whitelist + CSS class suffixes (ql-font-<id>)
+export const FONT_WHITELIST = DOCUMENT_FONTS.map(f => f.id);
+
+/**
+ * Register the document fonts with a Quill instance so the rich-text editor
+ * can apply per-selection fonts. Idempotent — safe to call on every Quill load.
+ * @param {object} Quill - the Quill class (ReactQuill.Quill)
+ */
+let _registered = false;
+export const registerQuillFonts = (Quill) => {
+    if (_registered || !Quill) return;
+    const Font = Quill.import('formats/font');
+    Font.whitelist = FONT_WHITELIST;
+    Quill.register(Font, true);
+    _registered = true;
+};

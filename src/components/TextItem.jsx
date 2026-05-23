@@ -2,6 +2,7 @@ import React, { memo, useState, useEffect, useMemo, useRef, useCallback } from '
 import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, Check, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import DOMPurify from 'dompurify';
+import { FONT_WHITELIST, registerQuillFonts } from '../data/documentFonts';
 import 'react-quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
 import Latex from 'react-latex-next';
@@ -16,6 +17,7 @@ const sanitize = (html) => DOMPurify.sanitize(html, SANITIZE_CONFIG);
 // Custom Toolbar Options
 // Defined outside to prevent re-creation
 const toolbarOptions = [
+    [{ 'font': FONT_WHITELIST }],
     ['bold', 'italic', 'underline'],
     [{ 'color': [] }, { 'background': [] }],
     [{ 'align': [] }],
@@ -25,6 +27,7 @@ const toolbarOptions = [
 ];
 
 const formats = [
+    'font',
     'bold', 'italic', 'underline',
     'color', 'background',
     'align', 'script', 'size'
@@ -48,6 +51,8 @@ const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelet
         setQuillLoading(true);
         try {
             const mod = await import('react-quill');
+            // Register document fonts so the per-selection font dropdown works
+            registerQuillFonts(mod.default.Quill);
             setQuillComponent(() => mod.default);
         } catch (err) {
             console.error('Failed to load ReactQuill:', err);
