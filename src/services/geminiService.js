@@ -95,6 +95,70 @@ export const generateQuestions = async (topic, count = 3, difficulty = 'Medium')
 };
 
 /**
+ * Format plain Thai text into Markdown + inline LaTeX using Gemini.
+ * Used by the "✨ จัดรูปแบบด้วย AI" button so teachers can type plain text and
+ * let AI add the math/formatting — they never write $...$ or ** themselves.
+ *
+ * @param {string} plainText - The teacher's plain text
+ * @returns {Promise<{text: string, usedFallback: boolean, errorMessage?: string}>}
+ *   On success: { text: formatted, usedFallback: false }
+ *   On no-key / any error: original text is returned untouched with usedFallback:true
+ */
+export const formatText = async (plainText) => {
+    const input = (plainText || '').trim();
+    if (!input) return { text: plainText || '', usedFallback: true, errorMessage: 'ไม่มีข้อความให้จัดรูปแบบ' };
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+        return { text: plainText, usedFallback: true, errorMessage: 'ยังไม่ได้ตั้งค่า Gemini API Key' };
+    }
+
+    try {
+        const prompt = `คุณคือผู้ช่วยจัดรูปแบบเอกสารคณิตศาสตร์ภาษาไทย
+แปลงข้อความด้านล่างให้เป็น Markdown ที่มีสมการคณิตศาสตร์ในรูปแบบ LaTeX
+กฎที่ต้องทำตามอย่างเคร่งครัด:
+- ใส่สมการ/ตัวแปร/ตัวเลขทางคณิตศาสตร์ไว้ในเครื่องหมาย $...$ (เช่น $x^2$, $\\frac{1}{2}$, $A = -0.01$) และใช้ $$...$$ สำหรับสมการที่ต้องการแสดงเป็นบรรทัดเดี่ยว
+- ใช้ **...** สำหรับคำที่ควรเน้น (ตัวหนา) เท่านั้นเมื่อจำเป็น
+- ห้ามแก้ไข ห้ามแปล ห้ามเพิ่ม หรือลบเนื้อหา/คำภาษาไทยเดิม — คงคำเดิมทุกคำ จัดแค่รูปแบบ
+- ห้ามแก้โจทย์หรือเฉลยคำตอบ
+- ตอบกลับเป็นข้อความที่จัดรูปแบบแล้วเท่านั้น ห้ามมีคำอธิบาย ห้ามใส่ \`\`\` หรือ code fence ใดๆ
+
+ข้อความ:
+${input}`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            if (response.status === 429) {
+                throw new Error('Gemini เรียกถี่เกินไป (rate limit) — โปรดลองอีกครั้งใน 30 วินาที');
+            }
+            if (response.status === 503) {
+                throw new Error('Gemini ไม่พร้อมให้บริการชั่วคราว — โปรดลองใหม่');
+            }
+            throw new Error(errorData.error?.message || `Gemini ตอบกลับด้วย status ${response.status}`);
+        }
+
+        const data = await response.json();
+        const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!generatedText) {
+            throw new Error('Gemini ไม่ได้ส่งเนื้อหากลับมา');
+        }
+
+        // Defensive: strip any stray code fences the model may add.
+        const cleaned = generatedText.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim();
+        return { text: cleaned, usedFallback: false };
+    } catch (error) {
+        console.error('Error formatting text:', error);
+        return { text: plainText, usedFallback: true, errorMessage: error.message };
+    }
+};
+
+/**
  * Mock Data Generator (Fallback)
  */
 const generateMockQuestions = (topic, count, difficulty) => {

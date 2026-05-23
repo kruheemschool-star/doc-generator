@@ -1311,6 +1311,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     onClose={() => setEditingQuestionId(null)}
                     onSave={handleSaveEditedQuestion}
                     initialData={editingQuestionData}
+                    addToast={addToast}
                 />
 
                 {/* Template Picker Modal */}

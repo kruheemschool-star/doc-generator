@@ -82,6 +82,50 @@
   font-family: inherit !important;
 }
 
+/* RichMathEditor — WYSIWYG editor with inline math */
+.rich-math-editor .ql-editor {
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.rich-math-editor .ql-container {
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+}
+.rich-math-editor.rme-multiline .ql-editor {
+  min-height: 9rem;
+}
+.rich-math-editor.rme-inline .ql-container {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+}
+.rich-math-editor.rme-inline .ql-editor {
+  min-height: auto;
+  padding: 0.6rem 0.9rem;
+}
+.rich-math-editor.rme-inline .ql-editor.ql-blank::before {
+  left: 0.9rem;
+}
+/* Inline math embed rendered with KaTeX */
+.ql-mathlive {
+  display: inline-block;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+}
+.ql-mathlive:hover {
+  background-color: rgba(99, 102, 241, 0.12);
+}
+.ql-mathlive .katex {
+  font-size: 1.05em;
+}
+.ql-mathlive-display {
+  display: block;
+  text-align: center;
+  margin: 0.4rem 0;
+}
+
 /* When grid overlay is active, make content item backgrounds transparent */
 .grid-active [data-rfd-draggable-id] {
   background-color: transparent !important;

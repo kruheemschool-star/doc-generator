@@ -3,6 +3,8 @@ import { X, Plus, Trash2, Check, Eye, RefreshCw, ChevronDown, ChevronUp } from '
 import Latex from 'react-latex-next';
 import 'katex/dist/katex.min.css';
 import { useModalA11y } from '../hooks/useModalA11y';
+import RichMathEditor from './RichMathEditor';
+import MarkdownRenderer from './MarkdownRenderer';
 
 // Normalize solution: if string, keep as string; if object, ensure all fields
 const normalizeSolution = (sol) => {
@@ -18,7 +20,7 @@ const normalizeSolution = (sol) => {
     return '';
 };
 
-const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
+const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData, addToast }) => {
     // Hooks must run unconditionally (Rules of Hooks) — do NOT return early before hooks
     const [activeTab, setActiveTab] = useState('question'); // 'question', 'options', 'solution'
     const [formData, setFormData] = useState({
@@ -164,16 +166,15 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                         <div className="flex-1 p-6 overflow-y-auto custom-scrollbar border-r border-gray-100 dark:border-slate-800">
                             {activeTab === 'question' && (
                                 <div className="space-y-4">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Question Text (Latex supported)</label>
-                                    <textarea
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">โจทย์คำถาม</label>
+                                    <RichMathEditor
+                                        variant="multiline"
                                         value={formData.question}
-                                        onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                                        className="w-full h-64 p-4 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none font-sarabun text-base leading-relaxed bg-white dark:bg-slate-900"
-                                        placeholder="Enter your question here..."
+                                        onChange={(v) => setFormData(prev => ({ ...prev, question: v }))}
+                                        addToast={addToast}
+                                        placeholder="พิมพ์โจทย์ที่นี่... กด “แทรกสมการ” เพื่อใส่สมการแบบเห็นภาพ"
+                                        ariaLabel="โจทย์คำถาม"
                                     />
-                                    <div className="text-xs text-gray-400 dark:text-slate-500">
-                                        Tip: Use standard LaTeX syntax like $x^2$ or \[ ... \]
-                                    </div>
                                 </div>
                             )}
 
@@ -211,12 +212,16 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                                         {formData.options?.map((opt, idx) => (
                                             <div key={idx} className="flex items-center gap-2 group">
                                                 <span className="w-6 font-bold text-gray-400 dark:text-slate-500 text-sm">{idx + 1}.</span>
-                                                <input
-                                                    value={opt}
-                                                    onChange={(e) => updateOption(idx, e.target.value)}
-                                                    className="flex-1 p-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-sarabun"
-                                                    placeholder={`Option ${idx + 1}`}
-                                                />
+                                                <div className="flex-1">
+                                                    <RichMathEditor
+                                                        variant="inline"
+                                                        value={opt}
+                                                        onChange={(v) => updateOption(idx, v)}
+                                                        addToast={addToast}
+                                                        placeholder={`ตัวเลือกที่ ${idx + 1}`}
+                                                        ariaLabel={`ตัวเลือกที่ ${idx + 1}`}
+                                                    />
+                                                </div>
                                                 <button onClick={() => removeOption(idx)} className="p-2 text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
                                                     <Trash2 size={16} />
                                                 </button>
@@ -234,59 +239,66 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                             {activeTab === 'solution' && (
                                 <div className="space-y-6">
                                     {isSolutionString ? (
-                                        /* String solution: single textarea for raw markdown */
+                                        /* String solution: WYSIWYG editor */
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">เฉลย (Markdown)</label>
-                                            <textarea
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">เฉลย</label>
+                                            <RichMathEditor
+                                                variant="multiline"
                                                 value={formData.solution}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, solution: e.target.value }))}
-                                                className="w-full h-64 p-4 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-mono text-sm resize-none bg-white dark:bg-slate-900"
-                                                placeholder="พิมพ์เฉลยในรูปแบบ Markdown..."
+                                                onChange={(v) => setFormData(prev => ({ ...prev, solution: v }))}
+                                                addToast={addToast}
+                                                placeholder="พิมพ์เฉลยที่นี่... กด “แทรกสมการ” เพื่อใส่สมการ"
+                                                ariaLabel="เฉลย"
                                             />
-                                            <div className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-                                                Tip: ใช้ LaTeX syntax เช่น $x^2$ หรือ $$\frac{'{1}'}{'{2}'}$$
-                                            </div>
                                         </div>
                                     ) : (
                                         /* Object solution: structured fields */
                                         <>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Correct Answer</label>
-                                                <input
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">คำตอบที่ถูกต้อง</label>
+                                                <RichMathEditor
+                                                    variant="inline"
                                                     value={formData.solution.answer}
-                                                    onChange={(e) => updateSolution('answer', e.target.value)}
-                                                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-sarabun"
-                                                    placeholder="e.g. 2x + 5"
+                                                    onChange={(v) => updateSolution('answer', v)}
+                                                    addToast={addToast}
+                                                    placeholder="เช่น 2x + 5"
+                                                    ariaLabel="คำตอบที่ถูกต้อง"
                                                 />
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Principle / Concept</label>
-                                                <textarea
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">หลักการ / แนวคิด</label>
+                                                <RichMathEditor
+                                                    variant="multiline"
                                                     value={formData.solution.principle}
-                                                    onChange={(e) => updateSolution('principle', e.target.value)}
-                                                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-sarabun h-24 resize-none"
-                                                    placeholder="Explain the core concept..."
+                                                    onChange={(v) => updateSolution('principle', v)}
+                                                    addToast={addToast}
+                                                    placeholder="อธิบายแนวคิดหลัก..."
+                                                    ariaLabel="หลักการ / แนวคิด"
                                                 />
                                             </div>
 
                                             <div>
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Solution Steps</label>
+                                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">ขั้นตอนการทำ</label>
                                                     <button onClick={addStep} className="text-xs flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-lg hover:bg-green-100 transition">
-                                                        <Plus size={14} /> Add Step
+                                                        <Plus size={14} /> เพิ่มขั้นตอน
                                                     </button>
                                                 </div>
                                                 <div className="space-y-2">
                                                     {formData.solution.steps?.map((step, idx) => (
                                                         <div key={idx} className="flex items-start gap-2 group">
                                                             <span className="w-6 font-bold text-gray-400 dark:text-slate-500 text-sm pt-3">{idx + 1}.</span>
-                                                            <textarea
-                                                                value={step}
-                                                                onChange={(e) => updateStep(idx, e.target.value)}
-                                                                className="flex-1 p-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all font-sarabun resize-none h-16 text-sm"
-                                                                placeholder={`Step ${idx + 1}`}
-                                                            />
+                                                            <div className="flex-1">
+                                                                <RichMathEditor
+                                                                    variant="multiline"
+                                                                    value={step}
+                                                                    onChange={(v) => updateStep(idx, v)}
+                                                                    addToast={addToast}
+                                                                    placeholder={`ขั้นตอนที่ ${idx + 1}`}
+                                                                    ariaLabel={`ขั้นตอนที่ ${idx + 1}`}
+                                                                />
+                                                            </div>
                                                             <button onClick={() => removeStep(idx)} className="p-2 text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 mt-2">
                                                                 <Trash2 size={16} />
                                                             </button>
@@ -296,12 +308,14 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-red-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Caution / Warning</label>
-                                                <textarea
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-red-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> ข้อควรระวัง</label>
+                                                <RichMathEditor
+                                                    variant="multiline"
                                                     value={formData.solution.caution}
-                                                    onChange={(e) => updateSolution('caution', e.target.value)}
-                                                    className="w-full p-3 rounded-xl border border-red-200 bg-red-50/20 focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all font-sarabun h-20 resize-none"
-                                                    placeholder="Common mistakes to avoid..."
+                                                    onChange={(v) => updateSolution('caution', v)}
+                                                    addToast={addToast}
+                                                    placeholder="ข้อผิดพลาดที่พบบ่อย..."
+                                                    ariaLabel="ข้อควรระวัง"
                                                 />
                                             </div>
                                         </>
@@ -316,19 +330,19 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                                 <Eye size={14} /> Live Preview
                             </h3>
 
-                            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 min-h-[300px]">
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[300px]">
                                 {/* Question Preview */}
-                                <div className="text-gray-900 dark:text-slate-100 font-sarabun text-lg leading-relaxed border-b border-gray-100 dark:border-slate-800 pb-4 mb-4">
-                                    <Latex>{formData.question || 'Start typing...'}</Latex>
+                                <div className="font-sarabun text-lg leading-relaxed border-b border-gray-100 pb-4 mb-4">
+                                    <MarkdownRenderer content={formData.question || 'เริ่มพิมพ์...'} />
                                 </div>
 
                                 {/* Options Preview */}
                                 {formData.options?.length > 0 && (
-                                    <div className="grid grid-cols-1 gap-3 mb-6">
+                                    <div className="grid grid-cols-1 gap-2 mb-6">
                                         {formData.options.map((opt, idx) => (
-                                            <div key={idx} className="flex items-center gap-3 text-gray-700 dark:text-slate-300 font-sarabun">
-                                                <span className="font-semibold text-gray-400 dark:text-slate-500">{idx + 1}.</span>
-                                                <div><Latex>{opt}</Latex></div>
+                                            <div key={idx} className="flex items-start gap-2 text-gray-700 font-sarabun">
+                                                <span className="font-semibold text-gray-400 pt-0.5">{idx + 1}.</span>
+                                                <div className="flex-1"><MarkdownRenderer content={opt || ''} /></div>
                                             </div>
                                         ))}
                                     </div>
@@ -339,25 +353,25 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData }) => {
                                     <div className="bg-green-50/50 rounded-lg border border-green-100 p-4 text-sm">
                                         <h4 className="font-bold text-green-700 mb-2">เฉลยละเอียด</h4>
                                         {isSolutionString ? (
-                                            <div className="text-gray-700 dark:text-slate-300 whitespace-pre-wrap">
-                                                <Latex>{formData.solution || 'ยังไม่มีเฉลย...'}</Latex>
+                                            <div className="text-gray-700">
+                                                <MarkdownRenderer content={formData.solution || 'ยังไม่มีเฉลย...'} />
                                             </div>
                                         ) : (
                                             <>
                                                 <div className="space-y-2">
                                                     {formData.solution.answer && <div><span className="font-semibold text-green-800">คำตอบ: </span><Latex>{formData.solution.answer}</Latex></div>}
-                                                    {formData.solution.principle && <div><span className="font-semibold text-green-800">หลักการ: </span><Latex>{formData.solution.principle}</Latex></div>}
+                                                    {formData.solution.principle && <div className="text-gray-700"><span className="font-semibold text-green-800">หลักการ:</span><MarkdownRenderer content={formData.solution.principle} /></div>}
                                                     {formData.solution.steps?.length > 0 && (
-                                                        <ul className="list-disc list-inside pl-2 space-y-1 mt-1 text-gray-700 dark:text-slate-300">
+                                                        <ol className="list-decimal list-inside pl-2 space-y-1 mt-1 text-gray-700">
                                                             {formData.solution.steps.map((step, i) => (
-                                                                <li key={i}><Latex>{step}</Latex></li>
+                                                                <li key={i}><MarkdownRenderer content={step || ''} /></li>
                                                             ))}
-                                                        </ul>
+                                                        </ol>
                                                     )}
                                                 </div>
                                                 {formData.solution.caution && (
                                                     <div className="bg-red-50 p-2 rounded border border-red-100 text-red-800 mt-2 text-xs">
-                                                        <span className="font-bold">Caution: </span><Latex>{formData.solution.caution}</Latex>
+                                                        <span className="font-bold">ข้อควรระวัง: </span><Latex>{formData.solution.caution}</Latex>
                                                     </div>
                                                 )}
                                             </>
