@@ -107,7 +107,7 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData, addToast })
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 print:hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-3 print:hidden">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
             <div
                 ref={modalRef}
@@ -115,7 +115,7 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData, addToast })
                 aria-modal="true"
                 aria-labelledby="question-editor-title"
                 tabIndex={-1}
-                className="bg-white/95 backdrop-blur-xl w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/20 animate-in zoom-in-95 duration-200"
+                className="bg-white/95 backdrop-blur-xl w-full max-w-[1700px] h-[96vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/20 animate-in zoom-in-95 duration-200"
             >
 
                 {/* Header */}
