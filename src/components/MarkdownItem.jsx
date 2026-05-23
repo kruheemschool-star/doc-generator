@@ -38,7 +38,7 @@ const splitAnswerContent = (content) => {
     };
 };
 
-const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly }) => {
+const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [showPreview, setShowPreview] = useState(false);
@@ -236,7 +236,10 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', showSolution =
                         ) : (() => {
                             const { mainContent, answerContent } = splitAnswerContent(text);
                             return (
-                                <div className={`prose max-w-none ${getSizeClass()}`}>
+                                <div
+                                    className={`prose max-w-none ${getSizeClass()}`}
+                                    style={typeof fontScale === 'number' ? { fontSize: `${fontScale}px` } : undefined}
+                                >
                                     <SafeMarkdownPreview content={mainContent || '> *Empty Markdown Content*'} getSizeClass={getSizeClass} />
                                     {answerContent && (
                                         <div className="relative transition-all">

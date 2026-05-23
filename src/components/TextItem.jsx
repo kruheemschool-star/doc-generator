@@ -17,6 +17,7 @@ const sanitize = (html) => DOMPurify.sanitize(html, SANITIZE_CONFIG);
 // Defined outside to prevent re-creation
 const toolbarOptions = [
     ['bold', 'italic', 'underline'],
+    [{ 'color': [] }, { 'background': [] }],
     [{ 'align': [] }],
     [{ 'script': 'sub' }, { 'script': 'super' }],
     [{ 'size': ['small', false, 'large', 'huge'] }],
@@ -25,14 +26,16 @@ const toolbarOptions = [
 
 const formats = [
     'bold', 'italic', 'underline',
+    'color', 'background',
     'align', 'script', 'size'
 ];
 
-const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly }) => {
+const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [QuillComponent, setQuillComponent] = useState(null);
     const [quillLoading, setQuillLoading] = useState(false);
+    const quillRef = useRef(null);
 
     // Memoize modules using named hook
     const modules = useMemo(() => ({
@@ -62,7 +65,18 @@ const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate
     }, [isExplicitEditing, loadQuill]);
 
     const handleSave = () => {
-        onUpdate(id, text);
+        // Read HTML straight from the Quill DOM. react-quill's onChange value can
+        // drop inline color/background styles on the controlled round-trip, so the
+        // editor's root.innerHTML is the source of truth for what the user sees.
+        let html = text;
+        try {
+            const editor = quillRef.current?.getEditor?.();
+            if (editor) html = editor.root.innerHTML;
+        } catch (e) {
+            console.warn('Could not read Quill editor HTML, falling back to state', e);
+        }
+        setText(html);
+        onUpdate(id, html);
         setIsEditing(false);
         if (onEditEnd) onEditEnd();
     };
@@ -142,6 +156,7 @@ const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate
                             <div className="w-full">
                                 {QuillComponent ? (
                                     <QuillComponent
+                                        ref={quillRef}
                                         theme="snow"
                                         value={text}
                                         onChange={setText}
@@ -170,6 +185,7 @@ const TextItem = memo(({ id, index, content, size = 'medium', onDelete, onUpdate
                             <div className="flex flex-col gap-2 pointer-events-none">
                                 <div
                                     className={`prose max-w-none text-gray-800 whitespace-pre-wrap cursor-text ql-editor p-0 ${getSizeClass()}`}
+                                    style={typeof fontScale === 'number' ? { fontSize: `${fontScale}px`, lineHeight: 1.2 } : undefined}
                                     dangerouslySetInnerHTML={{ __html: text ? sanitize(text) : '<span class="text-gray-400 italic">คลิกเพื่อเพิ่มข้อความ...</span>' }}
                                 />
                                 {/* LaTeX Preview Rendering */}

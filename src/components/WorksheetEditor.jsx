@@ -20,6 +20,17 @@ import { useModalA11y } from '../hooks/useModalA11y';
 import { expandDocumentTemplate } from '../data/pageTemplates';
 import { DEFAULT_FONT_ID, getFontStack } from '../data/documentFonts';
 
+// Font-size slider — maps legacy string sizes to a starting px value, and
+// reads the effective px (custom fontScale wins over the class-based size).
+const SIZE_TO_PX = { small: 14, medium: 16, large: 20, xl: 28 };
+const FONT_SCALE_MIN = 12;
+const FONT_SCALE_MAX = 96;
+const getEffectiveFontPx = (item) => {
+    if (!item) return 16;
+    if (typeof item.fontScale === 'number') return item.fontScale;
+    return SIZE_TO_PX[item.size] || 16;
+};
+
 const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // --- History State Management ---
     const {
@@ -51,9 +62,6 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
     // --- Toast notifications ---
     const { toasts, addToast, removeToast } = useToast();
-
-    // --- Import Modal A11y ---
-    const importModalRef = useModalA11y(showImportModal, () => setShowImportModal(false));
 
     // --- Manual Save State ---
     const [saveStatus, setSaveStatus] = useState('saved');
@@ -158,6 +166,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [importText, setImportText] = useState('');
     const [importSectionType, setImportSectionType] = useState('content');
     const [importQuestionType, setImportQuestionType] = useState('objective');
+
+    // --- Import Modal A11y (must come after showImportModal is declared) ---
+    const importModalRef = useModalA11y(showImportModal, () => setShowImportModal(false));
 
     // --- Template Picker State ---
     const [showTemplatePicker, setShowTemplatePicker] = useState(false);
@@ -675,12 +686,12 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
         if (q.type === 'text') return (
             <ErrorBoundary key={q.id}>
-                <TextItem {...commonProps} content={q.content} size={globalFontSize} />
+                <TextItem {...commonProps} content={q.content} size={globalFontSize} fontScale={q.fontScale} />
             </ErrorBoundary>
         );
         if (q.type === 'markdown') return (
             <ErrorBoundary key={q.id}>
-                <MarkdownItem {...commonProps} content={q.content} size={q.size || globalFontSize} showSolution={showSolution} />
+                <MarkdownItem {...commonProps} content={q.content} size={q.size || globalFontSize} fontScale={q.fontScale} showSolution={showSolution} />
             </ErrorBoundary>
         );
         if (q.type === 'image') return (
@@ -751,6 +762,17 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             down: !(sPageIdx === pages.length - 1 && sItemIdx === pages[sPageIdx].questions.length - 1)
         };
     })();
+
+    // Selected item object — used by the font-size slider (text/markdown only)
+    const selectedItem = (() => {
+        if (!selectedItemId) return null;
+        for (const page of pages) {
+            const found = (page.questions || []).find(q => q.id === selectedItemId);
+            if (found) return found;
+        }
+        return null;
+    })();
+    const isTextLikeSelected = selectedItem && (selectedItem.type === 'text' || selectedItem.type === 'markdown');
 
     return (
         <div className="min-h-screen bg-[#f1f5f9] dark:bg-slate-950 font-sans print:bg-white relative">
@@ -1119,6 +1141,35 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 >
                                     <ChevronDown size={20} />
                                 </button>
+
+                                {isTextLikeSelected && (
+                                    <>
+                                        <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+                                        <div className="flex items-center gap-1.5 px-1 flex-shrink-0" title="ปรับขนาดตัวอักษร">
+                                            <ALargeSmall size={18} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
+                                            <input
+                                                type="range"
+                                                min={FONT_SCALE_MIN}
+                                                max={FONT_SCALE_MAX}
+                                                step={1}
+                                                value={getEffectiveFontPx(selectedItem)}
+                                                onChange={(e) => handleUpdateItem(selectedItemId, { fontScale: Number(e.target.value) })}
+                                                className="w-20 sm:w-28 accent-blue-600 cursor-pointer"
+                                                aria-label="ขนาดตัวอักษร"
+                                            />
+                                            <span className="text-xs text-gray-500 dark:text-slate-400 font-medium min-w-[34px] text-center select-none tabular-nums">{getEffectiveFontPx(selectedItem)}px</span>
+                                            {typeof selectedItem.fontScale === 'number' && (
+                                                <button
+                                                    onClick={() => handleUpdateItem(selectedItemId, { fontScale: null })}
+                                                    className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                                    aria-label="ขนาดอัตโนมัติ" title="กลับเป็นขนาดอัตโนมัติ"
+                                                >
+                                                    <RotateCcw size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
 
                                 <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
 
