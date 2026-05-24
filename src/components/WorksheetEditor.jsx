@@ -615,8 +615,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                         type: 'question',
                         question: typeof q.question === 'string' ? q.question : '*(Question)*',
                         options: Array.isArray(q.options) ? q.options.filter(o => typeof o === 'string') : [],
-                        solution: typeof q.solution === 'string' ? q.solution : '',
+                        // AI output uses "explanation"; fall back to it so the เฉลย renders. Keep "solution" for older pastes.
+                        solution: typeof q.solution === 'string' ? q.solution : (typeof q.explanation === 'string' ? q.explanation : ''),
                         answer: typeof q.answer === 'string' ? q.answer : '',
+                        correctIndex: typeof q.correctIndex === 'number' ? q.correctIndex : undefined,
                         svg: typeof q.svg === 'string' ? q.svg : '',
                         spaceNeeded: q.space || 'medium'
                     });
