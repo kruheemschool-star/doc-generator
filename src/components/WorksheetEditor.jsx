@@ -13,6 +13,8 @@ import QuestionEditorModal from './QuestionEditorModal';
 import ErrorBoundary from './ErrorBoundary';
 import TemplatePicker from './TemplatePicker';
 import FontPicker from './FontPicker';
+import ImportPreview from './ImportPreview';
+import { tryParseImportJSON, normalizeImportedQuestion } from '../utils/importParser';
 import { useToast, ToastContainer } from './Toast';
 import useAutoPagination from '../hooks/useAutoPagination';
 import useHistory from '../hooks/useHistory';
@@ -575,26 +577,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         if (!importText.trim()) return;
 
         try {
-            let jsonString = importText.replace(/```json/g, '').replace(/```/g, '').trim();
-            let parsed = null;
-
-            try {
-                parsed = JSON.parse(jsonString);
-            } catch (e) {
-                const startArr = jsonString.indexOf('[');
-                const startObj = jsonString.indexOf('{');
-                const start = startArr !== -1 ? startArr : startObj;
-                const endArr = jsonString.lastIndexOf(']');
-                const endObj = jsonString.lastIndexOf('}');
-                const end = startArr !== -1 ? endArr : endObj;
-                if (start !== -1 && end !== -1 && end > start) {
-                    parsed = JSON.parse(jsonString.substring(start, end + 1));
-                } else {
-                    throw e;
-                }
-            }
-
-            if (!parsed) throw new Error("Could not parse data.");
+            const parseResult = tryParseImportJSON(importText);
+            if (!parseResult.ok) throw new Error(parseResult.error || "Could not parse data.");
+            const parsed = parseResult.parsed;
 
             const sectionHeaderItem = {
                 id: uuidv4(),
@@ -613,14 +598,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     itemsToAdd.push({
                         id: uuidv4(),
                         type: 'question',
-                        question: typeof q.question === 'string' ? q.question : '*(Question)*',
-                        options: Array.isArray(q.options) ? q.options.filter(o => typeof o === 'string') : [],
-                        // AI output uses "explanation"; fall back to it so the เฉลย renders. Keep "solution" for older pastes.
-                        solution: typeof q.solution === 'string' ? q.solution : (typeof q.explanation === 'string' ? q.explanation : ''),
-                        answer: typeof q.answer === 'string' ? q.answer : '',
-                        correctIndex: typeof q.correctIndex === 'number' ? q.correctIndex : undefined,
-                        svg: typeof q.svg === 'string' ? q.svg : '',
-                        spaceNeeded: q.space || 'medium'
+                        ...normalizeImportedQuestion(q)
                     });
                 });
                 insertItemsIntoPages(itemsToAdd);
@@ -1302,14 +1280,25 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                     </div>
                                 )}
 
-                                {/* Textarea */}
-                                <textarea
-                                    className="w-full flex-1 min-h-0 p-4 bg-gray-50 dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-800 focus:border-blue-500 rounded-2xl font-mono text-sm outline-none resize-none transition-all placeholder:text-gray-300"
-                                    placeholder="วางข้อมูล JSON หรือข้อความจาก Gemini ที่นี่..."
-                                    value={importText}
-                                    onChange={e => setImportText(e.target.value)}
-                                    autoFocus
-                                />
+                                {/* Two columns: paste (left) | live preview (right) */}
+                                <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
+                                    <div className="flex-1 min-h-0 flex flex-col">
+                                        <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 pl-1">วางข้อมูล (JSON / ข้อความ)</span>
+                                        <textarea
+                                            className="w-full flex-1 min-h-0 p-4 bg-gray-50 dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-800 focus:border-blue-500 rounded-2xl font-mono text-sm outline-none resize-none transition-all placeholder:text-gray-300"
+                                            placeholder="วางข้อมูล JSON หรือข้อความจาก Gemini ที่นี่..."
+                                            value={importText}
+                                            onChange={e => setImportText(e.target.value)}
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="flex-1 min-h-0 flex flex-col">
+                                        <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 pl-1">ตัวอย่างก่อนนำเข้า</span>
+                                        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar rounded-2xl border-2 border-gray-100 dark:border-slate-800 bg-gray-50/40 dark:bg-slate-900/40 p-4">
+                                            <ImportPreview text={importText} />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Footer */}
