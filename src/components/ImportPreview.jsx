@@ -53,13 +53,13 @@ const PreviewQuestion = ({ q, no }) => (
 );
 
 // Banner shown for the kruheemmath.com export (carries a `meta` block).
-const MetaBanner = ({ meta, count }) => {
+const MetaBanner = ({ meta, count, label = 'ชุดข้อสอบ' }) => {
     const chips = [meta.level, meta.difficulty, meta.category, meta.timeLimit ? `${meta.timeLimit} นาที` : null]
         .filter(Boolean);
     return (
         <div className="rounded-2xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-900/15 p-4">
             <div className="flex items-center gap-2 text-[10px] font-bold text-blue-400 dark:text-blue-500 uppercase tracking-wider mb-1">
-                <FileQuestion size={13} /> ชุดข้อสอบ • {count} ข้อ
+                <FileQuestion size={13} /> {label} • {count} ข้อ
             </div>
             {meta.title && <p className="text-sm font-bold text-gray-800 dark:text-slate-100">{meta.title}</p>}
             {meta.description && <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 line-clamp-2">{meta.description}</p>}
@@ -111,6 +111,25 @@ const ImportPreview = ({ text }) => {
                     <FileQuestion size={14} /> ตัวอย่าง {result.questions.length} ข้อ
                 </div>
                 {result.questions.map((q, i) => <PreviewQuestion key={i} q={q} no={i + 1} />)}
+            </div>
+        );
+    }
+
+    if (result.kind === 'answers') {
+        if (result.blocks.length === 0) {
+            return <Placeholder icon={FileQuestion} title="ไม่พบเฉลยในข้อมูลที่วาง" />;
+        }
+        return (
+            <div className="space-y-3">
+                {result.meta && <MetaBanner meta={result.meta} count={result.blocks.length} label="ชุดเฉลย" />}
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">
+                    <FileText size={14} /> ตัวอย่างเฉลย {result.blocks.length} ข้อ
+                </div>
+                {result.blocks.map((content, i) => (
+                    <div key={i} className="rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm text-sm text-gray-800 dark:text-slate-200 leading-relaxed">
+                        <MarkdownRenderer content={content} />
+                    </div>
+                ))}
             </div>
         );
     }

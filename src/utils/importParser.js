@@ -57,6 +57,33 @@ export const isProblemSolutionExport = (parsed) =>
     !!parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Array.isArray(parsed.problems);
 
 /**
+ * Detect the kruheemmath.com answer-key export: { meta, solutions[] } with NO `problems`.
+ * Each solution has { number, answerIndex, answerLabel, answerText, explanation }.
+ */
+export const isSolutionOnlyExport = (parsed) =>
+    !!parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    && Array.isArray(parsed.solutions) && !Array.isArray(parsed.problems);
+
+/**
+ * Render each solution from a solutions-only export as a self-contained markdown block.
+ * Prepending the question number + answer text gives an at-a-glance answer-key view;
+ * the explanation (which already opens with "**คำตอบ: ข้อ X.**") follows underneath.
+ */
+export const solutionsToMarkdownBlocks = (parsed) => {
+    const solutions = Array.isArray(parsed?.solutions) ? parsed.solutions : [];
+    return solutions
+        .filter(s => s && typeof s === 'object')
+        .map(s => {
+            const num = s.number != null ? `ข้อ ${s.number}.` : '';
+            const ans = typeof s.answerText === 'string' && s.answerText
+                ? ` คำตอบ: ${s.answerText}` : '';
+            const header = `**${num}${ans}**`.trim();
+            const explanation = typeof s.explanation === 'string' ? s.explanation : '';
+            return [header, explanation].filter(Boolean).join('\n\n').trim();
+        });
+};
+
+/**
  * Merge problems[] with solutions[] (matched by `number`, falling back to position)
  * into the internal question shape. In that export answerIndex is 0-based, so it
  * maps straight onto correctIndex; explanation becomes the solution.
@@ -103,6 +130,13 @@ export const classifyImport = (parsed) => {
         return {
             kind: 'questions',
             questions: mergeProblemsAndSolutions(parsed),
+            meta: parsed.meta && typeof parsed.meta === 'object' ? parsed.meta : null,
+        };
+    }
+    if (isSolutionOnlyExport(parsed)) {
+        return {
+            kind: 'answers',
+            blocks: solutionsToMarkdownBlocks(parsed),
             meta: parsed.meta && typeof parsed.meta === 'object' ? parsed.meta : null,
         };
     }

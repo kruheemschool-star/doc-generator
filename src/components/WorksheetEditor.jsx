@@ -14,7 +14,7 @@ import ErrorBoundary from './ErrorBoundary';
 import TemplatePicker from './TemplatePicker';
 import FontPicker from './FontPicker';
 import ImportPreview from './ImportPreview';
-import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions } from '../utils/importParser';
+import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions, isSolutionOnlyExport, solutionsToMarkdownBlocks } from '../utils/importParser';
 import { useToast, ToastContainer } from './Toast';
 import useAutoPagination from '../hooks/useAutoPagination';
 import useHistory from '../hooks/useHistory';
@@ -621,6 +621,17 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 }
                 mergeProblemsAndSolutions(parsed).forEach(q => {
                     itemsToAdd.push({ id: uuidv4(), type: 'question', ...q });
+                });
+                insertItemsIntoPages(itemsToAdd);
+            } else if (isSolutionOnlyExport(parsed)) {
+                // kruheemmath.com answer-key export: { meta, solutions[] } with no problems.
+                // Each solution becomes its own markdown item so the pagination hook can
+                // bin-pack them onto A4 pages by real measured height.
+                if (parsed.meta?.title) {
+                    sectionHeaderItem.content += `: เฉลย ${parsed.meta.title}`;
+                }
+                solutionsToMarkdownBlocks(parsed).forEach(content => {
+                    itemsToAdd.push({ id: uuidv4(), type: 'markdown', content, size: 'medium' });
                 });
                 insertItemsIntoPages(itemsToAdd);
             } else if (parsed.type === 'lesson' && parsed.blocks) {
