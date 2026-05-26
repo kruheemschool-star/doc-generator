@@ -315,7 +315,10 @@ const App = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#1e1e2f] flex flex-col">
+        <div
+            className="min-h-screen flex flex-col"
+            style={{ backgroundColor: 'var(--bg)', color: 'var(--text-2)' }}
+        >
             {/* Navbar */}
             <Navbar currentView={currentView} onViewChange={handleViewChange} />
 

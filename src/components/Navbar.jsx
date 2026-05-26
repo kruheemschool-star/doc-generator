@@ -1,28 +1,49 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LayoutDashboard, Sparkles, Settings, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
+import SettingsMenu from './SettingsMenu';
 
+// Deep Space TopBar — 52px slim bar, dark token-driven, sits over the Sidebar
+// region on the left visually but does not cover its content (Sidebar's KruHeem
+// brand sits in the corner; Navbar content lives on the right half).
 const Navbar = ({ currentView, onViewChange }) => {
-    const [theme, toggleTheme] = useTheme();
-    const isDark = theme === 'dark';
+    const t = useTheme();
+    const isDark = t.mode === 'dark';
+    const [settingsOpen, setSettingsOpen] = useState(false);
+
+    const pill = (active) => ({
+        backgroundColor: active ? 'var(--surface-3)' : 'transparent',
+        color: active ? 'var(--text-1)' : 'var(--text-3)',
+    });
 
     return (
-        <nav className="bg-white dark:bg-[#1e1e2f] text-gray-900 dark:text-white sticky top-0 z-40 border-b border-gray-200 dark:border-white/5 print:hidden font-sans">
-            <div className="flex items-center justify-end h-14 px-6">
+        <nav
+            className="sticky top-0 z-40 print:hidden font-noto-thai"
+            style={{
+                height: 52,
+                backgroundColor: 'var(--bg)',
+                borderBottom: '1px solid var(--border)',
+            }}
+        >
+            <div className="flex items-center justify-end h-full px-9">
                 <div className="flex items-center gap-2">
-                    {/* Menu Items */}
-                    <div className="flex space-x-1 bg-gray-100 dark:bg-white/[0.06] p-1 rounded-xl border border-gray-200/60 dark:border-white/[0.06]">
+                    {/* Page nav pills */}
+                    <div
+                        className="flex gap-0.5 p-1"
+                        style={{
+                            borderRadius: 10,
+                            backgroundColor: 'var(--surface)',
+                            border: '1px solid var(--border-2)',
+                        }}
+                    >
                         <button
                             onClick={() => onViewChange('dashboard')}
                             aria-label="Dashboard"
                             aria-current={(currentView === 'dashboard' || currentView === 'editor') ? 'page' : undefined}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-200 ${
-                                currentView === 'dashboard' || currentView === 'editor'
-                                    ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm'
-                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5'
-                            }`}
+                            className="px-3.5 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-2 transition-all"
+                            style={pill(currentView === 'dashboard' || currentView === 'editor')}
                         >
-                            <LayoutDashboard size={16} className={currentView === 'dashboard' || currentView === 'editor' ? 'text-blue-500 dark:text-blue-400' : ''} />
+                            <LayoutDashboard size={14} strokeWidth={2} />
                             <span className="hidden sm:inline">Dashboard</span>
                         </button>
 
@@ -30,45 +51,67 @@ const Navbar = ({ currentView, onViewChange }) => {
                             onClick={() => onViewChange('prompt-builder')}
                             aria-label="Prompt Builder"
                             aria-current={currentView === 'prompt-builder' ? 'page' : undefined}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-200 ${
-                                currentView === 'prompt-builder'
-                                    ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm'
-                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5'
-                            }`}
+                            className="px-3.5 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-2 transition-all"
+                            style={pill(currentView === 'prompt-builder')}
                         >
-                            <Sparkles size={16} className={currentView === 'prompt-builder' ? 'text-purple-500 dark:text-purple-400' : ''} />
+                            <Sparkles size={14} strokeWidth={2} />
                             <span className="hidden sm:inline">Prompt Builder</span>
                         </button>
                     </div>
 
-                    {/* Theme Toggle */}
+                    {/* Theme mode (sun/moon) */}
                     <button
-                        onClick={toggleTheme}
+                        onClick={t.toggleMode}
                         aria-label={isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'}
                         title={isDark ? 'โหมดสว่าง' : 'โหมดมืด'}
-                        className="relative w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 dark:text-amber-300 hover:text-gray-900 dark:hover:text-amber-200 hover:bg-gray-100 dark:hover:bg-white/10 transition-all border border-gray-200 dark:border-white/[0.06] overflow-hidden"
+                        className="relative w-9 h-9 flex items-center justify-center overflow-hidden transition-all"
+                        style={{
+                            borderRadius: 10,
+                            color: 'var(--text-3)',
+                            backgroundColor: 'var(--surface)',
+                            border: '1px solid var(--border-2)',
+                        }}
                     >
                         <Sun
-                            size={16}
-                            strokeWidth={2.5}
+                            size={15}
+                            strokeWidth={2.2}
                             className={`absolute transition-all duration-500 ${isDark ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'}`}
                         />
                         <Moon
-                            size={16}
-                            strokeWidth={2.5}
+                            size={15}
+                            strokeWidth={2.2}
                             className={`absolute transition-all duration-500 ${isDark ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'}`}
                         />
                     </button>
 
-                    {/* Settings */}
+                    {/* Settings (theme picker + density) */}
                     <button
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all border border-gray-200 dark:border-white/[0.06]"
+                        onClick={() => setSettingsOpen(s => !s)}
+                        className="w-9 h-9 flex items-center justify-center transition-all"
+                        style={{
+                            borderRadius: 10,
+                            color: settingsOpen ? 'var(--accent-b)' : 'var(--text-3)',
+                            backgroundColor: settingsOpen ? 'var(--accent-dim)' : 'var(--surface)',
+                            border: '1px solid ' + (settingsOpen ? 'var(--accent)' : 'var(--border-2)'),
+                        }}
                         title="Settings"
+                        aria-label="Settings"
+                        aria-expanded={settingsOpen}
                     >
-                        <Settings size={16} />
+                        <Settings size={15} strokeWidth={2} />
                     </button>
                 </div>
             </div>
+            <SettingsMenu
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+                theme={t.theme}
+                setTheme={t.setTheme}
+                density={t.density}
+                setDensity={t.setDensity}
+                mode={t.mode}
+                setMode={t.setMode}
+            />
         </nav>
     );
 };

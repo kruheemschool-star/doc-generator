@@ -31,6 +31,21 @@ const FOLDER_COLORS = {
     gray: { gradient: 'from-slate-400 to-gray-500', bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-600', iconBg: 'bg-gray-100', accent: 'bg-gray-500', ring: 'ring-gray-400/30' },
 };
 
+// Deep Space folder palette — flat solid color + glow for the portrait card top block.
+// Maps the legacy FOLDER_COLORS keys (set when the user picked a color) to fixed
+// hues that read well on the dark surface. Independent of the accent theme so
+// folder identity stays consistent if the user switches violet/cyan/amber.
+const FOLDER_COLOR_MAP = {
+    blue:   { bg: '#7856f4', glow: 'rgba(120, 86, 244, 0.38)' },
+    purple: { bg: '#a855f7', glow: 'rgba(168, 85, 247, 0.38)' },
+    pink:   { bg: '#ec4899', glow: 'rgba(236, 72, 153, 0.38)' },
+    red:    { bg: '#f05a5a', glow: 'rgba(240, 90, 90, 0.38)' },
+    orange: { bg: '#f59e0b', glow: 'rgba(245, 158, 11, 0.38)' },
+    yellow: { bg: '#fbbf24', glow: 'rgba(251, 191, 36, 0.38)' },
+    green:  { bg: '#059669', glow: 'rgba(5, 150, 105, 0.38)' },
+    gray:   { bg: '#64748b', glow: 'rgba(100, 116, 139, 0.38)' },
+};
+
 const FOLDER_ICONS = {
     folder: Folder,
     book: BookOpen,
@@ -167,132 +182,272 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
     const toggleSelectAll = () => { if (selectedDocs.size === docsToShow.length) setSelectedDocs(new Set()); else setSelectedDocs(new Set(docsToShow.map(d => d.id))); };
     const handleBatchDeleteSelected = () => { if (selectedDocs.size === 0) return; onBatchDelete && onBatchDelete([...selectedDocs]); setSelectedDocs(new Set()); setIsSelectMode(false); };
 
+    // Deep Space Sidebar — section label with gradient fade line (design §5.9)
+    const SectionLabel = ({ children }) => (
+        <div className="flex items-center gap-2 px-3 mb-2.5 mt-4">
+            <span
+                className="text-[10px] font-bold uppercase font-noto-thai"
+                style={{ color: 'var(--text-6)', letterSpacing: '0.12em' }}
+            >{children}</span>
+            <div
+                className="h-px flex-1 max-w-[48px]"
+                style={{ background: 'linear-gradient(to right, var(--border-3), transparent)' }}
+            />
+        </div>
+    );
+
     return (
-        <div className="flex bg-gray-50 dark:bg-[#1e1e2f] min-h-screen font-sans" onClick={() => setContextMenuFolder(null)}>
-            {/* ═══════ SIDEBAR ═══════ */}
-            <aside className="w-64 bg-white dark:bg-[#16162a] fixed top-0 left-0 h-screen z-50 flex flex-col border-r border-gray-200 dark:border-white/[0.06] shadow-sm dark:shadow-none">
-                {/* Brand */}
-                <div className="p-5 border-b border-gray-100 dark:border-white/[0.06]">
+        <div className="flex min-h-screen font-noto-thai" style={{ backgroundColor: 'var(--bg)' }} onClick={() => setContextMenuFolder(null)}>
+            {/* ═══════ DEEP SPACE SIDEBAR (230px) ═══════ */}
+            <aside
+                className="w-[230px] fixed top-0 left-0 h-screen z-50 flex flex-col print:hidden"
+                style={{ backgroundColor: 'var(--sidebar)', borderRight: '1px solid var(--border)' }}
+            >
+                {/* Profile (design §5.1) */}
+                <div className="px-5 pt-6 pb-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center font-bold text-white text-sm shadow-lg shadow-purple-500/20">K</div>
+                        <div
+                            className="w-10 h-10 flex items-center justify-center text-white text-base font-extrabold"
+                            style={{
+                                borderRadius: 13,
+                                background: 'linear-gradient(135deg, var(--accent), var(--accent-b))',
+                                boxShadow: '0 0 0 2px var(--sidebar), 0 0 0 3px color-mix(in srgb, var(--accent) 33%, transparent)',
+                                fontFamily: 'Sora, sans-serif'
+                            }}
+                        >K</div>
                         <div className="flex flex-col">
-                            <span className="font-bold text-gray-900 dark:text-white text-base leading-none tracking-tight font-outfit">KruHeem</span>
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium tracking-wider uppercase mt-0.5">MATH AI ASSISTANT</span>
+                            <span
+                                className="text-base font-extrabold leading-none tracking-tight"
+                                style={{ color: 'var(--text-1)', fontFamily: 'Sora, sans-serif' }}
+                            >KruHeem</span>
+                            <span
+                                className="text-[10px] font-medium uppercase mt-1.5"
+                                style={{ color: 'var(--text-5)', letterSpacing: '0.12em' }}
+                            >Math AI Assistant</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Workspace */}
-                <div className="p-4 border-b border-gray-100 dark:border-white/[0.06]">
-                    <h2 className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">Workspace</h2>
-                    <div className="space-y-1">
-                        <div
-                            onClick={() => { setShowTrash(false); setSelectedDocs(new Set()); setIsSelectMode(false); }}
-                            className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-all ${
-                                !showTrash
-                                    ? 'bg-blue-50 text-blue-700 dark:bg-white/[0.08] dark:text-white'
-                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04]'
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <Folder size={16} />
-                                <span className="text-sm font-medium">My Documents</span>
+                {/* Workspace nav */}
+                <SectionLabel>Workspace</SectionLabel>
+                <div className="px-2.5 space-y-0.5">
+                    {[
+                        { id: 'docs', icon: Folder, label: 'My Documents', count: documents.length, active: !showTrash,
+                          onClick: () => { setShowTrash(false); setSelectedDocs(new Set()); setIsSelectMode(false); } },
+                        { id: 'trash', icon: Trash2, label: 'Trash', count: trashedDocs.length, active: showTrash,
+                          onClick: () => { setShowTrash(true); setSelectedDocs(new Set()); setIsSelectMode(false); setCurrentFolderId(null); setSearchQuery(''); } },
+                    ].map(item => {
+                        const Icon = item.icon;
+                        return (
+                            <div
+                                key={item.id}
+                                onClick={item.onClick}
+                                className="flex items-center justify-between px-3 py-2 cursor-pointer transition-all"
+                                style={{
+                                    borderRadius: 8,
+                                    backgroundColor: item.active ? 'var(--accent-dim)' : 'transparent',
+                                    color: item.active ? 'var(--text-1)' : 'var(--text-3)',
+                                    borderLeft: item.active ? '2px solid var(--accent)' : '2px solid transparent',
+                                    paddingLeft: item.active ? 10 : 12,
+                                }}
+                                onMouseEnter={(e) => { if (!item.active) { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'var(--text-2)'; } }}
+                                onMouseLeave={(e) => { if (!item.active) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-3)'; } }}
+                            >
+                                <div className="flex items-center gap-2.5">
+                                    <Icon size={15} strokeWidth={1.8} />
+                                    <span className="text-[13px] font-medium">{item.label}</span>
+                                </div>
+                                {item.count > 0 && (
+                                    <span
+                                        className="text-[10px] font-bold px-1.5 py-0.5"
+                                        style={{
+                                            color: item.active ? 'var(--accent-b)' : 'var(--text-5)',
+                                            borderRadius: 5,
+                                        }}
+                                    >{item.count}</span>
+                                )}
                             </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">{documents.length}</span>
-                        </div>
-                        <div
-                            onClick={() => { setShowTrash(true); setSelectedDocs(new Set()); setIsSelectMode(false); setCurrentFolderId(null); setSearchQuery(''); }}
-                            className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-all ${
-                                showTrash
-                                    ? 'bg-rose-50 text-rose-700 dark:bg-white/[0.08] dark:text-white'
-                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04]'
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <Trash2 size={16} />
-                                <span className="text-sm font-medium">Trash</span>
-                            </div>
-                            {trashedDocs.length > 0 && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-white/[0.08] dark:text-gray-400">{trashedDocs.length}</span>
-                            )}
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
 
-                {/* Class Levels */}
-                <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
-                    <div className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">Class Levels</div>
-                    {Object.keys(CURRICULUM_DATA).map(grade => (
-                        <button
-                            key={grade}
-                            onClick={() => { setSelectedGrade(grade); setSelectedTerm('Term 1'); setCurrentFolderId(null); setSearchQuery(''); }}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                                selectedGrade === grade
-                                    ? 'bg-blue-50 text-blue-700 dark:bg-white/[0.08] dark:text-white'
-                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-white/[0.04] dark:hover:text-gray-300'
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className={`w-2 h-2 rounded-full ${selectedGrade === grade ? 'bg-blue-500 dark:bg-rose-400' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                                {grade}
-                            </div>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                                selectedGrade === grade
-                                    ? 'bg-blue-100 text-blue-600 dark:bg-white/[0.1] dark:text-gray-300'
-                                    : 'bg-gray-100 text-gray-400 dark:bg-transparent dark:text-gray-600'
-                            }`}>{docCountByGrade(grade)}</span>
-                        </button>
-                    ))}
+                {/* Class Levels (design §5.2 — dot glow on active) */}
+                <SectionLabel>Class Levels</SectionLabel>
+                <nav className="flex-1 overflow-y-auto custom-scrollbar px-2.5 space-y-0.5 pb-4">
+                    {Object.keys(CURRICULUM_DATA).map(grade => {
+                        const active = selectedGrade === grade && !showTrash;
+                        const count = docCountByGrade(grade);
+                        return (
+                            <button
+                                key={grade}
+                                onClick={() => { setSelectedGrade(grade); setSelectedTerm('Term 1'); setCurrentFolderId(null); setSearchQuery(''); setShowTrash(false); }}
+                                className="w-full flex items-center justify-between py-2 text-[13px] font-medium transition-all"
+                                style={{
+                                    borderRadius: 8,
+                                    backgroundColor: active ? 'var(--accent-dim)' : 'transparent',
+                                    color: active ? 'var(--text-1)' : 'var(--text-3)',
+                                    borderLeft: active ? '2px solid var(--accent)' : '2px solid transparent',
+                                    paddingLeft: active ? 10 : 12,
+                                    paddingRight: 10,
+                                }}
+                                onMouseEnter={(e) => { if (!active) { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'var(--text-2)'; } }}
+                                onMouseLeave={(e) => { if (!active) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-3)'; } }}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span
+                                        className="w-1.5 h-1.5 rounded-full"
+                                        style={{
+                                            backgroundColor: active ? 'var(--accent)' : 'var(--border-3)',
+                                            boxShadow: active ? '0 0 6px var(--accent)' : 'none',
+                                        }}
+                                    />
+                                    {grade}
+                                </div>
+                                <span
+                                    className="text-[10px] font-bold"
+                                    style={{ color: active ? 'var(--accent-b)' : 'var(--text-5)' }}
+                                >{count}</span>
+                            </button>
+                        );
+                    })}
                 </nav>
 
-                {/* Sync Status */}
-                <div className="p-4 border-t border-gray-100 dark:border-white/[0.06] bg-gray-50/50 dark:bg-transparent">
-                    <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-                        <Clock size={12} />
+                {/* Sync footer */}
+                <div className="px-5 py-3.5" style={{ borderTop: '1px solid var(--border)' }}>
+                    <div className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--text-5)' }}>
+                        <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: 'var(--accent)', boxShadow: '0 0 6px var(--accent)' }}
+                        />
                         <span>Last sync: Just now</span>
                     </div>
                 </div>
             </aside>
 
             {/* ═══════ MAIN CONTENT ═══════ */}
-            <main className="flex-1 ml-64 p-8 md:p-12 overflow-y-auto" onDragOver={(e) => { if (draggedDocId) e.preventDefault(); }} onDrop={handleDropOutside}>
+            <main
+                className="flex-1 overflow-y-auto"
+                style={{ marginLeft: '230px', padding: 'var(--content-pad)', color: 'var(--text-2)' }}
+                onDragOver={(e) => { if (draggedDocId) e.preventDefault(); }}
+                onDrop={handleDropOutside}
+            >
 
-                {/* Header */}
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+                {/* ═══════ PAGE HEADER (Deep Space §4) ═══════ */}
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4" style={{ marginBottom: 32 }}>
                     <div>
-                        <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-sm mb-1 font-medium">
-                            <span className="cursor-pointer hover:text-blue-600 dark:hover:text-white transition-colors" onClick={() => { setCurrentFolderId(null); setSearchQuery(''); }}>My Documents</span>
-                            <ChevronRight size={14} />
-                            <span className="cursor-pointer hover:text-blue-600 dark:hover:text-white transition-colors" onClick={() => { setCurrentFolderId(null); setSearchQuery(''); }}>{selectedGrade}</span>
-                            {currentFolder && (<><ChevronRight size={14} /><span className="text-gray-600 dark:text-gray-300 font-semibold">{currentFolder.name}</span></>)}
+                        {/* Breadcrumb */}
+                        <div className="flex items-center gap-2 text-[13px] font-medium mb-2" style={{ color: 'var(--text-3)' }}>
+                            <span
+                                className="cursor-pointer transition-colors"
+                                style={{ color: 'var(--text-3)' }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-3)'}
+                                onClick={() => { setCurrentFolderId(null); setSearchQuery(''); }}
+                            >My Documents</span>
+                            <ChevronRight size={14} style={{ color: 'var(--text-5)' }} />
+                            <span
+                                className="cursor-pointer transition-colors"
+                                style={{ color: 'var(--text-3)' }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-3)'}
+                                onClick={() => { setCurrentFolderId(null); setSearchQuery(''); }}
+                            >{selectedGrade}</span>
+                            {currentFolder && (<>
+                                <ChevronRight size={14} style={{ color: 'var(--text-5)' }} />
+                                <span className="font-semibold" style={{ color: 'var(--text-2)' }}>{currentFolder.name}</span>
+                            </>)}
                         </div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight font-outfit">
+
+                        {/* Display title (64px Sora gradient) */}
+                        <h2
+                            className="flex items-center gap-4 tracking-tight"
+                            style={{
+                                fontFamily: 'Sora, sans-serif',
+                                fontSize: 64,
+                                fontWeight: 800,
+                                lineHeight: 1,
+                                letterSpacing: '-0.04em',
+                                background: 'var(--head-grad)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                backgroundClip: 'text',
+                            }}
+                        >
                             {currentFolder ? currentFolder.name : (
-                                <>{selectedGrade} — <span className="inline-flex items-center px-3 py-0.5 rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 text-lg font-bold">{selectedTerm}</span></>
+                                <>
+                                    {selectedGrade}
+                                    <span style={{ color: 'var(--text-5)', WebkitTextFillColor: 'var(--text-5)' }}>—</span>
+                                    <span
+                                        className="inline-flex items-center font-extrabold"
+                                        style={{
+                                            background: 'var(--danger-bg)',
+                                            color: 'var(--danger)',
+                                            WebkitTextFillColor: 'var(--danger)',
+                                            fontSize: 18,
+                                            padding: '4px 12px',
+                                            borderRadius: 8,
+                                            fontFamily: "'Noto Sans Thai', sans-serif",
+                                            letterSpacing: 0,
+                                        }}
+                                    >{selectedTerm}</span>
+                                </>
                             )}
                         </h2>
-                        <p className="text-gray-500 mt-1 text-sm">
+
+                        <p className="text-[13px] mt-3" style={{ color: 'var(--text-4)' }}>
                             {currentFolder ? `${docsToShow.length} documents` : 'จัดการแบบทดสอบ แบบฝึกหัด และแผนการสอน'}
                         </p>
                     </div>
 
+                    {/* Right cluster: Search + Term toggle */}
                     <div className="flex items-center gap-3">
                         <div className="relative">
-                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                            <input type="text" placeholder="ค้นหาเอกสาร..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-4 py-2.5 bg-white dark:bg-white/[0.06] border border-gray-200 dark:border-white/[0.08] rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 w-64 focus:ring-2 focus:ring-blue-500/40 focus:border-transparent outline-none transition-all shadow-sm dark:shadow-none" />
-                            {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-white"><X size={14} /></button>}
+                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-5)' }} />
+                            <input
+                                type="text"
+                                placeholder="ค้นหาเอกสาร..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="pl-9 pr-4 py-2.5 text-[13px] w-64 outline-none transition-all"
+                                style={{
+                                    backgroundColor: 'var(--surface)',
+                                    border: '1px solid var(--border-2)',
+                                    borderRadius: 10,
+                                    color: 'var(--text-2)',
+                                }}
+                                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--border-4)'}
+                                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border-2)'}
+                            />
+                            {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--text-5)' }}><X size={14} /></button>}
                         </div>
                         {!currentFolderId && !searchQuery && (
-                            <div className="bg-white dark:bg-white/[0.06] p-1.5 rounded-xl border border-gray-200 dark:border-white/[0.08] shadow-sm dark:shadow-none flex gap-1">
-                                {['Term 1', 'Term 2'].map(term => (
-                                    <button key={term} onClick={() => setSelectedTerm(term)}
-                                        className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
-                                            selectedTerm === term
-                                                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-md'
-                                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/[0.06]'
-                                        }`}>{term}</button>
-                                ))}
+                            <div
+                                className="flex gap-0.5"
+                                style={{
+                                    backgroundColor: 'var(--surface)',
+                                    border: '1px solid var(--border-2)',
+                                    borderRadius: 10,
+                                    padding: 3,
+                                }}
+                            >
+                                {['Term 1', 'Term 2'].map(term => {
+                                    const active = selectedTerm === term;
+                                    return (
+                                        <button
+                                            key={term}
+                                            onClick={() => setSelectedTerm(term)}
+                                            className="text-[13px] font-bold transition-all"
+                                            style={{
+                                                padding: '7px 18px',
+                                                borderRadius: 7,
+                                                background: active
+                                                    ? (term === 'Term 1' ? 'var(--term-1-bg)' : 'var(--term-2-bg)')
+                                                    : 'transparent',
+                                                color: active ? '#fff' : 'var(--text-4)',
+                                            }}
+                                        >{term}</button>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -361,67 +516,243 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
                             </div>
                         )}
 
-                        {/* ═══ FOLDERS GRID ═══ */}
+                        {/* ═══ DEEP SPACE FOLDERS (portrait 172×210) ═══ */}
                         {!currentFolderId && !searchQuery && (
-                            <div className="mb-8">
-                                <h3 className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Folders</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <div style={{ marginBottom: 36 }}>
+                                <SectionLabel>Folders</SectionLabel>
+                                <div className="flex flex-wrap gap-4 mt-3">
                                     {gradeFolders.map(folder => {
-                                        const colors = FOLDER_COLORS[folder.color] || FOLDER_COLORS.blue;
+                                        const fc = FOLDER_COLOR_MAP[folder.color] || FOLDER_COLOR_MAP.blue;
                                         const IconComponent = FOLDER_ICONS[folder.icon] || Folder;
                                         const folderDocCount = documents.filter(d => d.folderId === folder.id).length;
                                         const isDragOver = dragOverFolderId === folder.id;
                                         return (
-                                            <div key={folder.id} onClick={() => setCurrentFolderId(folder.id)}
-                                                onDragOver={(e) => handleDragOver(e, folder.id)} onDragLeave={handleDragLeave}
+                                            <div
+                                                key={folder.id}
+                                                onClick={() => setCurrentFolderId(folder.id)}
+                                                onDragOver={(e) => handleDragOver(e, folder.id)}
+                                                onDragLeave={handleDragLeave}
                                                 onDrop={(e) => { e.stopPropagation(); handleDrop(e, folder.id); }}
-                                                className={`relative group cursor-pointer rounded-2xl p-5 transition-all duration-200 bg-gradient-to-br ${colors.gradient} ${isDragOver ? `ring-4 ${colors.ring} scale-105` : 'hover:shadow-xl hover:shadow-black/10 dark:hover:shadow-black/20 hover:scale-[1.02]'}`}>
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-white"><IconComponent size={20} /></div>
-                                                    <button onClick={(e) => { e.stopPropagation(); setContextMenuFolder(contextMenuFolder === folder.id ? null : folder.id); }}
-                                                        className="p-1 rounded-lg text-white/50 hover:bg-white/20 hover:text-white opacity-0 group-hover:opacity-100 transition-all"><MoreVertical size={16} /></button>
+                                                className="relative group cursor-pointer overflow-hidden"
+                                                style={{
+                                                    width: 172,
+                                                    height: 210,
+                                                    borderRadius: 18,
+                                                    border: `1px solid ${isDragOver ? fc.bg : 'var(--border-2)'}`,
+                                                    backgroundColor: 'var(--surface)',
+                                                    transform: isDragOver ? 'translateY(-3px)' : 'none',
+                                                    boxShadow: isDragOver ? `0 12px 32px ${fc.glow}, 0 0 0 1px ${fc.bg}22` : 'none',
+                                                    transition: 'all 0.2s',
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (isDragOver) return;
+                                                    e.currentTarget.style.transform = 'translateY(-3px)';
+                                                    e.currentTarget.style.borderColor = fc.bg;
+                                                    e.currentTarget.style.boxShadow = `0 12px 32px ${fc.glow}, 0 0 0 1px ${fc.bg}22`;
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (isDragOver) return;
+                                                    e.currentTarget.style.transform = 'none';
+                                                    e.currentTarget.style.borderColor = 'var(--border-2)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                }}
+                                            >
+                                                {/* Top 44% — color block with decorative circles + count */}
+                                                <div
+                                                    className="absolute top-0 left-0 right-0 overflow-hidden"
+                                                    style={{ height: '44%', backgroundColor: fc.bg }}
+                                                >
+                                                    {/* Decorative circles (design §5.3) */}
+                                                    <div
+                                                        className="absolute rounded-full"
+                                                        style={{ top: -18, left: -18, width: 80, height: 80, backgroundColor: 'rgba(255,255,255,0.14)' }}
+                                                    />
+                                                    <div
+                                                        className="absolute rounded-full"
+                                                        style={{ top: 10, left: 30, width: 40, height: 40, backgroundColor: 'rgba(255,255,255,0.08)' }}
+                                                    />
+                                                    {/* Icon (top-left) */}
+                                                    <div
+                                                        className="absolute flex items-center justify-center text-white backdrop-blur-sm"
+                                                        style={{ top: 14, left: 14, width: 32, height: 32, borderRadius: 9, backgroundColor: 'rgba(255,255,255,0.18)' }}
+                                                    >
+                                                        <IconComponent size={16} strokeWidth={2.2} />
+                                                    </div>
+                                                    {/* Count (top-right) — 48px Sora */}
+                                                    <span
+                                                        className="absolute text-white"
+                                                        style={{
+                                                            bottom: 8,
+                                                            right: 14,
+                                                            fontSize: 48,
+                                                            fontWeight: 800,
+                                                            fontFamily: 'Sora, sans-serif',
+                                                            lineHeight: 1,
+                                                            letterSpacing: '-0.04em',
+                                                        }}
+                                                    >{folderDocCount}</span>
+                                                    {/* More button */}
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setContextMenuFolder(contextMenuFolder === folder.id ? null : folder.id); }}
+                                                        className="absolute opacity-0 group-hover:opacity-100 text-white/70 hover:text-white transition-all"
+                                                        style={{ top: 12, right: 12, padding: 4, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.18)' }}
+                                                    >
+                                                        <MoreVertical size={14} />
+                                                    </button>
                                                 </div>
-                                                <h4 className="font-bold text-white text-sm mb-1 line-clamp-1">{folder.name}</h4>
-                                                <p className="text-white/70 text-xs">{folderDocCount} {folderDocCount === 1 ? 'document' : 'documents'}</p>
+
+                                                {/* Bottom 56% — name + accent line + subtitle */}
+                                                <div className="absolute bottom-0 left-0 right-0 p-4" style={{ height: '56%' }}>
+                                                    <h4
+                                                        className="line-clamp-2 mb-3"
+                                                        style={{
+                                                            color: 'var(--text-1)',
+                                                            fontSize: 14,
+                                                            fontWeight: 700,
+                                                            lineHeight: 1.3,
+                                                        }}
+                                                    >{folder.name}</h4>
+                                                    <div className="absolute left-4 right-4" style={{ bottom: 14 }}>
+                                                        <div className="flex items-center gap-2">
+                                                            <span
+                                                                className="block h-0.5 rounded-full"
+                                                                style={{ width: 18, backgroundColor: fc.bg }}
+                                                            />
+                                                            <span style={{ color: 'var(--text-5)', fontSize: 11 }}>
+                                                                {folderDocCount} {folderDocCount === 1 ? 'document' : 'documents'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
                                                 {contextMenuFolder === folder.id && (
-                                                    <div className="absolute top-12 right-2 bg-white dark:bg-[#2a2a42] rounded-xl shadow-xl border border-gray-200 dark:border-white/[0.1] py-1 z-20 min-w-[140px]" onClick={e => e.stopPropagation()}>
-                                                        <button onClick={() => openEditFolder(folder)} className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] flex items-center gap-2"><Pencil size={14} /> Edit</button>
-                                                        <button onClick={() => { onDeleteFolder && onDeleteFolder(folder.id); setContextMenuFolder(null); }} className="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 flex items-center gap-2"><Trash2 size={14} /> Delete</button>
+                                                    <div
+                                                        className="absolute z-20 py-1 min-w-[140px]"
+                                                        style={{
+                                                            top: 50, right: 8,
+                                                            backgroundColor: 'var(--surface)',
+                                                            border: '1px solid var(--border-3)',
+                                                            borderRadius: 10,
+                                                            boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+                                                        }}
+                                                        onClick={e => e.stopPropagation()}
+                                                    >
+                                                        <button
+                                                            onClick={() => openEditFolder(folder)}
+                                                            className="w-full text-left px-3 py-1.5 text-[13px] flex items-center gap-2 transition-colors"
+                                                            style={{ color: 'var(--text-2)' }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-2)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                        ><Pencil size={13} /> Edit</button>
+                                                        <button
+                                                            onClick={() => { onDeleteFolder && onDeleteFolder(folder.id); setContextMenuFolder(null); }}
+                                                            className="w-full text-left px-3 py-1.5 text-[13px] flex items-center gap-2 transition-colors"
+                                                            style={{ color: 'var(--danger)' }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--danger-bg)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                        ><Trash2 size={13} /> Delete</button>
                                                     </div>
                                                 )}
                                             </div>
                                         );
                                     })}
-                                    <button onClick={() => { setEditingFolder(null); setNewFolderData({ name: '', color: 'blue', icon: 'folder' }); setIsFolderModalOpen(true); }}
-                                        className="group rounded-2xl p-5 border-2 border-dashed border-gray-300 dark:border-white/[0.1] hover:border-gray-400 dark:hover:border-white/[0.2] transition-all flex flex-col items-center justify-center min-h-[120px] cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.03]">
-                                        <div className="w-10 h-10 bg-gray-100 dark:bg-white/[0.06] rounded-xl flex items-center justify-center mb-2 group-hover:bg-gray-200 dark:group-hover:bg-white/[0.1] transition-all">
-                                            <Plus size={20} className="text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                                        </div>
-                                        <span className="font-medium text-gray-500 dark:text-gray-400 text-sm">New Folder</span>
-                                        <span className="text-gray-400 dark:text-gray-600 text-xs mt-0.5">สร้างโฟลเดอร์ใหม่</span>
+
+                                    {/* New Folder card (design §5.4) */}
+                                    <button
+                                        onClick={() => { setEditingFolder(null); setNewFolderData({ name: '', color: 'blue', icon: 'folder' }); setIsFolderModalOpen(true); }}
+                                        className="group flex flex-col items-center justify-center cursor-pointer transition-all"
+                                        style={{
+                                            width: 172,
+                                            height: 210,
+                                            borderRadius: 18,
+                                            border: '1.5px dashed var(--border-2)',
+                                            backgroundColor: 'transparent',
+                                            color: 'var(--text-4)',
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.borderColor = 'var(--accent)';
+                                            e.currentTarget.style.color = 'var(--accent-b)';
+                                            e.currentTarget.style.backgroundColor = 'var(--accent-dim)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.borderColor = 'var(--border-2)';
+                                            e.currentTarget.style.color = 'var(--text-4)';
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                        }}
+                                    >
+                                        <div
+                                            className="flex items-center justify-center mb-3"
+                                            style={{ width: 40, height: 40, borderRadius: 12, border: '1.5px dashed currentColor' }}
+                                        ><Plus size={20} strokeWidth={2.2} /></div>
+                                        <span className="text-[13px] font-bold">New Folder</span>
+                                        <span className="text-[11px] mt-1" style={{ color: 'var(--text-5)' }}>สร้างโฟลเดอร์ใหม่</span>
                                     </button>
                                 </div>
                             </div>
                         )}
 
-                        {/* ═══ DOCUMENTS SECTION ═══ */}
+                        {/* ═══ DEEP SPACE DOCUMENTS SECTION ═══ */}
                         <div>
                             {!searchQuery && (
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Documents</h3>
+                                    <SectionLabel>Documents</SectionLabel>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={() => { setIsSelectMode(!isSelectMode); setSelectedDocs(new Set()); }}
-                                            className={`p-2 rounded-lg text-sm font-medium transition-all ${isSelectMode ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.06]'}`}
-                                            title="Select multiple"><CheckSquare size={16} /></button>
-                                        <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                                            className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/[0.08] rounded-lg px-2 py-2 outline-none cursor-pointer hover:border-gray-300 dark:hover:border-white/[0.15] transition-all">
+                                        <button
+                                            onClick={() => { setIsSelectMode(!isSelectMode); setSelectedDocs(new Set()); }}
+                                            className="flex items-center justify-center transition-all"
+                                            style={{
+                                                width: 32, height: 32, borderRadius: 8,
+                                                backgroundColor: isSelectMode ? 'var(--accent-dim)' : 'transparent',
+                                                color: isSelectMode ? 'var(--accent-b)' : 'var(--text-4)',
+                                                border: '1px solid ' + (isSelectMode ? 'var(--accent)' : 'var(--border-2)'),
+                                            }}
+                                            title="Select multiple"
+                                        ><CheckSquare size={14} /></button>
+                                        <select
+                                            value={sortBy}
+                                            onChange={e => setSortBy(e.target.value)}
+                                            className="text-[12px] font-medium outline-none cursor-pointer transition-all"
+                                            style={{
+                                                backgroundColor: 'var(--surface)',
+                                                border: '1px solid var(--border-2)',
+                                                borderRadius: 8,
+                                                color: 'var(--text-3)',
+                                                padding: '7px 8px',
+                                            }}
+                                        >
                                             <option value="newest">ล่าสุด</option>
                                             <option value="oldest">เก่าสุด</option>
                                             <option value="alphabetical">A → Z</option>
                                         </select>
-                                        <div className="bg-white dark:bg-white/[0.06] border border-gray-200 dark:border-white/[0.08] rounded-lg flex p-0.5">
-                                            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}><List size={14} /></button>
-                                            <button onClick={() => setViewMode('card')} className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}><LayoutGrid size={14} /></button>
+                                        <div
+                                            className="flex"
+                                            style={{
+                                                backgroundColor: 'var(--surface)',
+                                                border: '1px solid var(--border-2)',
+                                                borderRadius: 8,
+                                                padding: 2,
+                                            }}
+                                        >
+                                            {[
+                                                { id: 'list', icon: List },
+                                                { id: 'card', icon: LayoutGrid },
+                                            ].map(v => {
+                                                const Icon = v.icon;
+                                                const active = viewMode === v.id;
+                                                return (
+                                                    <button
+                                                        key={v.id}
+                                                        onClick={() => setViewMode(v.id)}
+                                                        className="transition-all flex items-center justify-center"
+                                                        style={{
+                                                            padding: 5,
+                                                            borderRadius: 6,
+                                                            backgroundColor: active ? 'var(--surface-3)' : 'transparent',
+                                                            color: active ? 'var(--text-1)' : 'var(--text-4)',
+                                                        }}
+                                                    ><Icon size={13} /></button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>
@@ -437,60 +768,156 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
                                 </div>
                             )}
 
-                            {/* LIST VIEW */}
+                            {/* DEEP SPACE LIST VIEW */}
                             {viewMode === 'list' ? (
-                                <div className="space-y-1">
+                                <div className="space-y-2">
                                     {!searchQuery && (
                                         <>
-                                            <button onClick={() => setIsDocModalOpen(true)}
-                                                className="w-full flex items-center gap-4 p-3 border-2 border-dashed border-gray-200 dark:border-white/[0.08] rounded-xl hover:border-blue-400 dark:hover:border-blue-400/40 hover:bg-blue-50/30 dark:hover:bg-blue-500/[0.04] transition-all group">
-                                                <div className="w-8 h-8 bg-white dark:bg-white/[0.06] text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center border border-gray-100 dark:border-transparent group-hover:shadow-sm"><Plus size={16} /></div>
-                                                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 group-hover:text-blue-700 dark:group-hover:text-blue-400">New Document</span>
-                                            </button>
-                                            {!currentFolderId && (
-                                                <button onClick={() => { setEditingFolder(null); setNewFolderData({ name: '', color: 'blue', icon: 'folder' }); setIsFolderModalOpen(true); }}
-                                                    className="w-full flex items-center gap-4 p-3 border-2 border-dashed border-gray-200 dark:border-white/[0.08] rounded-xl hover:border-purple-400 dark:hover:border-purple-400/40 hover:bg-purple-50/30 dark:hover:bg-purple-500/[0.04] transition-all group">
-                                                    <div className="w-8 h-8 bg-white dark:bg-white/[0.06] text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center border border-gray-100 dark:border-transparent group-hover:shadow-sm"><FolderPlus size={16} /></div>
-                                                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 group-hover:text-purple-700 dark:group-hover:text-purple-400">New Folder</span>
-                                                </button>
-                                            )}
+                                            {[
+                                                { id: 'new-doc', icon: Plus, label: 'New Document', onClick: () => setIsDocModalOpen(true) },
+                                                ...(!currentFolderId ? [{ id: 'new-folder', icon: FolderPlus, label: 'New Folder',
+                                                    onClick: () => { setEditingFolder(null); setNewFolderData({ name: '', color: 'blue', icon: 'folder' }); setIsFolderModalOpen(true); } }] : []),
+                                            ].map(b => {
+                                                const Icon = b.icon;
+                                                return (
+                                                    <button
+                                                        key={b.id}
+                                                        onClick={b.onClick}
+                                                        className="w-full flex items-center gap-3 transition-all"
+                                                        style={{
+                                                            padding: '11px 16px',
+                                                            border: '1.5px dashed var(--border-2)',
+                                                            borderRadius: 12,
+                                                            color: 'var(--text-4)',
+                                                            backgroundColor: 'transparent',
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.borderColor = 'var(--accent)';
+                                                            e.currentTarget.style.color = 'var(--accent-b)';
+                                                            e.currentTarget.style.backgroundColor = 'var(--accent-dim)';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.borderColor = 'var(--border-2)';
+                                                            e.currentTarget.style.color = 'var(--text-4)';
+                                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                                        }}
+                                                    >
+                                                        <Icon size={16} strokeWidth={2} />
+                                                        <span className="text-[13px] font-bold">{b.label}</span>
+                                                    </button>
+                                                );
+                                            })}
                                         </>
                                     )}
-                                    {docsToShow.map(doc => (
-                                        <div key={doc.id} draggable onDragStart={(e) => handleDragStart(e, doc.id)} onDragEnd={() => { setDraggedDocId(null); setDragOverFolderId(null); }}
-                                            className={`bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.06] rounded-xl p-3 flex items-center gap-4 group hover:shadow-md dark:hover:shadow-none hover:border-blue-200 dark:hover:border-white/[0.1] transition-all cursor-pointer ${draggedDocId === doc.id ? 'opacity-50 scale-95' : ''} ${selectedDocs.has(doc.id) ? 'ring-2 ring-blue-400 dark:ring-blue-400/50 bg-blue-50/30 dark:bg-blue-500/[0.06]' : ''}`}>
-                                            {isSelectMode && (
-                                                <button onClick={(e) => { e.stopPropagation(); toggleSelectDoc(doc.id); }} className="flex-shrink-0">
-                                                    {selectedDocs.has(doc.id) ? <CheckSquare size={18} className="text-blue-600 dark:text-blue-400" /> : <Square size={18} className="text-gray-300 dark:text-gray-600" />}
-                                                </button>
-                                            )}
-                                            <div className="w-9 h-9 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-transparent dark:to-transparent dark:bg-white/[0.06] text-indigo-600 dark:text-gray-400 rounded-lg flex items-center justify-center flex-shrink-0"><FileText size={16} /></div>
-                                            <div className="flex-1 min-w-0" onClick={() => { if (!isSelectMode) onOpenDocument && onOpenDocument(doc); else toggleSelectDoc(doc.id); }}>
-                                                {editingDocId === doc.id ? (
-                                                    <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                                                        <input value={editingDocData.title} onChange={e => setEditingDocData({ ...editingDocData, title: e.target.value })}
-                                                            onKeyDown={e => { if (e.key === 'Enter') saveEditDoc(); if (e.key === 'Escape') setEditingDocId(null); }}
-                                                            onBlur={saveEditDoc} autoFocus className="text-sm font-bold text-gray-800 dark:text-white bg-blue-50 dark:bg-white/[0.08] border border-blue-200 dark:border-white/[0.15] rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-400/40 flex-1" />
-                                                        <input value={editingDocData.topic} onChange={e => setEditingDocData({ ...editingDocData, topic: e.target.value })}
-                                                            onKeyDown={e => { if (e.key === 'Enter') saveEditDoc(); if (e.key === 'Escape') setEditingDocId(null); }}
-                                                            onBlur={saveEditDoc} placeholder="Description" className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-white/[0.06] border border-gray-200 dark:border-white/[0.1] rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-400/40 w-40" />
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <h4 className="font-bold text-sm text-gray-800 dark:text-gray-200 truncate group-hover:text-blue-700 dark:group-hover:text-white transition-colors">{doc.title}</h4>
-                                                        <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{doc.topic}{searchResults ? ` · ${doc.grade} · ${doc.term}` : ''}</p>
-                                                    </>
+                                    {docsToShow.map(doc => {
+                                        const isT2 = (doc.term || '').endsWith('2');
+                                        const accentBar = isT2 ? 'var(--cyan)' : 'var(--accent)';
+                                        const accentGlow = isT2 ? 'rgba(6, 214, 247, 0.45)' : 'var(--accent-glow)';
+                                        const sel = selectedDocs.has(doc.id);
+                                        return (
+                                            <div
+                                                key={doc.id}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, doc.id)}
+                                                onDragEnd={() => { setDraggedDocId(null); setDragOverFolderId(null); }}
+                                                className="group flex items-center gap-3 cursor-pointer transition-all"
+                                                style={{
+                                                    padding: '10px 16px',
+                                                    borderRadius: 10,
+                                                    backgroundColor: sel ? 'var(--accent-dim)' : 'var(--surface)',
+                                                    border: '1px solid ' + (sel ? 'var(--accent)' : 'var(--border-2)'),
+                                                    opacity: draggedDocId === doc.id ? 0.5 : 1,
+                                                }}
+                                                onMouseEnter={(e) => { if (!sel) e.currentTarget.style.borderColor = 'var(--border-3)'; }}
+                                                onMouseLeave={(e) => { if (!sel) e.currentTarget.style.borderColor = 'var(--border-2)'; }}
+                                            >
+                                                {/* Left accent bar (design §5.5) */}
+                                                <span
+                                                    className="block flex-shrink-0 transition-all"
+                                                    style={{ width: 3, height: 30, borderRadius: 2, backgroundColor: accentBar, boxShadow: `0 0 8px ${accentGlow}` }}
+                                                />
+                                                {isSelectMode && (
+                                                    <button onClick={(e) => { e.stopPropagation(); toggleSelectDoc(doc.id); }} className="flex-shrink-0" style={{ color: sel ? 'var(--accent)' : 'var(--text-5)' }}>
+                                                        {sel ? <CheckSquare size={16} /> : <Square size={16} />}
+                                                    </button>
                                                 )}
+                                                {/* File icon */}
+                                                <div
+                                                    className="flex items-center justify-center flex-shrink-0"
+                                                    style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: 'var(--surface-2)', color: 'var(--text-3)' }}
+                                                ><FileText size={15} strokeWidth={2} /></div>
+                                                {/* Title + subtitle */}
+                                                <div className="flex-1 min-w-0" onClick={() => { if (!isSelectMode) onOpenDocument && onOpenDocument(doc); else toggleSelectDoc(doc.id); }}>
+                                                    {editingDocId === doc.id ? (
+                                                        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                                                            <input
+                                                                value={editingDocData.title}
+                                                                onChange={e => setEditingDocData({ ...editingDocData, title: e.target.value })}
+                                                                onKeyDown={e => { if (e.key === 'Enter') saveEditDoc(); if (e.key === 'Escape') setEditingDocId(null); }}
+                                                                onBlur={saveEditDoc}
+                                                                autoFocus
+                                                                className="text-[13px] font-bold outline-none flex-1"
+                                                                style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-3)', borderRadius: 6, padding: '2px 8px', color: 'var(--text-1)' }}
+                                                            />
+                                                            <input
+                                                                value={editingDocData.topic}
+                                                                onChange={e => setEditingDocData({ ...editingDocData, topic: e.target.value })}
+                                                                onKeyDown={e => { if (e.key === 'Enter') saveEditDoc(); if (e.key === 'Escape') setEditingDocId(null); }}
+                                                                onBlur={saveEditDoc}
+                                                                placeholder="Description"
+                                                                className="text-[11px] outline-none w-40"
+                                                                style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-3)', borderRadius: 6, padding: '2px 8px', color: 'var(--text-3)' }}
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <h4
+                                                                className="truncate transition-colors"
+                                                                style={{ color: 'var(--text-2)', fontSize: 13.5, fontWeight: 600, lineHeight: 1.3 }}
+                                                            >{doc.title}</h4>
+                                                            <p className="truncate" style={{ color: 'var(--text-5)', fontSize: 11, marginTop: 1 }}>
+                                                                {doc.topic}{searchResults ? ` · ${doc.grade} · ${doc.term}` : ''}
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {/* Term badge (design §5.6) */}
+                                                <span
+                                                    className="flex-shrink-0 uppercase"
+                                                    style={{
+                                                        fontSize: 10, fontWeight: 800, letterSpacing: '0.06em',
+                                                        background: 'var(--danger-bg)', color: 'var(--danger)',
+                                                        borderRadius: 5, padding: '2px 7px',
+                                                    }}
+                                                >{doc.term?.replace('Term ', 'T')}</span>
+                                                {/* Date */}
+                                                <div className="flex items-center gap-1.5 flex-shrink-0" style={{ color: 'var(--text-6)', fontSize: 11, fontFamily: 'Sora, sans-serif' }}>
+                                                    <Calendar size={10} />{doc.date}
+                                                </div>
+                                                {/* Hover actions */}
+                                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                                                    {[
+                                                        { icon: Pencil, title: 'Rename', onClick: (e) => { e.stopPropagation(); startEditDoc(doc); }, hover: 'var(--accent-b)' },
+                                                        { icon: Copy, title: 'Duplicate', onClick: (e) => { e.stopPropagation(); onDuplicateDocument && onDuplicateDocument(doc.id); }, hover: 'var(--accent-b)' },
+                                                        { icon: Trash2, title: 'Delete', onClick: (e) => { e.stopPropagation(); onDeleteDocument && onDeleteDocument(doc.id); }, hover: 'var(--danger)' },
+                                                    ].map(a => {
+                                                        const I = a.icon;
+                                                        return (
+                                                            <button
+                                                                key={a.title}
+                                                                onClick={a.onClick}
+                                                                className="flex items-center justify-center transition-all"
+                                                                style={{ width: 26, height: 26, borderRadius: 6, color: 'var(--text-5)' }}
+                                                                onMouseEnter={(e) => { e.currentTarget.style.color = a.hover; e.currentTarget.style.backgroundColor = 'var(--surface-2)'; }}
+                                                                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-5)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                                                title={a.title}
+                                                            ><I size={12} /></button>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                            <div className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 uppercase tracking-wide flex-shrink-0">{doc.term?.replace('Term ', 'T')}</div>
-                                            <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 flex-shrink-0"><Calendar size={11} />{doc.date}</div>
-                                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
-                                                <button onClick={(e) => { e.stopPropagation(); startEditDoc(doc); }} className="w-7 h-7 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-all" title="Rename"><Pencil size={13} /></button>
-                                                <button onClick={(e) => { e.stopPropagation(); onDuplicateDocument && onDuplicateDocument(doc.id); }} className="w-7 h-7 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-all" title="Duplicate"><Copy size={13} /></button>
-                                                <button onClick={(e) => { e.stopPropagation(); onDeleteDocument && onDeleteDocument(doc.id); }} className="w-7 h-7 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all" title="Delete"><Trash2 size={13} /></button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 /* CARD VIEW */
