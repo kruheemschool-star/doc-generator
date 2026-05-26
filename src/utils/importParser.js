@@ -50,8 +50,44 @@ export const normalizeImportedQuestion = (q) => ({
 });
 
 /**
+ * Detect the kruheemmath.com export shape: { meta, problems[], solutions[] }.
+ * problems & solutions are separate arrays linked by `number`.
+ */
+export const isProblemSolutionExport = (parsed) =>
+    !!parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Array.isArray(parsed.problems);
+
+/**
+ * Merge problems[] with solutions[] (matched by `number`, falling back to position)
+ * into the internal question shape. In that export answerIndex is 0-based, so it
+ * maps straight onto correctIndex; explanation becomes the solution.
+ * @returns {object[]} normalized questions
+ */
+export const mergeProblemsAndSolutions = (parsed) => {
+    const problems = Array.isArray(parsed?.problems) ? parsed.problems : [];
+    const solutions = Array.isArray(parsed?.solutions) ? parsed.solutions : [];
+    const solByNumber = new Map(
+        solutions
+            .filter(s => s && typeof s === 'object' && s.number != null)
+            .map(s => [s.number, s])
+    );
+
+    return problems
+        .filter(p => p && typeof p === 'object')
+        .map((p, idx) => {
+            const sol = solByNumber.get(p.number) || solutions[idx] || {};
+            return normalizeImportedQuestion({
+                question: p.question,
+                options: p.options,
+                explanation: sol.explanation,
+                answer: typeof sol.answerText === 'string' ? sol.answerText : '',
+                correctIndex: typeof sol.answerIndex === 'number' ? sol.answerIndex : undefined,
+            });
+        });
+};
+
+/**
  * Classify a parsed value into a preview-friendly shape.
- * @returns {{ kind: 'questions', questions: object[] }
+ * @returns {{ kind: 'questions', questions: object[], meta?: object }
  *         | { kind: 'lesson', blocks: object[] }
  *         | { kind: 'raw', raw: string }
  *         | { kind: 'unknown' }}
@@ -61,6 +97,13 @@ export const classifyImport = (parsed) => {
         return {
             kind: 'questions',
             questions: parsed.filter(q => q && typeof q === 'object').map(normalizeImportedQuestion),
+        };
+    }
+    if (isProblemSolutionExport(parsed)) {
+        return {
+            kind: 'questions',
+            questions: mergeProblemsAndSolutions(parsed),
+            meta: parsed.meta && typeof parsed.meta === 'object' ? parsed.meta : null,
         };
     }
     if (parsed && parsed.type === 'lesson' && Array.isArray(parsed.blocks)) {

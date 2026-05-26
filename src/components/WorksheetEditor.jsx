@@ -14,7 +14,7 @@ import ErrorBoundary from './ErrorBoundary';
 import TemplatePicker from './TemplatePicker';
 import FontPicker from './FontPicker';
 import ImportPreview from './ImportPreview';
-import { tryParseImportJSON, normalizeImportedQuestion } from '../utils/importParser';
+import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions } from '../utils/importParser';
 import { useToast, ToastContainer } from './Toast';
 import useAutoPagination from '../hooks/useAutoPagination';
 import useHistory from '../hooks/useHistory';
@@ -573,6 +573,18 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         });
     }, [setPages]);
 
+    // Read a picked .json file into the paste box so the live preview + import
+    // reuse the exact same path (no separate file-parsing branch needed).
+    const handleImportFile = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => setImportText(String(ev.target?.result || ''));
+        reader.onerror = () => window.alert('อ่านไฟล์ไม่สำเร็จ กรุณาลองใหม่');
+        reader.readAsText(file);
+        e.target.value = ''; // allow re-picking the same file
+    };
+
     const handleImport = () => {
         if (!importText.trim()) return;
 
@@ -600,6 +612,15 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                         type: 'question',
                         ...normalizeImportedQuestion(q)
                     });
+                });
+                insertItemsIntoPages(itemsToAdd);
+            } else if (isProblemSolutionExport(parsed)) {
+                // kruheemmath.com export: { meta, problems[], solutions[] } linked by `number`.
+                if (parsed.meta?.title) {
+                    sectionHeaderItem.content += `: ${parsed.meta.title}`;
+                }
+                mergeProblemsAndSolutions(parsed).forEach(q => {
+                    itemsToAdd.push({ id: uuidv4(), type: 'question', ...q });
                 });
                 insertItemsIntoPages(itemsToAdd);
             } else if (parsed.type === 'lesson' && parsed.blocks) {
@@ -1244,7 +1265,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             </div>
                                             นำเข้าเนื้อหา
                                         </h3>
-                                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5 ml-[46px]">วางข้อมูลจาก Gemini AI แล้วเลือกประเภท</p>
+                                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5 ml-[46px]">วางข้อมูลจาก Gemini AI หรืออัปโหลดไฟล์ JSON แล้วเลือกประเภท</p>
                                     </div>
                                     <button onClick={() => setShowImportModal(false)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-300 dark:text-slate-600 hover:text-gray-500 transition-colors"><X size={18} /></button>
                                 </div>
@@ -1283,10 +1304,17 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 {/* Two columns: paste (left) | live preview (right) */}
                                 <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
                                     <div className="flex-1 min-h-0 flex flex-col">
-                                        <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 pl-1">วางข้อมูล (JSON / ข้อความ)</span>
+                                        <div className="flex items-center justify-between mb-1.5 pl-1 gap-2">
+                                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">วางข้อมูล (JSON / ข้อความ)</span>
+                                            <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[11px] font-bold cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all active:scale-95">
+                                                <Upload size={13} />
+                                                เลือกไฟล์ JSON
+                                                <input type="file" accept=".json,application/json" className="hidden" onChange={handleImportFile} />
+                                            </label>
+                                        </div>
                                         <textarea
                                             className="w-full flex-1 min-h-0 p-4 bg-gray-50 dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-800 focus:border-blue-500 rounded-2xl font-mono text-sm outline-none resize-none transition-all placeholder:text-gray-300"
-                                            placeholder="วางข้อมูล JSON หรือข้อความจาก Gemini ที่นี่..."
+                                            placeholder="วางข้อมูล JSON / ข้อความจาก Gemini ที่นี่ หรือกด 'เลือกไฟล์ JSON' ด้านบนเพื่ออัปโหลดไฟล์..."
                                             value={importText}
                                             onChange={e => setImportText(e.target.value)}
                                             autoFocus
