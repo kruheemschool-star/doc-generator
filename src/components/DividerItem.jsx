@@ -84,7 +84,7 @@ const DividerItem = memo(({ id, index, style = 'solid', thickness = 2, color = '
                                         <select
                                             value={tempStyle}
                                             onChange={(e) => setTempStyle(e.target.value)}
-                                            className="w-full text-smborder border-gray-200 rounded-md p-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 font-sans"
+                                            className="w-full text-sm border border-gray-200 rounded-md p-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 font-sans"
                                         >
                                             <option value="solid">เส้นทึบ (Solid)</option>
                                             <option value="dashed">เส้นประแคบ (Dashed)</option>

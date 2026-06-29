@@ -89,36 +89,55 @@ const App = () => {
 
     // --- Auto-Save to Firestore (only changed docs to reduce Firestore writes) ---
     const prevDocumentsRef = useRef([]);
+    // docIds whose Firestore write is currently in flight — prevents starting a
+    // second concurrent write for the same doc when it changes again mid-save.
+    const inFlightSavesRef = useRef(new Set());
+    // Bumped after a write batch settles so docs that changed while their write was
+    // in flight get flushed on a follow-up run (no edits are silently dropped).
+    const [saveTick, setSaveTick] = useState(0);
     useEffect(() => {
         if (isInitialLoad.current || isLoading) {
             prevDocumentsRef.current = documents;
             return;
         }
         const prevMap = new Map(prevDocumentsRef.current.map(d => [d.id, d]));
-        const changedDocs = documents.filter(d => {
+        const nextPrev = [];
+        const changedDocs = [];
+        for (const d of documents) {
             const prev = prevMap.get(d.id);
-            if (prev === d) return false; // unchanged reference → no write
+            if (prev === d) { nextPrev.push(d); continue; } // unchanged reference
             const json = JSON.stringify(d);
-            if (lastDirectSaveRef.current.get(d.id) === json) return false; // editor already wrote it
-            return !prev || JSON.stringify(prev) !== json;
-        });
-        prevDocumentsRef.current = documents;
+            if (lastDirectSaveRef.current.get(d.id) === json) { nextPrev.push(d); continue; } // editor already wrote it
+            if (prev && JSON.stringify(prev) === json) { nextPrev.push(d); continue; } // unchanged content
+            if (inFlightSavesRef.current.has(d.id)) {
+                // Keep the OLD baseline so this change is re-detected and flushed once
+                // the in-flight write settles (saveTick bump re-runs this effect then).
+                if (prev) nextPrev.push(prev);
+                continue;
+            }
+            changedDocs.push(d);
+            nextPrev.push(d);
+        }
+        prevDocumentsRef.current = nextPrev;
         if (changedDocs.length === 0) return;
 
         // Surface failures (incl. DocumentTooLargeError) via toast instead of failing
         // silently and losing the user's work. Covers Dashboard-originated changes
         // (rename/move/duplicate/delete); editor saves report via handleSaveDocument.
         let cancelled = false;
-        Promise.allSettled(changedDocs.map(doc => saveDocument(doc))).then(results => {
-            if (cancelled) return;
+        changedDocs.forEach(d => inFlightSavesRef.current.add(d.id));
+        Promise.allSettled(
+            changedDocs.map(doc => saveDocument(doc).finally(() => inFlightSavesRef.current.delete(doc.id)))
+        ).then(results => {
             const failed = results.find(r => r.status === 'rejected');
-            if (failed) {
+            if (!cancelled && failed) {
                 console.error('Auto-save failed:', failed.reason);
                 addToast(failed.reason?.message || 'บันทึกไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 6000);
             }
+            if (!cancelled) setSaveTick(t => t + 1); // flush any edits deferred during these writes
         });
         return () => { cancelled = true; };
-    }, [documents, isLoading, addToast]);
+    }, [documents, isLoading, addToast, saveTick]);
 
     useEffect(() => {
         if (isInitialLoad.current || isLoading) return;

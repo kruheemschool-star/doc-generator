@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 /**
  * Custom Hook for Undo/Redo functionality
@@ -13,6 +13,12 @@ const useHistory = (initialState) => {
     });
 
     const { past, present, future } = history;
+
+    // Keep the latest initialState in a ref so `clear()` can read it without listing
+    // it as a dependency — callers recreate initialState every render, which would
+    // otherwise make `clear` a new function on every render.
+    const initialStateRef = useRef(initialState);
+    initialStateRef.current = initialState;
 
     // Helper to determine if undo/redo is possible
     const canUndo = past.length > 0;
@@ -106,10 +112,10 @@ const useHistory = (initialState) => {
     const clear = useCallback((newInitialState) => {
         setHistory({
             past: [],
-            present: newInitialState !== undefined ? newInitialState : initialState,
+            present: newInitialState !== undefined ? newInitialState : initialStateRef.current,
             future: []
         });
-    }, [initialState]);
+    }, []);
 
     return {
         state: present,

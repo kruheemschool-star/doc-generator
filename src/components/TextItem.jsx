@@ -48,6 +48,10 @@ const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelet
     const [QuillComponent, setQuillComponent] = useState(null);
     const [quillLoading, setQuillLoading] = useState(false);
     const quillRef = useRef(null);
+    // Guards against setState after unmount if the dynamic import resolves late
+    // (e.g. the item is deleted while react-quill is still loading).
+    const mountedRef = useRef(true);
+    useEffect(() => () => { mountedRef.current = false; }, []);
 
     // Memoize modules using named hook
     const modules = useMemo(() => ({
@@ -62,11 +66,11 @@ const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelet
             const mod = await import('react-quill');
             // Register document fonts so the per-selection font dropdown works
             registerQuillFonts(mod.default.Quill);
-            setQuillComponent(() => mod.default);
+            if (mountedRef.current) setQuillComponent(() => mod.default);
         } catch (err) {
             console.error('Failed to load ReactQuill:', err);
         } finally {
-            setQuillLoading(false);
+            if (mountedRef.current) setQuillLoading(false);
         }
     }, [QuillComponent]);
 

@@ -24,6 +24,11 @@ export const useModalA11y = (isOpen, onClose) => {
     const ref = useRef(null);
     const previouslyFocusedRef = useRef(null);
 
+    // Hold onClose in a ref so callers can pass an inline arrow without the focus
+    // trap tearing down and re-attaching its listeners on every parent render.
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
+
     useEffect(() => {
         if (!isOpen) return;
 
@@ -47,7 +52,7 @@ export const useModalA11y = (isOpen, onClose) => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
                 e.preventDefault();
-                onClose?.();
+                onCloseRef.current?.();
                 return;
             }
             if (e.key !== 'Tab') return;
@@ -76,7 +81,7 @@ export const useModalA11y = (isOpen, onClose) => {
                 try { prev.focus(); } catch (_) { /* element may be gone */ }
             }
         };
-    }, [isOpen, onClose]);
+    }, [isOpen]);
 
     return ref;
 };

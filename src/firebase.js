@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { getAuth, signInAnonymously } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, writeBatch } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -12,6 +13,34 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+// --- Anonymous auth ---
+// firestore.rules require `request.auth != null`, so every read/write must run
+// inside an authenticated session. There is no login UI; we sign in anonymously
+// once and reuse the same session. ensureAuth() is awaited before any Firestore
+// call so the first operations don't race the sign-in.
+//
+// Prerequisite: enable Anonymous sign-in in Firebase Console → Authentication.
+// If it is disabled, sign-in rejects; we log it (not throw at module load, so the
+// app still renders) and Firestore reads fall back to their safe defaults.
+let authReadyPromise = null;
+const ensureAuth = () => {
+  if (!authReadyPromise) {
+    authReadyPromise = (auth.currentUser
+      ? Promise.resolve(auth.currentUser)
+      : signInAnonymously(auth).then(cred => cred.user)
+    ).catch(error => {
+      console.error("Anonymous auth failed (enable Anonymous sign-in in Firebase Console):", error);
+      authReadyPromise = null; // allow a retry on the next call
+      throw error;
+    });
+  }
+  return authReadyPromise;
+};
+
+// Kick off sign-in eagerly so it's usually ready by the time the app reads data.
+ensureAuth().catch(() => { /* already logged in ensureAuth */ });
 
 // --- Document CRUD ---
 // Mutations throw on failure so callers can show user-facing errors.
@@ -48,6 +77,7 @@ export const saveDocument = async (docData) => {
     throw new DocumentTooLargeError(size);
   }
   try {
+    await ensureAuth();
     await setDoc(doc(db, "documents", docData.id), payload);
   } catch (error) {
     console.error("Error saving document:", error);
@@ -57,6 +87,7 @@ export const saveDocument = async (docData) => {
 
 export const loadDocuments = async () => {
   try {
+    await ensureAuth();
     const snapshot = await getDocs(collection(db, "documents"));
     return snapshot.docs.map(d => d.data());
   } catch (error) {
@@ -67,6 +98,7 @@ export const loadDocuments = async () => {
 
 export const deleteDocument = async (docId) => {
   try {
+    await ensureAuth();
     await deleteDoc(doc(db, "documents", docId));
   } catch (error) {
     console.error("Error deleting document:", error);
@@ -77,6 +109,7 @@ export const deleteDocument = async (docId) => {
 // --- Folders CRUD ---
 export const saveFolders = async (folders) => {
   try {
+    await ensureAuth();
     await setDoc(doc(db, "settings", "folders"), { data: folders });
   } catch (error) {
     console.error("Error saving folders:", error);
@@ -86,6 +119,7 @@ export const saveFolders = async (folders) => {
 
 export const loadFolders = async () => {
   try {
+    await ensureAuth();
     const snap = await getDoc(doc(db, "settings", "folders"));
     return snap.exists() ? snap.data().data : [];
   } catch (error) {
@@ -97,6 +131,7 @@ export const loadFolders = async () => {
 // --- Active Document ---
 export const saveActiveDocId = async (activeId) => {
   try {
+    await ensureAuth();
     await setDoc(doc(db, "settings", "activeDoc"), { id: activeId || null });
   } catch (error) {
     console.error("Error saving active doc:", error);
@@ -106,6 +141,7 @@ export const saveActiveDocId = async (activeId) => {
 
 export const loadActiveDocId = async () => {
   try {
+    await ensureAuth();
     const snap = await getDoc(doc(db, "settings", "activeDoc"));
     return snap.exists() ? snap.data().id : null;
   } catch (error) {
@@ -117,6 +153,7 @@ export const loadActiveDocId = async () => {
 // --- Trash ---
 export const saveTrash = async (trashedDocs) => {
   try {
+    await ensureAuth();
     await setDoc(doc(db, "settings", "trash"), { data: trashedDocs });
   } catch (error) {
     console.error("Error saving trash:", error);
@@ -126,6 +163,7 @@ export const saveTrash = async (trashedDocs) => {
 
 export const loadTrash = async () => {
   try {
+    await ensureAuth();
     const snap = await getDoc(doc(db, "settings", "trash"));
     return snap.exists() ? snap.data().data : [];
   } catch (error) {
@@ -137,6 +175,7 @@ export const loadTrash = async () => {
 // --- Prompt Settings ---
 export const savePromptSettings = async (settings) => {
   try {
+    await ensureAuth();
     await setDoc(doc(db, "settings", "promptSettings"), { data: settings });
   } catch (error) {
     console.error("Error saving prompt settings:", error);
@@ -146,6 +185,7 @@ export const savePromptSettings = async (settings) => {
 
 export const loadPromptSettings = async () => {
   try {
+    await ensureAuth();
     const snap = await getDoc(doc(db, "settings", "promptSettings"));
     return snap.exists() ? snap.data().data : null;
   } catch (error) {
@@ -157,6 +197,7 @@ export const loadPromptSettings = async () => {
 // --- Prompt Templates CRUD (Item 5) ---
 export const savePromptTemplate = async (template) => {
   try {
+    await ensureAuth();
     await setDoc(doc(db, "promptTemplates", template.id), {
       ...template,
       updatedAt: new Date().toISOString()
@@ -169,6 +210,7 @@ export const savePromptTemplate = async (template) => {
 
 export const loadPromptTemplates = async () => {
   try {
+    await ensureAuth();
     const snapshot = await getDocs(collection(db, "promptTemplates"));
     return snapshot.docs.map(d => d.data());
   } catch (error) {
@@ -179,6 +221,7 @@ export const loadPromptTemplates = async () => {
 
 export const deletePromptTemplate = async (templateId) => {
   try {
+    await ensureAuth();
     await deleteDoc(doc(db, "promptTemplates", templateId));
   } catch (error) {
     console.error("Error deleting prompt template:", error);
@@ -186,4 +229,4 @@ export const deletePromptTemplate = async (templateId) => {
   }
 };
 
-export { db };
+export { db, auth, ensureAuth };

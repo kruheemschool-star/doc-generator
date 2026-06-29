@@ -84,6 +84,11 @@ const PromptBuilderPage = () => {
     const isInitialLoad = useRef(true);
     const { toasts, addToast, removeToast } = useToast(); // Item 1: Toast notifications
 
+    // Single re-usable timer for the "Copied!" flash + unmount cleanup so rapid
+    // clicks don't stack timeouts and a late timeout can't setState after unmount.
+    const copyTimerRef = useRef(null);
+    useEffect(() => () => clearTimeout(copyTimerRef.current), []);
+
     // Item 2: Debounced formData for auto-save
     const debouncedFormData = useDebounce(formData, 800);
 
@@ -92,20 +97,25 @@ const PromptBuilderPage = () => {
 
     // Load from Firestore on mount (Item 1: Error Handling)
     useEffect(() => {
+        let mounted = true;
+        let initialLoadTimer = null;
         const load = async () => {
             try {
                 setIsLoading(true);
                 const saved = await loadPromptSettings();
-                if (saved) setFormData(saved);
+                if (mounted && saved) setFormData(saved);
             } catch (error) {
                 console.error('Error loading prompt settings:', error);
-                addToast('ไม่สามารถโหลดค่าที่บันทึกไว้ได้ ใช้ค่าเริ่มต้นแทน', 'error', 5000);
+                if (mounted) addToast('ไม่สามารถโหลดค่าที่บันทึกไว้ได้ ใช้ค่าเริ่มต้นแทน', 'error', 5000);
             } finally {
-                setIsLoading(false);
-                setTimeout(() => { isInitialLoad.current = false; }, 500);
+                if (mounted) {
+                    setIsLoading(false);
+                    initialLoadTimer = setTimeout(() => { isInitialLoad.current = false; }, 500);
+                }
             }
         };
         load();
+        return () => { mounted = false; clearTimeout(initialLoadTimer); };
     }, []);
 
     // Item 2: Auto-save to Firestore with debounce + Item 1: Error handling
@@ -144,14 +154,17 @@ const PromptBuilderPage = () => {
         }
     }, [formData.chapter, formData.grade, formData.term, formData.subjectType]);
 
-    const handleReset = () => {
-        if (window.confirm("คุณต้องการล้างการตั้งค่าทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่?")) {
-            setFormData(DEFAULT_FORM_DATA);
-            savePromptSettings(DEFAULT_FORM_DATA).catch(e => {
-                console.error('Reset save failed:', e);
-                addToast('รีเซ็ตเรียบร้อย แต่บันทึกค่าไม่สำเร็จ', 'error');
-            });
+    const handleReset = async () => {
+        if (!window.confirm("คุณต้องการล้างการตั้งค่าทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่?")) return;
+        setFormData(DEFAULT_FORM_DATA);
+        // Confirm success only after the write actually lands, so the user isn't told
+        // "saved" while persistence is still pending or has failed.
+        try {
+            await savePromptSettings(DEFAULT_FORM_DATA);
             addToast('รีเซ็ตค่าทั้งหมดเรียบร้อย', 'success');
+        } catch (e) {
+            console.error('Reset save failed:', e);
+            addToast('รีเซ็ตเรียบร้อย แต่บันทึกค่าไม่สำเร็จ', 'error');
         }
     };
 
@@ -220,20 +233,24 @@ const PromptBuilderPage = () => {
         }));
     };
 
+    const flashCopied = () => {
+        setIsCopied(true);
+        clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = setTimeout(() => setIsCopied(false), 2000);
+    };
+
     const handleCopy = () => {
         if (!generatedPrompt) return;
-        navigator.clipboard.writeText(generatedPrompt);
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
+        navigator.clipboard.writeText(generatedPrompt).catch(e => console.error('Copy failed:', e));
+        flashCopied();
     };
 
     // Item 15: Copy as Markdown
     const handleCopyMarkdown = () => {
         if (!generatedPrompt) return;
         const markdownPrompt = `# AI Prompt — ${formData.mode.toUpperCase()}\n\n---\n\n${generatedPrompt}`;
-        navigator.clipboard.writeText(markdownPrompt);
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
+        navigator.clipboard.writeText(markdownPrompt).catch(e => console.error('Copy failed:', e));
+        flashCopied();
     };
 
     const handleOpenGemini = () => {

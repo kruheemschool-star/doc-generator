@@ -21,6 +21,13 @@ const useAutoPagination = (pages, setPages, replacePages) => {
     const [resizeTick, setResizeTick] = useState(0); // bumps when any page content resizes
     const resizeTimerRef = useRef(null);
     const observerRef = useRef(null);
+    const recheckTimerRef = useRef(null);
+
+    // Unmount-only cleanup: clear any pending re-check timer so setIsChecking()
+    // can't fire on an unmounted component. Deliberately NOT cleared on every
+    // effect re-run — doing so would cancel the timer that resets isChecking and
+    // freeze pagination.
+    useEffect(() => () => clearTimeout(recheckTimerRef.current), []);
 
     // --- ResizeObserver: re-paginate when content grows asynchronously
     // (image loads, KaTeX rendering, font swap, solution toggle, typing) ---
@@ -115,7 +122,8 @@ const useAutoPagination = (pages, setPages, replacePages) => {
         if (pagesSignature(newPages) !== pagesSignature(pages)) {
             setIsChecking(true);
             (replacePages || setPages)(newPages);
-            setTimeout(() => setIsChecking(false), RECHECK_DELAY);
+            clearTimeout(recheckTimerRef.current);
+            recheckTimerRef.current = setTimeout(() => setIsChecking(false), RECHECK_DELAY);
         }
 
         setOverflowPages(prev => {

@@ -181,7 +181,7 @@ const PromptPreview = ({
             <div className="p-4 bg-black/40 backdrop-blur-xl text-[9px] font-bold text-slate-500 dark:text-slate-400 flex justify-between px-6 lg:px-8 border-t border-white/5 relative z-10">
                 <div className="flex gap-6">
                     <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> ENGINE: GPT-4/GEMINI READY</span>
-                    <span>LENGTH: ~{generatedPrompt.length} chars</span>
+                    <span>LENGTH: ~{generatedPrompt?.length ?? 0} chars</span>
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1.5">

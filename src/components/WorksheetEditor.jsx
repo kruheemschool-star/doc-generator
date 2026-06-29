@@ -62,14 +62,17 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [saveStatus, setSaveStatus] = useState('saved');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-    // Track unsaved changes
+    // Track unsaved changes (documentTitle included so renaming alone is also tracked).
     useEffect(() => {
         setHasUnsavedChanges(true);
         setSaveStatus('unsaved');
-    }, [pages, fontId]);
+    }, [pages, fontId, documentTitle]);
 
-    const handleManualSave = async () => {
+    const handleManualSave = useCallback(async () => {
         if (!onSave || !pages) return;
+        // Guard against concurrent saves: rapid clicks / repeated Ctrl+S while a write
+        // is in flight would otherwise fire overlapping onSave calls and race in Firestore.
+        if (saveStatus === 'saving') return;
         setSaveStatus('saving');
         try {
             // Awaits the real Firestore write so success/failure is reported accurately.
@@ -82,7 +85,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             setSaveStatus('error');
             addToast(e?.message || 'บันทึกไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 5000);
         }
-    };
+    }, [onSave, pages, documentTitle, fontId, saveStatus, addToast]);
 
     const handleBackWithConfirmation = () => {
         if (hasUnsavedChanges) {
@@ -1236,8 +1239,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                         <div className="flex items-center gap-2 pr-1">
                             <button
                                 onClick={handleManualSave}
-                                disabled={!hasUnsavedChanges}
-                                className={`h-11 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 ${hasUnsavedChanges
+                                disabled={!hasUnsavedChanges || saveStatus === 'saving'}
+                                className={`h-11 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 ${hasUnsavedChanges && saveStatus !== 'saving'
                                     ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
                                     : 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 cursor-not-allowed'
                                     }`}

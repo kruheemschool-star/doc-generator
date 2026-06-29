@@ -75,13 +75,22 @@ export const generateQuestions = async (topic, count = 3, difficulty = 'Medium')
             throw new Error('AI ไม่ได้ส่งข้อมูลเป็น Array');
         }
 
+        // Validate the contract: each item must be an object carrying question + answer.
+        // Without this, a malformed response silently yields questions with undefined text.
+        const validItems = parsedQuestions.filter(
+            q => q && typeof q === 'object' && q.question && q.answer
+        );
+        if (validItems.length === 0) {
+            throw new Error('AI ส่งข้อมูลไม่ครบ (ไม่มี question/answer ที่ใช้งานได้)');
+        }
+
         // Add unique IDs
-        const questions = parsedQuestions.map(q => ({
+        const questions = validItems.map(q => ({
             id: uuidv4(),
             no: 0, // Will be set by parent
             question: q.question,
             answer: q.answer,
-            spaceNeeded: parseInt(q.space) || 40, // Default to 40 if parsing fails
+            spaceNeeded: parseInt(q.space, 10) || 40, // Default to 40 if parsing fails
             type: 'Math'
         }));
         return { questions, usedMock: false };

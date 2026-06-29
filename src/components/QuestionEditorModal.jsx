@@ -70,15 +70,19 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData, addToast })
     };
 
     const updateOption = (index, value) => {
-        const newOptions = [...(formData.options || [])];
-        newOptions[index] = value;
-        setFormData(prev => ({ ...prev, options: newOptions }));
+        setFormData(prev => {
+            const newOptions = [...(prev.options || [])];
+            newOptions[index] = value;
+            return { ...prev, options: newOptions };
+        });
     };
 
     const removeOption = (index) => {
-        const newOptions = [...(formData.options || [])];
-        newOptions.splice(index, 1);
-        setFormData(prev => ({ ...prev, options: newOptions }));
+        setFormData(prev => {
+            const newOptions = [...(prev.options || [])];
+            newOptions.splice(index, 1);
+            return { ...prev, options: newOptions };
+        });
     };
 
     const addStep = () => {
@@ -89,21 +93,19 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData, addToast })
     };
 
     const updateStep = (index, value) => {
-        const newSteps = [...(formData.solution.steps || [])];
-        newSteps[index] = value;
-        setFormData(prev => ({
-            ...prev,
-            solution: { ...prev.solution, steps: newSteps }
-        }));
+        setFormData(prev => {
+            const newSteps = [...(prev.solution.steps || [])];
+            newSteps[index] = value;
+            return { ...prev, solution: { ...prev.solution, steps: newSteps } };
+        });
     };
 
     const removeStep = (index) => {
-        const newSteps = [...(formData.solution.steps || [])];
-        newSteps.splice(index, 1);
-        setFormData(prev => ({
-            ...prev,
-            solution: { ...prev.solution, steps: newSteps }
-        }));
+        setFormData(prev => {
+            const newSteps = [...(prev.solution.steps || [])];
+            newSteps.splice(index, 1);
+            return { ...prev, solution: { ...prev.solution, steps: newSteps } };
+        });
     };
 
     return (

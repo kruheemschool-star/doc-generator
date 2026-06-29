@@ -112,18 +112,23 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
 
     const searchResults = useMemo(() => searchQuery.trim()
         ? documents.filter(doc =>
-            doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            doc.topic?.toLowerCase().includes(searchQuery.toLowerCase())
+            // Scope search to the grade/term currently in view so M1 doesn't surface M3 docs.
+            doc.grade === selectedGrade && doc.term === selectedTerm && (
+                doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                doc.topic?.toLowerCase().includes(searchQuery.toLowerCase())
+            )
         )
         : null,
-        [documents, searchQuery]
+        [documents, searchQuery, selectedGrade, selectedTerm]
     );
 
     const docsToShow = useMemo(() => {
         const arr = searchResults || filteredDocs;
         const sorted = [...arr];
-        if (sortBy === 'newest') sorted.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-        else if (sortBy === 'oldest') sorted.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+        // Compare as timestamps so malformed/missing dates can't sort lexicographically wrong.
+        const ts = (d) => { const n = Date.parse(d?.date); return Number.isNaN(n) ? 0 : n; };
+        if (sortBy === 'newest') sorted.sort((a, b) => ts(b) - ts(a));
+        else if (sortBy === 'oldest') sorted.sort((a, b) => ts(a) - ts(b));
         else if (sortBy === 'alphabetical') sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
         return sorted;
     }, [searchResults, filteredDocs, sortBy]);
@@ -172,7 +177,7 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onOpenDocument, 
     const handleDragStart = (e, docId) => { setDraggedDocId(docId); e.dataTransfer.effectAllowed = 'move'; };
     const handleDragOver = (e, folderId) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverFolderId(folderId); };
     const handleDragLeave = () => setDragOverFolderId(null);
-    const handleDrop = (e, folderId) => { e.preventDefault(); if (draggedDocId && folderId) onMoveDocToFolder && onMoveDocToFolder(draggedDocId, folderId); setDraggedDocId(null); setDragOverFolderId(null); };
+    const handleDrop = (e, folderId) => { e.preventDefault(); const folderExists = folders.some(f => f.id === folderId); if (draggedDocId && folderId && folderExists) onMoveDocToFolder && onMoveDocToFolder(draggedDocId, folderId); setDraggedDocId(null); setDragOverFolderId(null); };
     const handleDropOutside = (e) => { if (draggedDocId && currentFolderId) onMoveDocToFolder && onMoveDocToFolder(draggedDocId, null); setDraggedDocId(null); setDragOverFolderId(null); };
 
     const startEditDoc = (doc) => { setEditingDocId(doc.id); setEditingDocData({ title: doc.title || '', topic: doc.topic || '' }); };

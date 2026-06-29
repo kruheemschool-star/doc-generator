@@ -18,6 +18,10 @@ export const compressImage = (file, maxWidth = 800, quality = 0.7) =>
             URL.revokeObjectURL(url);
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('ไม่สามารถบีบอัดรูปภาพได้ (canvas ไม่พร้อมใช้งาน)'));
+                return;
+            }
             let { width, height } = img;
             if (width > maxWidth) {
                 height = (height * maxWidth) / width;
