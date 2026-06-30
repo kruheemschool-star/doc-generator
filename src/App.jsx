@@ -28,10 +28,16 @@ const PromptBuilderPage = lazy(() => import('./pages/PromptBuilderPage'));
 const WorksheetEditor = lazy(() => import('./components/WorksheetEditor'));
 
 const LoadingScreen = ({ label = 'กำลังโหลด...' }) => (
-    <div className="min-h-[calc(100vh-56px)] flex items-center justify-center bg-gray-50 dark:bg-[#1e1e2f]">
+    <div
+        className="min-h-screen flex items-center justify-center font-thai"
+        style={{ backgroundColor: 'var(--canvas)' }}
+    >
         <div className="text-center">
-            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">{label}</p>
+            <div
+                className="w-10 h-10 rounded-full animate-spin mx-auto mb-4"
+                style={{ border: '3px solid var(--line)', borderTopColor: 'var(--accent)' }}
+            ></div>
+            <p className="text-sm font-medium" style={{ color: 'var(--text-3)' }}>{label}</p>
         </div>
     </div>
 );
@@ -324,10 +330,16 @@ const App = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#1e1e2f] flex items-center justify-center">
+            <div
+                className="min-h-screen flex items-center justify-center font-thai"
+                style={{ backgroundColor: 'var(--canvas)' }}
+            >
                 <div className="text-center">
-                    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">กำลังโหลดข้อมูล...</p>
+                    <div
+                        className="w-10 h-10 rounded-full animate-spin mx-auto mb-4"
+                        style={{ border: '3px solid var(--line)', borderTopColor: 'var(--accent)' }}
+                    ></div>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-3)' }}>กำลังโหลดข้อมูล...</p>
                 </div>
             </div>
         );
@@ -335,14 +347,22 @@ const App = () => {
 
     return (
         <div
-            className="min-h-screen flex flex-col"
-            style={{ backgroundColor: 'var(--bg)', color: 'var(--text-2)' }}
+            className="min-h-screen"
+            style={{ backgroundColor: 'var(--canvas)', color: 'var(--text-2)' }}
         >
-            {/* Navbar */}
-            <Navbar currentView={currentView} onViewChange={handleViewChange} />
+            {/* Left global rail (fixed 72px). The Dashboard has its own full-height
+                aside (brand + class levels + nav), so the rail is hidden there to
+                avoid a double sidebar; it shows on Editor / Prompt Builder. */}
+            {currentView !== 'dashboard' && (
+                <Navbar currentView={currentView} onViewChange={handleViewChange} />
+            )}
 
-            {/* --- Main Content Area --- */}
-            <div className={`flex-1 ${currentView !== 'dashboard' ? 'animate-page-fade-in' : ''}`} key={currentView}>
+            {/* --- Main Content Area (sits right of the 72px rail) --- */}
+            <div
+                className={`min-h-screen print:ml-0 ${currentView !== 'dashboard' ? 'animate-page-fade-in' : ''}`}
+                style={{ marginLeft: currentView === 'dashboard' ? 0 : 72 }}
+                key={currentView}
+            >
 
                 {/* Dashboard View */}
                 {currentView === 'dashboard' && (
@@ -350,6 +370,7 @@ const App = () => {
                         documents={documents}
                         folders={folders}
                         trashedDocs={trashedDocs}
+                        onViewChange={handleViewChange}
                         onOpenDocument={handleOpenDocument}
                         onCreateDocument={handleCreateDocument}
                         onDeleteDocument={handleDeleteDocument}

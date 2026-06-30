@@ -8,13 +8,23 @@ export default {
     theme: {
         extend: {
             colors: {
-                // Surface tokens — used across chrome/UI (not the A4 paper)
+                // Editorial Bold palette (chrome of the app — not the A4 paper)
+                ink: { DEFAULT: '#16130f', soft: '#26211a' },
+                accent: { DEFAULT: '#ff4d2e', press: '#e63c1f' },
+                canvas: { DEFAULT: '#f6f3ec', 2: '#efe9df', 3: '#e7e0d3' },
+                paper: { DEFAULT: '#ffffff', 2: '#f1ebe0' },
+                line: { DEFAULT: '#e7dfd0', 2: '#e2dacb', dotted: '#b8af9c' },
+                // Surface tokens — kept for any existing references
                 surface: {
-                    light: '#f8fafc',  // slate-50
+                    light: '#f8fafc',
                     DEFAULT: '#ffffff',
-                    dark: '#0f172a',   // slate-900
-                    darker: '#020617', // slate-950
+                    dark: '#0f172a',
+                    darker: '#020617',
                 },
+            },
+            fontFamily: {
+                display: ['Sora', 'sans-serif'],
+                thai: ['"IBM Plex Sans Thai"', 'Sora', 'sans-serif'],
             },
         },
     },

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 // user's choices survive reloads. We also reflect them as html attributes
 // (`class="dark"` for Tailwind compat, `data-color-mode` / `data-theme` /
 // `data-density` for the Deep Space CSS-variable tokens in index.css).
-const MODE_KEY = 'kruheem-theme';         // legacy key — keeps stored value working
+const MODE_KEY = 'kruheem-mode-v2';       // bumped for Editorial Bold (light-first); drops old dark pref
 const THEME_KEY = 'kruheem-accent';
 const DENSITY_KEY = 'kruheem-density';
 
@@ -18,14 +18,13 @@ const safeRead = (key, fallback, valid) => {
 };
 
 const getInitialMode = () => {
-    if (typeof window === 'undefined') return 'dark';
+    if (typeof window === 'undefined') return 'light';
     try {
         const stored = localStorage.getItem(MODE_KEY);
         if (stored === 'light' || stored === 'dark') return stored;
-        // First visit: honor OS preference but default to dark (Deep Space is dark-first)
-        if (window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light';
     } catch (_) { /* private mode */ }
-    return 'dark';
+    // Editorial Bold is light-first; dark is opt-in via the toggle.
+    return 'light';
 };
 
 const apply = (mode, theme, density) => {

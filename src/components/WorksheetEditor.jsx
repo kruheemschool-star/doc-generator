@@ -859,13 +859,21 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         { key: 'import', label: 'นำเข้าด้วย AI', desc: 'วางจาก Gemini / JSON', icon: Sparkles, color: 'text-blue-600', onClick: () => setShowImportModal(true) },
     ];
 
-    // Shared toolbar styling — one neutral icon-button look + a thin group divider.
-    const tbtn = 'h-10 w-10 flex items-center justify-center rounded-xl text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-800 dark:hover:text-slate-100 transition-all active:scale-90 flex-shrink-0';
+    // Shared toolbar styling — dark pill (Editorial Bold §8.4): idle icons #a39a8c,
+    // hover bg #26211a. Active toggles keep a tint on the dark pill (set inline at call site).
+    const tbtn = 'editor-tbtn h-10 w-10 flex items-center justify-center rounded-xl text-[#a39a8c] hover:bg-[#26211a] hover:text-white transition-all active:scale-90 flex-shrink-0';
     const tbtnActive = 'h-10 w-10 flex items-center justify-center rounded-xl transition-all active:scale-90 flex-shrink-0';
-    const tDivider = <div className="w-px h-6 bg-gray-200/70 dark:bg-slate-700/70 mx-0.5 flex-shrink-0" />;
+    const tDivider = <div className="w-px h-6 mx-0.5 flex-shrink-0" style={{ backgroundColor: '#37312a' }} />;
 
     return (
-        <div className="min-h-screen bg-[#f1f5f9] dark:bg-slate-950 font-sans print:bg-white relative">
+        <div className="min-h-screen font-sans print:bg-white relative" style={{ backgroundColor: 'var(--canvas)' }}>
+            {/* Editorial Bold — scoped chrome overrides for the dark toolbar pill.
+                FontPicker's trigger lives inside the dark pill; its dropdown is portaled
+                to <body> so it stays light and is unaffected by these rules. */}
+            <style>{`
+                .editor-fontpicker-host > div > button { color: #a39a8c !important; }
+                .editor-fontpicker-host > div > button:hover { background-color: #26211a !important; color: #ffffff !important; }
+            `}</style>
             {/* Debug Overlay */}
             {showDebug && (
                 <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md p-8 overflow-y-auto">
@@ -890,14 +898,31 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 </div>
             )}
 
-            <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 sticky top-0 z-40 h-14 sm:h-16 shadow-sm print:hidden">
+            <header className="sticky top-0 z-40 h-14 sm:h-[56px] print:hidden" style={{ backgroundColor: 'var(--canvas)', borderBottom: '1px solid var(--line-2)' }}>
                 <div className="max-w-[1600px] mx-auto px-3 sm:px-6 h-full flex justify-between items-center">
-                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                        <button onClick={handleBackWithConfirmation} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 dark:text-slate-500 transition-colors flex-shrink-0"><ArrowLeft size={20} /></button>
-                        <h1 className="text-sm sm:text-lg font-bold text-gray-800 dark:text-slate-200 flex items-center gap-2 font-outfit truncate">
-                            <Layout size={18} className="text-blue-600 flex-shrink-0" />
-                            <span className="truncate">{activeDocument?.title || 'Untitled'}</span>
-                        </h1>
+                    <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
+                        <button
+                            onClick={handleBackWithConfirmation}
+                            className="w-8 h-8 flex items-center justify-center rounded-[9px] transition-colors flex-shrink-0 hover:bg-[var(--paper-2)]"
+                            style={{ border: '1px solid var(--line)', color: 'var(--text-2)' }}
+                            aria-label="ย้อนกลับ"
+                        >
+                            <ArrowLeft size={16} strokeWidth={2} />
+                        </button>
+                        <div className="flex flex-col min-w-0">
+                            <span
+                                className="hidden sm:block text-[10.5px] font-semibold uppercase tracking-[0.07em] leading-none"
+                                style={{ color: 'var(--text-4)', fontFamily: "'Sora', sans-serif" }}
+                            >
+                                {[activeDocument?.grade, activeDocument?.term, activeDocument?.topic].filter(Boolean).join(' · ') || 'EDITOR'}
+                            </span>
+                            <h1
+                                className="text-sm sm:text-[19px] font-bold flex items-center gap-2 truncate sm:mt-1 leading-tight"
+                                style={{ color: 'var(--text-1)', letterSpacing: '-0.02em' }}
+                            >
+                                <span className="truncate">{activeDocument?.title || 'Untitled'}</span>
+                            </h1>
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         {/* Save button removed from here and moved to floating toolbar */}
@@ -906,7 +931,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             </header>
 
             <div className="flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
-                <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 lg:p-12 custom-scrollbar bg-slate-100/50 dark:bg-slate-950 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); setShowAddMenu(false); setShowBorderPopover(false); }}>
+                <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 lg:p-12 custom-scrollbar print:p-0 print:overflow-visible print:bg-white" style={{ backgroundColor: 'var(--canvas-3)' }} onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); setShowAddMenu(false); setShowBorderPopover(false); }}>
                     <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack, ...themeToCssVars(docTheme) }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
@@ -1296,11 +1321,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                         </div>
                     )}
 
-                    <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-gray-200/60 dark:border-slate-700/60 shadow-xl shadow-slate-900/10 rounded-2xl px-2 py-1.5 flex items-center gap-1 overflow-x-auto custom-scrollbar">
+                    <div className="px-2 py-1.5 flex items-center gap-1 overflow-x-auto custom-scrollbar" style={{ backgroundColor: 'var(--ink)', borderRadius: '14px', boxShadow: '0 16px 40px -12px rgba(20,18,15,.6)' }}>
                         {!selectedItemId ? (
                             <>
-                                <button onClick={(e) => { e.stopPropagation(); setShowAddMenu(s => !s); }} className={`h-10 pl-2.5 pr-3 rounded-xl text-sm font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/30 transition-all active:scale-95 flex-shrink-0 ${showAddMenu ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`} aria-label="เพิ่มเนื้อหา" title="เพิ่มเนื้อหา">
-                                    <Plus size={18} /> เพิ่ม <ChevronDown size={14} className={`transition-transform ${showAddMenu ? 'rotate-180' : ''}`} />
+                                <button onClick={(e) => { e.stopPropagation(); setShowAddMenu(s => !s); }} className="editor-add-btn h-10 pl-2.5 pr-3 rounded-xl text-sm font-bold flex items-center gap-1.5 text-white transition-all active:scale-95 flex-shrink-0" style={{ backgroundColor: showAddMenu ? 'var(--accent-press)' : 'var(--accent)' }} aria-label="เพิ่มเนื้อหา" title="เพิ่มเนื้อหา">
+                                    <Plus size={18} strokeWidth={2.4} /> เพิ่ม <ChevronDown size={14} className={`transition-transform ${showAddMenu ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {tDivider}
@@ -1311,26 +1336,28 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 {tDivider}
 
                                 <button onClick={() => setZoomLevel(z => Math.max(50, z - 10))} className={tbtn} aria-label="ซูมออก" title="ซูมออก"><ZoomOut size={18} /></button>
-                                <span className="text-xs text-gray-500 dark:text-slate-400 font-semibold min-w-[42px] text-center select-none tabular-nums">{zoomLevel}%</span>
+                                <span className="text-xs text-[#a39a8c] font-semibold min-w-[42px] text-center select-none tabular-nums" style={{ fontFamily: "'Sora', sans-serif" }}>{zoomLevel}%</span>
                                 <button onClick={() => setZoomLevel(z => Math.min(150, z + 10))} className={tbtn} aria-label="ซูมเข้า" title="ซูมเข้า"><ZoomIn size={18} /></button>
 
                                 {tDivider}
 
-                                <FontPicker value={fontId} onChange={setFontId} />
+                                <span className="editor-fontpicker-host">
+                                    <FontPicker value={fontId} onChange={setFontId} />
+                                </span>
 
                                 {tDivider}
 
-                                <button onClick={() => setIsViewOnly(!isViewOnly)} className={isViewOnly ? `${tbtnActive} bg-orange-50 text-orange-600` : tbtn} aria-label="สลับโหมดแก้ไข/มุมมอง" title={isViewOnly ? "โหมดมุมมอง (ดูอย่างเดียว)" : "โหมดแก้ไข"}>{isViewOnly ? <Hand size={18} /> : <MousePointer2 size={18} />}</button>
-                                <button onClick={() => setShowSolution(!showSolution)} className={showSolution ? `${tbtnActive} bg-blue-50 text-blue-600` : tbtn} aria-label="ซ่อน/แสดงเฉลย" title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={18} /> : <EyeOff size={18} />}</button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={showGrid ? `${tbtnActive} bg-emerald-50 text-emerald-600` : tbtn} aria-label="เปิด/ปิดตารางกริด" title="เปิด/ปิดตารางกริด"><Grid3X3 size={18} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={watermark.enabled ? `${tbtnActive} bg-cyan-50 text-cyan-600` : tbtn} aria-label="ลายน้ำ" title="ลายน้ำ"><Droplets size={18} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowTweaks(s => !s); }} className={showTweaks ? `${tbtnActive} bg-teal-50 text-teal-600` : tbtn} aria-label="ปรับดีไซน์" title="ปรับดีไซน์ (สี/ฟอนต์/กระดาษ)"><SlidersHorizontal size={18} /></button>
+                                <button onClick={() => setIsViewOnly(!isViewOnly)} className={isViewOnly ? `${tbtnActive} bg-[#26211a] text-[var(--accent)]` : tbtn} aria-label="สลับโหมดแก้ไข/มุมมอง" title={isViewOnly ? "โหมดมุมมอง (ดูอย่างเดียว)" : "โหมดแก้ไข"}>{isViewOnly ? <Hand size={18} /> : <MousePointer2 size={18} />}</button>
+                                <button onClick={() => setShowSolution(!showSolution)} className={showSolution ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ซ่อน/แสดงเฉลย" title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={18} /> : <EyeOff size={18} />}</button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={showGrid ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="เปิด/ปิดตารางกริด" title="เปิด/ปิดตารางกริด"><Grid3X3 size={18} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={watermark.enabled ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ลายน้ำ" title="ลายน้ำ"><Droplets size={18} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowTweaks(s => !s); }} className={showTweaks ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ปรับดีไซน์" title="ปรับดีไซน์ (สี/ฟอนต์/กระดาษ)"><SlidersHorizontal size={18} /></button>
                                 <button onClick={() => window.print()} className={tbtn} aria-label="พิมพ์" title="พิมพ์"><Printer size={18} /></button>
                             </>
                         ) : (
                             <>
-                                <button onClick={() => setSelectedItemId(null)} className="h-10 w-10 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-all active:scale-90 flex-shrink-0" aria-label="ยกเลิกการเลือก" title="ยกเลิกการเลือก"><X size={18} /></button>
-                                <span className="px-2.5 h-8 inline-flex items-center rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 text-xs font-bold whitespace-nowrap flex-shrink-0">{selectedTypeLabel}</span>
+                                <button onClick={() => setSelectedItemId(null)} className="h-10 w-10 flex items-center justify-center bg-[#26211a] text-[#a39a8c] rounded-xl hover:bg-[#37312a] hover:text-white transition-all active:scale-90 flex-shrink-0" aria-label="ยกเลิกการเลือก" title="ยกเลิกการเลือก"><X size={18} /></button>
+                                <span className="px-2.5 h-8 inline-flex items-center rounded-lg bg-[#26211a] text-[var(--accent)] text-xs font-bold whitespace-nowrap flex-shrink-0">{selectedTypeLabel}</span>
 
                                 {tDivider}
 
@@ -1341,7 +1368,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                     <>
                                         {tDivider}
                                         <div className="flex items-center gap-1.5 px-1 flex-shrink-0" title="ปรับขนาดตัวอักษร">
-                                            <ALargeSmall size={18} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
+                                            <ALargeSmall size={18} className="text-[#a39a8c] flex-shrink-0" />
                                             <input
                                                 type="range"
                                                 min={FONT_SCALE_MIN}
@@ -1349,12 +1376,12 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                                 step={1}
                                                 value={getEffectiveFontPx(selectedItem)}
                                                 onChange={(e) => handleUpdateItem(selectedItemId, { fontScale: Number(e.target.value) })}
-                                                className="w-20 sm:w-24 accent-blue-600 cursor-pointer"
+                                                className="w-20 sm:w-24 accent-[var(--accent)] cursor-pointer"
                                                 aria-label="ขนาดตัวอักษร"
                                             />
-                                            <span className="text-xs text-gray-500 dark:text-slate-400 font-medium min-w-[34px] text-center select-none tabular-nums">{getEffectiveFontPx(selectedItem)}px</span>
+                                            <span className="text-xs text-[#a39a8c] font-medium min-w-[34px] text-center select-none tabular-nums" style={{ fontFamily: "'Sora', sans-serif" }}>{getEffectiveFontPx(selectedItem)}px</span>
                                             {typeof selectedItem.fontScale === 'number' && (
-                                                <button onClick={() => handleUpdateItem(selectedItemId, { fontScale: null })} className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" aria-label="ขนาดอัตโนมัติ" title="กลับเป็นขนาดอัตโนมัติ"><RotateCcw size={14} /></button>
+                                                <button onClick={() => handleUpdateItem(selectedItemId, { fontScale: null })} className="p-1.5 text-[#a39a8c] hover:text-white hover:bg-[#26211a] rounded-lg transition-all" aria-label="ขนาดอัตโนมัติ" title="กลับเป็นขนาดอัตโนมัติ"><RotateCcw size={14} /></button>
                                             )}
                                         </div>
                                     </>
@@ -1362,14 +1389,14 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 {tDivider}
 
-                                <button onClick={(e) => { e.stopPropagation(); setShowAddMenu(s => !s); }} className={`h-10 pl-2.5 pr-3 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all active:scale-95 flex-shrink-0 ${showAddMenu ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`} aria-label="แทรกเนื้อหา" title="แทรกถัดจากกล่องนี้"><Plus size={18} /> แทรก <ChevronDown size={14} className={`transition-transform ${showAddMenu ? 'rotate-180' : ''}`} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowAddMenu(s => !s); }} className="editor-add-btn h-10 pl-2.5 pr-3 rounded-xl text-sm font-bold flex items-center gap-1.5 text-white transition-all active:scale-95 flex-shrink-0" style={{ backgroundColor: showAddMenu ? 'var(--accent-press)' : 'var(--accent)' }} aria-label="แทรกเนื้อหา" title="แทรกถัดจากกล่องนี้"><Plus size={18} strokeWidth={2.4} /> แทรก <ChevronDown size={14} className={`transition-transform ${showAddMenu ? 'rotate-180' : ''}`} /></button>
 
                                 <button onClick={() => handleDuplicateItem(selectedItemId)} className={tbtn} aria-label="ทำสำเนา" title="ทำสำเนา (Duplicate)"><Copy size={18} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowBorderPopover(s => !s); }} className={(selectedItem && ((selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || selectedItem.fillColor)) || showBorderPopover ? `${tbtnActive} bg-teal-50 text-teal-600` : tbtn} aria-label="กรอบและสีพื้นกล่อง" title="กรอบและสีพื้นกล่อง"><Square size={18} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowBorderPopover(s => !s); }} className={(selectedItem && ((selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || selectedItem.fillColor)) || showBorderPopover ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="กรอบและสีพื้นกล่อง" title="กรอบและสีพื้นกล่อง"><Square size={18} /></button>
 
                                 {tDivider}
 
-                                <button onClick={() => handleDeleteQuestion(selectedItemId)} className="h-10 w-10 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-all active:scale-90 flex-shrink-0" aria-label="ลบรายการ" title="ลบรายการ"><Trash2 size={18} /></button>
+                                <button onClick={() => handleDeleteQuestion(selectedItemId)} className="h-10 w-10 flex items-center justify-center bg-[#26211a] text-[var(--danger)] hover:bg-[#37312a] rounded-xl transition-all active:scale-90 flex-shrink-0" aria-label="ลบรายการ" title="ลบรายการ"><Trash2 size={18} /></button>
                             </>
                         )}
 
@@ -1379,10 +1406,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             <button
                                 onClick={handleManualSave}
                                 disabled={!hasUnsavedChanges || saveStatus === 'saving'}
-                                className={`h-10 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 ${hasUnsavedChanges && saveStatus !== 'saving'
-                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/30'
-                                    : 'bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed'
-                                    }`}
+                                className="editor-save-btn h-10 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 active:scale-95 text-white"
+                                style={hasUnsavedChanges && saveStatus !== 'saving'
+                                    ? { backgroundColor: 'var(--ink-soft)' }
+                                    : { backgroundColor: '#201b15', color: '#6b6357', cursor: 'not-allowed' }}
                                 aria-label="บันทึกการเปลี่ยนแปลง" title="บันทึกการเปลี่ยนแปลง"
                             >
                                 <Save size={18} />
@@ -1390,9 +1417,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             </button>
                             {saveStatus !== 'idle' && (
                                 <div className="flex flex-col min-w-[58px]">
-                                    {saveStatus === 'saving' && <span className="text-[11px] text-yellow-600 font-bold animate-pulse">กำลังบันทึก…</span>}
-                                    {saveStatus === 'saved' && <span className="text-[11px] text-green-600 font-bold">บันทึกแล้ว</span>}
-                                    {saveStatus === 'error' && <span className="text-[11px] text-red-600 font-bold">ไม่สำเร็จ</span>}
+                                    {saveStatus === 'saving' && <span className="text-[11px] text-[#e0b87a] font-bold animate-pulse">กำลังบันทึก…</span>}
+                                    {saveStatus === 'saved' && <span className="text-[11px] text-[#5eead4] font-bold">บันทึกแล้ว</span>}
+                                    {saveStatus === 'error' && <span className="text-[11px] text-[var(--danger)] font-bold">ไม่สำเร็จ</span>}
                                 </div>
                             )}
                         </div>

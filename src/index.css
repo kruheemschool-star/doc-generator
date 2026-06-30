@@ -10,118 +10,142 @@
    (violet/cyan/amber), color-mode (dark/light), and density (comfortable/
    compact) can swap instantly via [data-theme] / [data-color-mode] on <html>.
    ========================================================================= */
+/* =========================================================================
+   Editorial Bold — light, warm off-white "paper" + ink black + orange-red accent.
+   Token NAMES are kept (components consume --bg, --surface, --text-N, --accent)
+   so remapping the values reskins the whole app; the canonical Editorial names
+   (--ink/--canvas/--paper/--line/…) are added alongside for new components.
+   ========================================================================= */
 :root {
-    /* --- Base surfaces (dark, deepest at --bg) --- */
-    --bg: #07090f;
-    --sidebar: #0b0d15;
-    --surface: #111520;
-    --surface-2: #141824;
-    --surface-3: #1e2336;
+    /* --- Editorial canonical tokens --- */
+    --ink: #16130f;
+    --ink-soft: #26211a;
+    --accent-press: #e63c1f;
+    --canvas: #f6f3ec;
+    --canvas-2: #efe9df;
+    --canvas-3: #e7e0d3;
+    --paper: #ffffff;
+    --paper-2: #f1ebe0;
+    --line: #e7dfd0;
+    --line-2: #e2dacb;
+    --line-dotted: #b8af9c;
+    --type-worksheet: #0b7a5b;
+    --type-exam: #c2483c;
+    --type-plan: #7a5fd0;
+
+    /* --- Base surfaces (light, warm paper) --- */
+    --bg: #f6f3ec;          /* canvas — main app background */
+    --sidebar: #16130f;     /* ink — the global rail stays dark */
+    --surface: #ffffff;     /* paper — cards */
+    --surface-2: #f1ebe0;
+    --surface-3: #efe9df;
 
     /* --- Borders (subtle → strong) --- */
-    --border: #141824;
-    --border-2: #1a1f30;
-    --border-3: #1e2638;
-    --border-4: #2a3550;
+    --border: #e7dfd0;
+    --border-2: #e2dacb;
+    --border-3: #d8cfbe;
+    --border-4: #b8af9c;
 
-    /* --- Text (1 = primary, 6 = very muted) --- */
-    --text-1: #edf0fa;
-    --text-2: #c8d0e8;
-    --text-3: #7d8ba8;
-    --text-4: #5a6a88;
-    --text-5: #3d4a65;
-    --text-6: #2a3550;
+    /* --- Text (1 = primary ink, 6 = very faint) --- */
+    --text-1: #16130f;
+    --text-2: #3a342c;
+    --text-3: #6b6357;
+    --text-4: #8a8175;
+    --text-5: #b3aa97;
+    --text-6: #ccc4b3;
 
-    /* --- Accent (Violet default) --- */
-    --accent: #7856f4;
-    --accent-b: #a87ff8;
-    --accent-dim: rgba(120, 86, 244, 0.14);
-    --accent-glow: rgba(120, 86, 244, 0.32);
+    /* --- Accent (orange-red — used sparingly) --- */
+    --accent: #ff4d2e;
+    --accent-b: #ff6b50;
+    --accent-dim: rgba(255, 77, 46, 0.12);
+    --accent-glow: rgba(255, 77, 46, 0.26);
 
-    /* --- Folder palette (cycles modulo 4) --- */
-    --folder-1: #7856f4;
-    --folder-2: #f05a5a;
-    --folder-3: #059669;
-    --folder-4: #f59e0b;
-    --folder-1-glow: rgba(120, 86, 244, 0.38);
-    --folder-2-glow: rgba(240, 90, 90, 0.38);
-    --folder-3-glow: rgba(5, 150, 105, 0.38);
-    --folder-4-glow: rgba(245, 158, 11, 0.38);
+    /* --- Folder / type palette (muted, on-paper) --- */
+    --folder-1: #16130f;
+    --folder-2: #ff4d2e;
+    --folder-3: #0b7a5b;
+    --folder-4: #7a5fd0;
+    --folder-1-glow: rgba(22, 19, 15, 0.18);
+    --folder-2-glow: rgba(255, 77, 46, 0.22);
+    --folder-3-glow: rgba(11, 122, 91, 0.20);
+    --folder-4-glow: rgba(122, 95, 208, 0.20);
 
-    /* --- Term gradients & headline gradient --- */
-    --term-1-bg: linear-gradient(135deg, #7856f4, #a87ff8);
-    --term-2-bg: linear-gradient(135deg, #0891b2, #06d6f7);
-    --head-grad: linear-gradient(140deg, #edf0fa 0%, #a5b4fc 100%);
+    /* --- Solid fills (Editorial uses flat colour, not gradients) --- */
+    --term-1-bg: #16130f;
+    --term-2-bg: #ff4d2e;
+    --head-grad: linear-gradient(140deg, #16130f 0%, #16130f 100%);
 
     /* --- Semantic --- */
-    --danger: #f87171;
-    --danger-bg: rgba(239, 100, 100, 0.15);
-    --cyan: #06d6f7;
+    --danger: #c2483c;
+    --danger-bg: rgba(194, 72, 60, 0.12);
+    --cyan: #0b7a5b;
 
     /* --- Density (content padding) --- */
     --content-pad: 36px;
 }
 
-/* Cyan accent */
-:root[data-theme="cyan"] {
-    --accent: #06b6d4;
-    --accent-b: #67e8f9;
-    --accent-dim: rgba(6, 182, 212, 0.14);
-    --accent-glow: rgba(6, 182, 212, 0.32);
-    --folder-1: #06b6d4;
-    --folder-2: #8b5cf6;
-    --folder-1-glow: rgba(6, 182, 212, 0.38);
-    --folder-2-glow: rgba(139, 92, 246, 0.38);
-    --term-1-bg: linear-gradient(135deg, #06b6d4, #67e8f9);
-    --head-grad: linear-gradient(140deg, #edf0fa 0%, #67e8f9 100%);
-}
-
-/* Amber accent */
+/* Editorial Bold uses one fixed accent (orange-red). The accent-theme axis is
+   kept for compatibility but pinned to the Editorial accent so any stored choice
+   stays on-brand. */
+:root[data-theme="cyan"],
 :root[data-theme="amber"] {
-    --accent: #f59e0b;
-    --accent-b: #fcd34d;
-    --accent-dim: rgba(245, 158, 11, 0.14);
-    --accent-glow: rgba(245, 158, 11, 0.32);
-    --folder-1: #f59e0b;
-    --folder-2: #ec4899;
-    --folder-1-glow: rgba(245, 158, 11, 0.38);
-    --folder-2-glow: rgba(236, 72, 153, 0.38);
-    --term-1-bg: linear-gradient(135deg, #f59e0b, #fcd34d);
-    --head-grad: linear-gradient(140deg, #edf0fa 0%, #fcd34d 100%);
+    --accent: #ff4d2e;
+    --accent-b: #ff6b50;
+    --accent-dim: rgba(255, 77, 46, 0.12);
+    --accent-glow: rgba(255, 77, 46, 0.26);
 }
 
-/* Light color-mode overrides (kept as a quieter, friendly variant) */
+/* Light mode = the Editorial default (re-asserted so toggling to light is exact). */
 :root[data-color-mode="light"] {
-    --bg: #f5f6fb;
-    --sidebar: #ffffff;
+    --bg: #f6f3ec;
+    --sidebar: #16130f;
     --surface: #ffffff;
-    --surface-2: #f1f5f9;
-    --surface-3: #e2e8f0;
-
-    --border: #e2e8f0;
-    --border-2: #cbd5e1;
-    --border-3: #94a3b8;
-    --border-4: #64748b;
-
-    --text-1: #0f172a;
-    --text-2: #1e293b;
-    --text-3: #475569;
-    --text-4: #64748b;
-    --text-5: #94a3b8;
-    --text-6: #cbd5e1;
-
-    --accent-dim: rgba(120, 86, 244, 0.10);
-    --head-grad: linear-gradient(140deg, #0f172a 0%, #6d28d9 100%);
+    --surface-2: #f1ebe0;
+    --surface-3: #efe9df;
+    --border: #e7dfd0;
+    --border-2: #e2dacb;
+    --border-3: #d8cfbe;
+    --border-4: #b8af9c;
+    --text-1: #16130f;
+    --text-2: #3a342c;
+    --text-3: #6b6357;
+    --text-4: #8a8175;
+    --text-5: #b3aa97;
+    --text-6: #ccc4b3;
+    --ink: #16130f;
+    --paper: #ffffff;
+    --canvas: #f6f3ec;
+    --line: #e7dfd0;
+    --head-grad: linear-gradient(140deg, #16130f 0%, #16130f 100%);
 }
 
-:root[data-color-mode="light"][data-theme="cyan"] {
-    --accent-dim: rgba(6, 182, 212, 0.10);
-    --head-grad: linear-gradient(140deg, #0f172a 0%, #0891b2 100%);
-}
-
-:root[data-color-mode="light"][data-theme="amber"] {
-    --accent-dim: rgba(245, 158, 11, 0.10);
-    --head-grad: linear-gradient(140deg, #0f172a 0%, #b45309 100%);
+/* Editorial dark mode (optional). A4 paper stays white via --doc-paper. */
+:root[data-color-mode="dark"] {
+    --bg: #16130f;
+    --sidebar: #0f0d0a;
+    --surface: #201b15;
+    --surface-2: #26211a;
+    --surface-3: #2a241d;
+    --border: #2a241d;
+    --border-2: #2a241d;
+    --border-3: #3a342c;
+    --border-4: #4a443c;
+    --text-1: #f6f3ec;
+    --text-2: #d8d0c2;
+    --text-3: #a39a8c;
+    --text-4: #807868;
+    --text-5: #5e5749;
+    --text-6: #45403a;
+    --ink: #f6f3ec;
+    --ink-soft: #2a241d;
+    --paper: #201b15;
+    --paper-2: #26211a;
+    --canvas: #16130f;
+    --canvas-2: #1c1813;
+    --canvas-3: #201b15;
+    --line: #2a241d;
+    --line-2: #2a241d;
+    --head-grad: linear-gradient(140deg, #f6f3ec 0%, #f6f3ec 100%);
 }
 
 /* Compact density */
@@ -131,12 +155,13 @@
 
 /* Font utility classes for the Deep Space chrome */
 .font-sora { font-family: 'Sora', sans-serif; }
-.font-noto-thai { font-family: 'Noto Sans Thai', 'Sora', sans-serif; }
+.font-noto-thai { font-family: 'IBM Plex Sans Thai', 'Sora', sans-serif; }
+.font-thai { font-family: 'IBM Plex Sans Thai', 'Sora', sans-serif; }
 
 @layer base {
   body {
     @apply font-sans;
-    font-family: 'Prompt', 'Outfit', sans-serif;
+    font-family: 'IBM Plex Sans Thai', 'Sora', sans-serif;
     background-color: var(--bg);
     color: var(--text-2);
     transition: background-color 200ms ease, color 200ms ease;
@@ -148,7 +173,7 @@
   h4,
   h5,
   h6 {
-    font-family: 'Prompt', sans-serif;
+    font-family: 'IBM Plex Sans Thai', 'Sora', sans-serif;
   }
 
   /* Smooth color transitions for all themed surfaces (but not transforms/zoom) */
