@@ -15,15 +15,16 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// --- Anonymous auth ---
-// firestore.rules require `request.auth != null`, so every read/write must run
-// inside an authenticated session. There is no login UI; we sign in anonymously
-// once and reuse the same session. ensureAuth() is awaited before any Firestore
-// call so the first operations don't race the sign-in.
+// --- Anonymous auth (best-effort) ---
+// We sign in anonymously once and reuse the session, so that a locked-down
+// `firestore.rules` (request.auth != null) works. IMPORTANT: this is best-effort
+// — ensureAuth() NEVER rejects. If Anonymous sign-in is disabled in the Firebase
+// Console the Firestore call still runs afterwards, so a project whose rules are
+// still open keeps reading/writing exactly as before (no "my documents vanished").
+// Only locked rules + no auth will deny the op, which each CRUD already handles.
 //
-// Prerequisite: enable Anonymous sign-in in Firebase Console → Authentication.
-// If it is disabled, sign-in rejects; we log it (not throw at module load, so the
-// app still renders) and Firestore reads fall back to their safe defaults.
+// To turn on real protection: enable Authentication → Anonymous in the Console,
+// then deploy rules that require `request.auth != null`. Reload to pick up auth.
 let authReadyPromise = null;
 const ensureAuth = () => {
   if (!authReadyPromise) {
@@ -31,24 +32,21 @@ const ensureAuth = () => {
       ? Promise.resolve(auth.currentUser)
       : signInAnonymously(auth).then(cred => cred.user)
     ).catch(error => {
-      // Attempt sign-in only ONCE per session. The most common cause is Anonymous
-      // sign-in not being enabled in the Firebase Console — retrying on every
-      // Firestore call would flood the console and hammer the network for nothing.
-      // After this, reads fall back to safe defaults and writes surface a toast.
-      // (Re-enable auth in the Console, then reload to retry.)
+      // Sign-in attempted once per session. Log once, then resolve to null so the
+      // Firestore operation proceeds regardless (works under open rules).
       if (error?.code === 'auth/configuration-not-found') {
-        console.warn("Anonymous sign-in is not enabled in the Firebase Console — running without persistence. Enable Authentication → Anonymous, then reload.");
+        console.warn("Anonymous sign-in is not enabled in the Firebase Console — continuing without auth (works while Firestore rules are open).");
       } else {
         console.error("Anonymous auth failed:", error);
       }
-      throw error;
+      return null;
     });
   }
   return authReadyPromise;
 };
 
 // Kick off sign-in eagerly so it's usually ready by the time the app reads data.
-ensureAuth().catch(() => { /* already logged in ensureAuth */ });
+ensureAuth();
 
 // --- Document CRUD ---
 // Mutations throw on failure so callers can show user-facing errors.
