@@ -1,9 +1,9 @@
 /**
- * Per-item "frame" (border) — a box outline the user can turn on for any content
- * item (text / markdown / image / question) and style independently.
+ * Per-item "frame" — an outline + fill the user can turn on for any content item
+ * (text / markdown / image / question) and style independently.
  *
- * The fields live on the item itself (borderStyle / borderWidth / borderColor /
- * borderRadius) so they save with the document. buildFrameStyle() turns them into
+ * Fields live on the item (borderStyle / borderWidth / borderColor / borderRadius
+ * / fillColor) so they save with the document. buildFrameStyle() turns them into
  * an inline style object applied on the item's container when it is not selected
  * (the blue selection outline takes over while selected).
  */
@@ -22,13 +22,23 @@ export const DEFAULT_FRAME = {
     borderRadius: 8,
 };
 
-// Returns an inline style object for the frame, or null when no frame is set.
+// Starting fill when the user first turns "สีพื้นกล่อง" on (cream, like a note box).
+// Default state is NO fill — fillColor stays unset until the user enables it.
+export const DEFAULT_FILL = '#fff7d6';
+
+// Inline style for the frame (border and/or fill), or null when neither is set.
 export const buildFrameStyle = (item) => {
-    if (!item || !item.borderStyle || item.borderStyle === 'none') return null;
-    return {
-        borderStyle: item.borderStyle,
-        borderWidth: `${item.borderWidth ?? DEFAULT_FRAME.borderWidth}px`,
-        borderColor: item.borderColor || DEFAULT_FRAME.borderColor,
-        borderRadius: `${item.borderRadius ?? DEFAULT_FRAME.borderRadius}px`,
-    };
+    if (!item) return null;
+    const hasBorder = item.borderStyle && item.borderStyle !== 'none';
+    const hasFill = !!item.fillColor;
+    if (!hasBorder && !hasFill) return null;
+
+    const style = { borderRadius: `${item.borderRadius ?? DEFAULT_FRAME.borderRadius}px` };
+    if (hasBorder) {
+        style.borderStyle = item.borderStyle;
+        style.borderWidth = `${item.borderWidth ?? DEFAULT_FRAME.borderWidth}px`;
+        style.borderColor = item.borderColor || DEFAULT_FRAME.borderColor;
+    }
+    if (hasFill) style.backgroundColor = item.fillColor;
+    return style;
 };

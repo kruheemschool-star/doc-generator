@@ -16,7 +16,7 @@ import FontPicker from './FontPicker';
 import ImportPreview from './ImportPreview';
 import TweaksPanel from './TweaksPanel';
 import { DEFAULT_DOC_THEME, normalizeTheme, themeToCssVars } from '../data/docThemes';
-import { buildFrameStyle, DEFAULT_FRAME, FRAME_STYLE_OPTIONS } from '../utils/itemFrame';
+import { buildFrameStyle, DEFAULT_FRAME, DEFAULT_FILL, FRAME_STYLE_OPTIONS } from '../utils/itemFrame';
 import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions, isSolutionOnlyExport, solutionsToMarkdownBlocks } from '../utils/importParser';
 import { useToast, ToastContainer } from './Toast';
 import useAutoPagination from '../hooks/useAutoPagination';
@@ -1205,6 +1205,29 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                     </div>
                                 </div>
                             </div>
+                            {/* Fill (background) — default off = no fill */}
+                            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-gray-500 dark:text-slate-400">สีพื้นกล่อง</span>
+                                    <button
+                                        onClick={() => handleUpdateItem(selectedItemId, { fillColor: selectedItem.fillColor ? null : DEFAULT_FILL })}
+                                        role="switch"
+                                        aria-checked={!!selectedItem.fillColor}
+                                        aria-label="เปิด/ปิดสีพื้นกล่อง"
+                                        className={`relative w-10 h-5 rounded-full transition-colors ${selectedItem.fillColor ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'}`}
+                                    >
+                                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${selectedItem.fillColor ? 'translate-x-5' : ''}`} />
+                                    </button>
+                                </div>
+                                {selectedItem.fillColor ? (
+                                    <div className="flex items-center justify-between mt-2">
+                                        <span className="text-[11px] font-mono text-gray-400 dark:text-slate-500 uppercase">{selectedItem.fillColor}</span>
+                                        <input type="color" value={selectedItem.fillColor} onChange={e => handleUpdateItem(selectedItemId, { fillColor: e.target.value })} className="w-8 h-8 rounded-lg border border-gray-200 dark:border-slate-700 cursor-pointer p-0.5 bg-transparent" aria-label="เลือกสีพื้นกล่อง" />
+                                    </div>
+                                ) : (
+                                    <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">ค่าเริ่มต้น: ไม่เติมสี (โปร่งใส)</p>
+                                )}
+                            </div>
                         </div>
                     )}
                     <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-gray-100 dark:border-slate-800 shadow-2xl rounded-2xl p-2 sm:p-2.5 flex items-center gap-1 sm:gap-2 overflow-x-auto custom-scrollbar">
@@ -1307,7 +1330,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 <button onClick={() => handleDuplicateItem(selectedItemId)} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 hover:text-gray-700 rounded-xl transition-all" aria-label="ทำสำเนา (Duplicate)" title="ทำสำเนา (Duplicate)"><Copy size={20} /></button>
 
-                                <button onClick={(e) => { e.stopPropagation(); setShowBorderPopover(s => !s); }} className={`p-3 rounded-xl transition-all ${(selectedItem && selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || showBorderPopover ? 'bg-teal-50 text-teal-600' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-700'}`} aria-label="กรอบกล่อง" title="กรอบกล่อง (เส้นขอบ)"><Square size={20} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowBorderPopover(s => !s); }} className={`p-3 rounded-xl transition-all ${(selectedItem && ((selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || selectedItem.fillColor)) || showBorderPopover ? 'bg-teal-50 text-teal-600' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-700'}`} aria-label="กรอบกล่อง" title="กรอบและสีพื้นกล่อง"><Square size={20} /></button>
 
                                 <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
 
