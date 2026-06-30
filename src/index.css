@@ -323,30 +323,15 @@
   margin: 0.4rem 0;
 }
 
-/* When grid overlay is active, make content item backgrounds transparent */
-.grid-active [data-rfd-draggable-id] {
-  background-color: transparent !important;
-}
-
-.grid-active [data-rfd-draggable-id] .bg-green-50\/50,
-.grid-active [data-rfd-draggable-id] .bg-gray-50\/30 {
-  background-color: transparent !important;
-}
-
-/* Notebook lined-paper background on the A4 sheet — subtle bluish grid, like a
-   lecture notebook. Layers on top of the sheet's white background-color. */
+/* The A4 sheet's grid is the single, adjustable "ช่องตาราง" — controlled from the
+   design panel (Tweaks → กระดาษ): on/off, intensity (--doc-grid-color) and cell
+   size (--doc-grid-size). It layers on top of the sheet's background colour. */
 .sheet-paper {
   background-color: var(--doc-paper, #ffffff);
   background-image:
     repeating-linear-gradient(to bottom, var(--doc-grid-color, rgba(74, 115, 196, 0.07)) 0 1px, transparent 1px var(--doc-grid-size, 26px)),
     repeating-linear-gradient(to right, var(--doc-grid-color, rgba(74, 115, 196, 0.07)) 0 1px, transparent 1px var(--doc-grid-size, 26px));
   background-position: 0 0;
-}
-
-/* When the writing-guide grid overlay is on (toolbar grid button), hide the
-   notebook paper grid so the two grids don't stack into a misaligned double layer. */
-.sheet-paper.grid-active {
-  background-image: none;
 }
 
 @media print {
@@ -429,14 +414,6 @@
   /* Preserve grid layout exactly as on screen */
   .grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  /* Grid overlay for writing guides */
-  .grid-overlay {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    width: 210mm !important;
-    height: 297mm !important;
   }
 }
 

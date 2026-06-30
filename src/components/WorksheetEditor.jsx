@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2 } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2 } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -123,10 +123,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     });
     const [globalFontSize, setGlobalFontSize] = useState('medium');
     const [showDebug, setShowDebug] = useState(false);
-    const [showGrid, setShowGrid] = useState(false);
     const [isViewOnly, setIsViewOnly] = useState(false);
-    const gridSize = 'medium';
-    const gridOpacity = 5;
 
     // --- Watermark State ---
     const [watermark, setWatermark] = useState({
@@ -935,20 +932,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack, ...themeToCssVars(docTheme) }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
-                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`sheet-paper w-[210mm] min-h-[297mm] shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden ${showGrid ? 'grid-active' : ''}`}>
-                                    {/* Grid Overlay */}
-                                    {showGrid && (
-                                        <div
-                                            className="absolute inset-0 pointer-events-none z-0 grid-overlay"
-                                            style={{
-                                                backgroundImage: `
-                                                    linear-gradient(to right, rgba(0,0,0,${gridOpacity / 100}) 1px, transparent 1px),
-                                                    linear-gradient(to bottom, rgba(0,0,0,${gridOpacity / 100}) 1px, transparent 1px)
-                                                `,
-                                                backgroundSize: `${{ small: '5mm 5mm', medium: '8mm 8mm', large: '12mm 12mm' }[gridSize]}`,
-                                            }}
-                                        />
-                                    )}
+                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className="sheet-paper w-[210mm] min-h-[297mm] shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden">
                                     {/* Watermark Overlay */}
                                     {watermark.enabled && (
                                         <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden watermark-overlay" style={{ opacity: watermark.opacity / 100 }}>
@@ -1356,9 +1340,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 <button onClick={() => setIsViewOnly(!isViewOnly)} className={isViewOnly ? `${tbtnActive} bg-[#26211a] text-[var(--accent)]` : tbtn} aria-label="สลับโหมดแก้ไข/มุมมอง" title={isViewOnly ? "โหมดมุมมอง (ดูอย่างเดียว)" : "โหมดแก้ไข"}>{isViewOnly ? <Hand size={18} /> : <MousePointer2 size={18} />}</button>
                                 <button onClick={() => setShowSolution(!showSolution)} className={showSolution ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ซ่อน/แสดงเฉลย" title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={18} /> : <EyeOff size={18} />}</button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={showGrid ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="เปิด/ปิดตารางกริด" title="เปิด/ปิดตารางกริด"><Grid3X3 size={18} /></button>
                                 <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={watermark.enabled ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ลายน้ำ" title="ลายน้ำ"><Droplets size={18} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowTweaks(s => !s); }} className={showTweaks ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ปรับดีไซน์" title="ปรับดีไซน์ (สี/ฟอนต์/กระดาษ)"><SlidersHorizontal size={18} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowTweaks(s => !s); }} className={showTweaks ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ปรับดีไซน์ (สี/ฟอนต์/ช่องตาราง)" title="ปรับดีไซน์ (สี/ฟอนต์/ช่องตาราง)"><SlidersHorizontal size={18} /></button>
                                 <button onClick={() => window.print()} className={tbtn} aria-label="พิมพ์" title="พิมพ์"><Printer size={18} /></button>
                             </>
                         ) : (
