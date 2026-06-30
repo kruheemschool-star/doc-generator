@@ -42,7 +42,7 @@ const ColumnsItem = memo(({ id, index, left, right, onUpdate, onDelete, onMove, 
     };
 
     return (
-        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly}>
+        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly || isEditing}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}

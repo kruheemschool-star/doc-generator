@@ -181,7 +181,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
     };
 
     return (
-        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly}>
+        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly || isEditing}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}

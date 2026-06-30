@@ -51,7 +51,13 @@ const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelet
     // Guards against setState after unmount if the dynamic import resolves late
     // (e.g. the item is deleted while react-quill is still loading).
     const mountedRef = useRef(true);
-    useEffect(() => () => { mountedRef.current = false; }, []);
+    // Set true on mount (not just false on unmount): under React StrictMode the
+    // mount→unmount→mount cycle would otherwise leave this stuck false and the
+    // async Quill load would never apply (editor stuck on "loading").
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
 
     // Memoize modules using named hook
     const modules = useMemo(() => ({
@@ -116,7 +122,7 @@ const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelet
     };
 
     return (
-        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly}>
+        <Draggable draggableId={id} index={index} isDragDisabled={isViewOnly || isEditing}>
             {(provided, snapshot) => (
                 <div
                     ref={provided.innerRef}
