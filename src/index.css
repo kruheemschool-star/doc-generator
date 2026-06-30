@@ -343,6 +343,12 @@
   background-position: 0 0;
 }
 
+/* When the writing-guide grid overlay is on (toolbar grid button), hide the
+   notebook paper grid so the two grids don't stack into a misaligned double layer. */
+.sheet-paper.grid-active {
+  background-image: none;
+}
+
 @media print {
   @page {
     size: A4;
