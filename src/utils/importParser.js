@@ -113,6 +113,44 @@ export const mergeProblemsAndSolutions = (parsed) => {
 };
 
 /**
+ * Split a raw Markdown string into section blocks, breaking at ATX headings
+ * (`#` … up to `maxLevel`). Each block keeps its heading together with the body
+ * that follows it; text before the first heading becomes its own leading block.
+ *
+ * Designed for the "นำเข้าเป็น Markdown แยกกล่องตามหัวข้อ" flow — each returned
+ * block becomes one `markdown` content item, which lets the pagination hook
+ * bin-pack the sections onto A4 pages by their measured height.
+ *
+ * Fenced code blocks (``` / ~~~) are respected so a `#` comment inside code is
+ * never mistaken for a heading. Consecutive headings (e.g. `##` then `###` with
+ * no body between) stay grouped rather than producing empty stub boxes.
+ */
+export const splitMarkdownByHeading = (md, maxLevel = 3) => {
+    if (!md || !md.trim()) return [];
+    const lines = md.replace(/\r\n/g, '\n').split('\n');
+    const splitRe = new RegExp(`^#{1,${maxLevel}}\\s+\\S`);
+    const anyHeadingRe = /^#{1,6}\s+\S/;
+    const blocks = [];
+    let current = [];
+    let inFence = false;
+    // Only break when the current block already holds real body text — keeps a
+    // run of back-to-back headings attached to the body that eventually follows.
+    const hasBody = () => current.some(l => l.trim() && !anyHeadingRe.test(l));
+    const flush = () => {
+        const text = current.join('\n').trim();
+        if (text) blocks.push(text);
+        current = [];
+    };
+    for (const line of lines) {
+        if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+        if (!inFence && splitRe.test(line) && hasBody()) flush();
+        current.push(line);
+    }
+    flush();
+    return blocks;
+};
+
+/**
  * Classify a parsed value into a preview-friendly shape.
  * @returns {{ kind: 'questions', questions: object[], meta?: object }
  *         | { kind: 'lesson', blocks: object[] }

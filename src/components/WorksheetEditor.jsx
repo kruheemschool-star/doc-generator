@@ -18,7 +18,7 @@ import ImportPreview from './ImportPreview';
 import TweaksPanel from './TweaksPanel';
 import { DEFAULT_DOC_THEME, normalizeTheme, themeToCssVars } from '../data/docThemes';
 import { buildFrameStyle, DEFAULT_FRAME, DEFAULT_FILL, FRAME_STYLE_OPTIONS } from '../utils/itemFrame';
-import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions, isSolutionOnlyExport, solutionsToMarkdownBlocks } from '../utils/importParser';
+import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions, isSolutionOnlyExport, solutionsToMarkdownBlocks, splitMarkdownByHeading } from '../utils/importParser';
 import { useToast, ToastContainer } from './Toast';
 import useAutoPagination from '../hooks/useAutoPagination';
 import useHistory from '../hooks/useHistory';
@@ -689,14 +689,23 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             setImportText('');
 
         } catch (err) {
-            if (window.confirm("รูปแบบ JSON ไม่ถูกต้อง ต้องการนำเข้าเป็นข้อความดิบ (Markdown) ใช่หรือไม่?")) {
+            // Not JSON → import as Markdown, split into one box per heading so the
+            // sections bin-pack across A4 pages (matches the live preview).
+            if (window.confirm("ไม่พบรูปแบบ JSON — นำเข้าเป็น Markdown โดยแยกเป็นกล่องตามหัวข้อ ใช่หรือไม่?")) {
                 const sectionHeaderItem = {
                     id: uuidv4(),
                     type: 'markdown',
                     content: buildSectionHeader(importSectionType, importQuestionType),
                     size: 'medium'
                 };
-                insertItemsIntoPages([sectionHeaderItem, { id: uuidv4(), type: 'markdown', content: importText, size: 'medium' }]);
+                const blocks = splitMarkdownByHeading(importText);
+                const markdownItems = (blocks.length > 0 ? blocks : [importText]).map(content => ({
+                    id: uuidv4(),
+                    type: 'markdown',
+                    content,
+                    size: 'medium'
+                }));
+                insertItemsIntoPages([sectionHeaderItem, ...markdownItems]);
                 setShowImportModal(false);
                 setImportText('');
             }
@@ -1437,7 +1446,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             </div>
                                             นำเข้าเนื้อหา
                                         </h3>
-                                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5 ml-[46px]">วางข้อมูลจาก Gemini AI หรืออัปโหลดไฟล์ JSON แล้วเลือกประเภท</p>
+                                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5 ml-[46px]">วาง JSON จาก Gemini AI หรือวาง/อัปโหลด Markdown (.md) — ระบบจะแยกเป็นกล่องตามหัวข้อให้</p>
                                     </div>
                                     <button onClick={() => setShowImportModal(false)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-300 dark:text-slate-600 hover:text-gray-500 transition-colors"><X size={18} /></button>
                                 </div>
@@ -1477,16 +1486,16 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
                                     <div className="flex-1 min-h-0 flex flex-col">
                                         <div className="flex items-center justify-between mb-1.5 pl-1 gap-2">
-                                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">วางข้อมูล (JSON / ข้อความ)</span>
+                                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">วางข้อมูล (JSON / Markdown)</span>
                                             <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[11px] font-bold cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all active:scale-95">
                                                 <Upload size={13} />
-                                                เลือกไฟล์ JSON
-                                                <input type="file" accept=".json,application/json" className="hidden" onChange={handleImportFile} />
+                                                เลือกไฟล์ (JSON / .md)
+                                                <input type="file" accept=".json,application/json,.md,.markdown,text/markdown,text/plain" className="hidden" onChange={handleImportFile} />
                                             </label>
                                         </div>
                                         <textarea
                                             className="w-full flex-1 min-h-0 p-4 bg-gray-50 dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-800 focus:border-blue-500 rounded-2xl font-mono text-sm outline-none resize-none transition-all placeholder:text-gray-300"
-                                            placeholder="วางข้อมูล JSON / ข้อความจาก Gemini ที่นี่ หรือกด 'เลือกไฟล์ JSON' ด้านบนเพื่ออัปโหลดไฟล์..."
+                                            placeholder="วาง JSON จาก Gemini หรือวาง Markdown (เช่น # หัวข้อ, **ตัวหนา**, - ลิสต์, $สมการ$) ที่นี่ — หรือกด 'เลือกไฟล์' ด้านบน"
                                             value={importText}
                                             onChange={e => setImportText(e.target.value)}
                                             autoFocus

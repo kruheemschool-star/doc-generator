@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import MarkdownRenderer from './MarkdownRenderer';
 import SvgRenderer from './SvgRenderer';
 import { Eye, AlertCircle, FileQuestion, BookOpen, FileText } from 'lucide-react';
-import { tryParseImportJSON, classifyImport } from '../utils/importParser';
+import { tryParseImportJSON, classifyImport, splitMarkdownByHeading } from '../utils/importParser';
 
 // AI sometimes prefixes options with ก./ข./ค./ง. — strip so numbering isn't doubled.
 const stripOptionPrefix = (text) => (text ? text.replace(/^[ก-ง]\.\s*/, '').trim() : text);
@@ -88,7 +88,9 @@ const ImportPreview = ({ text }) => {
     const result = useMemo(() => {
         if (!text || !text.trim()) return { state: 'empty' };
         const parsedRes = tryParseImportJSON(text);
-        if (!parsedRes.ok) return { state: 'error', error: parsedRes.error };
+        // Not JSON → treat the paste as Markdown and split it into section boxes,
+        // mirroring exactly what handleImport() will create on "นำเข้า".
+        if (!parsedRes.ok) return { state: 'ok', kind: 'markdown', blocks: splitMarkdownByHeading(text) };
         return { state: 'ok', ...classifyImport(parsedRes.parsed) };
     }, [text]);
 
@@ -147,6 +149,24 @@ const ImportPreview = ({ text }) => {
                         </div>
                     ))}
                 </div>
+            </div>
+        );
+    }
+
+    if (result.kind === 'markdown') {
+        if (!result.blocks || result.blocks.length === 0) {
+            return <Placeholder icon={FileText} title="ยังไม่มีเนื้อหา" sub="พิมพ์หรือวาง Markdown ด้านซ้าย" />;
+        }
+        return (
+            <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">
+                    <FileText size={14} /> ตัวอย่าง Markdown • แยกเป็น {result.blocks.length} กล่อง
+                </div>
+                {result.blocks.map((content, i) => (
+                    <div key={i} className="rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm text-sm text-gray-800 dark:text-slate-200 leading-relaxed">
+                        <MarkdownRenderer content={content} />
+                    </div>
+                ))}
             </div>
         );
     }
