@@ -80,14 +80,44 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
         const sel = text.slice(start, end);
         let next = text, selStart = start, selEnd = end;
 
+        // Toggle a wrapping mark (bold/italic/math): add it, or remove it if the
+        // selection is already wrapped — so clicking again turns the format OFF.
         const wrap = (mark, placeholder) => {
+            const ml = mark.length;
+            // markers sit just OUTSIDE the selection → strip them
+            if (start >= ml && text.slice(start - ml, start) === mark && text.slice(end, end + ml) === mark) {
+                next = text.slice(0, start - ml) + sel + text.slice(end + ml);
+                selStart = start - ml; selEnd = end - ml;
+                return;
+            }
+            // markers are INSIDE the selection → strip them
+            if (sel.length >= 2 * ml && sel.startsWith(mark) && sel.endsWith(mark)) {
+                const inner = sel.slice(ml, sel.length - ml);
+                next = text.slice(0, start) + inner + text.slice(end);
+                selStart = start; selEnd = start + inner.length;
+                return;
+            }
             const inner = sel || placeholder;
             next = text.slice(0, start) + mark + inner + mark + text.slice(end);
-            selStart = start + mark.length;
-            selEnd = selStart + inner.length;
+            selStart = start + ml; selEnd = selStart + inner.length;
         };
-        const linePrefix = (prefix) => {
+        // Toggle a line prefix (heading/list/quote): remove if present, switch from
+        // an alternate (e.g. H2↔H3, bullet↔numbered), else add.
+        const linePrefix = (prefix, alts = []) => {
             const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+            const rest = text.slice(lineStart);
+            if (rest.startsWith(prefix)) {
+                next = text.slice(0, lineStart) + rest.slice(prefix.length);
+                selStart = selEnd = Math.max(lineStart, start - prefix.length);
+                return;
+            }
+            for (const alt of alts) {
+                if (rest.startsWith(alt)) {
+                    next = text.slice(0, lineStart) + prefix + rest.slice(alt.length);
+                    selStart = selEnd = start + (prefix.length - alt.length);
+                    return;
+                }
+            }
             next = text.slice(0, lineStart) + prefix + text.slice(lineStart);
             selStart = selEnd = start + prefix.length;
         };
@@ -96,16 +126,11 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
             case 'bold': wrap('**', 'ข้อความ'); break;
             case 'italic': wrap('*', 'ข้อความ'); break;
             case 'imath': wrap('$', 'x'); break;
-            case 'bmath': {
-                const inner = sel || 'x = y';
-                next = text.slice(0, start) + '\n$$\n' + inner + '\n$$\n' + text.slice(end);
-                selStart = start + 4; selEnd = selStart + inner.length;
-                break;
-            }
-            case 'h2': linePrefix('## '); break;
-            case 'h3': linePrefix('### '); break;
-            case 'ul': linePrefix('- '); break;
-            case 'ol': linePrefix('1. '); break;
+            case 'bmath': wrap('$$', 'x = y'); break;
+            case 'h2': linePrefix('## ', ['### ', '# ']); break;
+            case 'h3': linePrefix('### ', ['## ', '# ']); break;
+            case 'ul': linePrefix('- ', ['1. ']); break;
+            case 'ol': linePrefix('1. ', ['- ']); break;
             case 'quote': linePrefix('> '); break;
             case 'link': {
                 const label = sel || 'ข้อความ';
