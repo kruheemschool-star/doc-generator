@@ -142,6 +142,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [showWatermarkPanel, setShowWatermarkPanel] = useState(false);
     const watermarkImageInputRef = useRef(null);
     const [showBorderPopover, setShowBorderPopover] = useState(false);
+    const [showAddMenu, setShowAddMenu] = useState(false);
 
     const handleWatermarkImageUpload = (e) => {
         const file = e.target.files?.[0];
@@ -841,6 +842,28 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     })();
     const isTextLikeSelected = selectedItem && (selectedItem.type === 'text' || selectedItem.type === 'markdown');
 
+    // Friendly label for the selected item's type (shown in the toolbar).
+    const ITEM_TYPE_LABELS = { text: 'ข้อความ', markdown: 'Markdown', columns: '2 คอลัมน์', image: 'รูปภาพ', divider: 'เส้นคั่น', spacer: 'ช่องว่าง' };
+    const selectedTypeLabel = selectedItem ? (ITEM_TYPE_LABELS[selectedItem.type] || 'โจทย์') : '';
+
+    // Single "Add" menu used in both modes: when an item is selected the add
+    // handlers insert below it, otherwise they append. Each entry closes the menu.
+    const ADD_MENU_ITEMS = [
+        { key: 'text', label: 'กล่องข้อความ', desc: 'พิมพ์ข้อความ / Rich text', icon: Type, color: 'text-blue-600', onClick: handleAddText },
+        { key: 'markdown', label: 'Markdown', desc: 'หัวข้อ ลิสต์ สมการ กล่องโน้ต', icon: FileText, color: 'text-teal-600', onClick: handleAddMarkdown },
+        { key: 'columns', label: '2 คอลัมน์', desc: 'เนื้อหาซ้าย-ขวาแยกกัน', icon: Columns2, color: 'text-indigo-600', onClick: handleAddColumns },
+        { key: 'image', label: 'รูปภาพ', desc: 'อัปโหลดรูป', icon: ImageIcon, color: 'text-purple-600', onClick: handleAddImage },
+        { key: 'divider', label: 'เส้นคั่น', desc: 'แบ่งส่วนเนื้อหา', icon: Minus, color: 'text-rose-600', onClick: handleAddDivider },
+        { key: 'spacer', label: 'ช่องว่าง', desc: 'เว้นที่ให้นักเรียนเขียน', icon: MoveVertical, color: 'text-amber-600', onClick: handleAddSpacer },
+        { key: 'template', label: 'เทมเพลต', desc: 'แทรกชุดสำเร็จรูป', icon: LayoutTemplate, color: 'text-green-700', onClick: () => setShowTemplatePicker(true) },
+        { key: 'import', label: 'นำเข้าด้วย AI', desc: 'วางจาก Gemini / JSON', icon: Sparkles, color: 'text-blue-600', onClick: () => setShowImportModal(true) },
+    ];
+
+    // Shared toolbar styling — one neutral icon-button look + a thin group divider.
+    const tbtn = 'h-10 w-10 flex items-center justify-center rounded-xl text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-800 dark:hover:text-slate-100 transition-all active:scale-90 flex-shrink-0';
+    const tbtnActive = 'h-10 w-10 flex items-center justify-center rounded-xl transition-all active:scale-90 flex-shrink-0';
+    const tDivider = <div className="w-px h-6 bg-gray-200/70 dark:bg-slate-700/70 mx-0.5 flex-shrink-0" />;
+
     return (
         <div className="min-h-screen bg-[#f1f5f9] dark:bg-slate-950 font-sans print:bg-white relative">
             {/* Debug Overlay */}
@@ -883,7 +906,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             </header>
 
             <div className="flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
-                <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 lg:p-12 custom-scrollbar bg-slate-100/50 dark:bg-slate-950 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); }}>
+                <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 lg:p-12 custom-scrollbar bg-slate-100/50 dark:bg-slate-950 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); setShowAddMenu(false); setShowBorderPopover(false); }}>
                     <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack, ...themeToCssVars(docTheme) }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
@@ -1245,61 +1268,78 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             </div>
                         </div>
                     )}
-                    <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-gray-100 dark:border-slate-800 shadow-2xl rounded-2xl p-2 sm:p-2.5 flex items-center gap-1 sm:gap-2 overflow-x-auto custom-scrollbar">
+
+                    {/* "Add" menu — one place to add any block (appends, or inserts below the selected item) */}
+                    {showAddMenu && (
+                        <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full left-0 mb-3 w-[280px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-2xl p-2 animate-in slide-in-from-bottom-2 duration-200">
+                            <div className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                                {selectedItemId ? 'แทรกถัดจากกล่องนี้' : 'เพิ่มลงในเอกสาร'}
+                            </div>
+                            {ADD_MENU_ITEMS.map(item => {
+                                const Icon = item.icon;
+                                return (
+                                    <button
+                                        key={item.key}
+                                        onClick={() => { item.onClick(); setShowAddMenu(false); }}
+                                        className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-colors group/add"
+                                    >
+                                        <span className={`flex-shrink-0 w-9 h-9 rounded-lg bg-gray-50 dark:bg-slate-700/50 flex items-center justify-center ${item.color} group-hover/add:scale-105 transition-transform`}>
+                                            <Icon size={18} />
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="block text-sm font-semibold text-gray-800 dark:text-slate-100">{item.label}</span>
+                                            <span className="block text-[11px] text-gray-400 dark:text-slate-500 truncate">{item.desc}</span>
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-gray-200/60 dark:border-slate-700/60 shadow-xl shadow-slate-900/10 rounded-2xl px-2 py-1.5 flex items-center gap-1 overflow-x-auto custom-scrollbar">
                         {!selectedItemId ? (
                             <>
-                                <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 dark:text-slate-400 hover:text-blue-600 rounded-xl transition-all" aria-label="เพิ่มกล่องข้อความ" title="เพิ่มกล่องข้อความ"><Type size={20} /></button>
-                                <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 dark:text-slate-400 hover:text-teal-600 rounded-xl transition-all" aria-label="เพิ่ม Markdown" title="เพิ่ม Markdown"><FileText size={20} /></button>
-                                <button onClick={handleAddColumns} className="p-3 hover:bg-indigo-50 text-gray-500 dark:text-slate-400 hover:text-indigo-600 rounded-xl transition-all" aria-label="เพิ่มกล่อง 2 คอลัมน์" title="เพิ่มกล่อง 2 คอลัมน์"><Columns2 size={20} /></button>
-                                <button onClick={handleAddImage} className="p-3 hover:bg-purple-50 text-gray-500 dark:text-slate-400 hover:text-purple-600 rounded-xl transition-all" aria-label="เพิ่มรูปภาพ" title="เพิ่มรูปภาพ"><ImageIcon size={20} /></button>
-                                <button onClick={handleAddDivider} className="p-3 hover:bg-rose-50 text-gray-500 dark:text-slate-400 hover:text-rose-600 rounded-xl transition-all" aria-label="เพิ่มเส้นคั่น" title="เพิ่มเส้นคั่น"><Minus size={20} /></button>
-                                <button onClick={() => setShowTemplatePicker(true)} className="p-3 hover:bg-green-50 text-gray-500 dark:text-slate-400 hover:text-green-700 rounded-xl transition-all" aria-label="เทมเพลตหน้า (Templates)" title="เทมเพลตหน้า (Templates)"><LayoutTemplate size={20} /></button>
-                                <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" aria-label="Import จาก Gemini" title="Import จาก Gemini"><FileJson size={20} /></button>
-                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
-                                <button onClick={undo} disabled={!canUndo} className={`p-3 rounded-xl transition-all ${canUndo ? 'hover:bg-amber-50 text-gray-500 dark:text-slate-400 hover:text-amber-600' : 'text-gray-200 cursor-not-allowed'}`} aria-label="ย้อนกลับ (Undo)" title="ย้อนกลับ (Undo)"><RotateCcw size={20} /></button>
-                                <button onClick={redo} disabled={!canRedo} className={`p-3 rounded-xl transition-all ${canRedo ? 'hover:bg-amber-50 text-gray-500 dark:text-slate-400 hover:text-amber-600' : 'text-gray-200 cursor-not-allowed'}`} aria-label="ทำซ้ำ (Redo)" title="ทำซ้ำ (Redo)"><RotateCw size={20} /></button>
-                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
-                                <button onClick={() => setZoomLevel(z => Math.max(50, z - 10))} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 rounded-xl transition-all" aria-label="ซูมออก" title="ซูมออก"><ZoomOut size={20} /></button>
-                                <span className="text-xs text-gray-400 dark:text-slate-500 font-medium min-w-[40px] text-center select-none">{zoomLevel}%</span>
-                                <button onClick={() => setZoomLevel(z => Math.min(150, z + 10))} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 rounded-xl transition-all" aria-label="ซูมเข้า" title="ซูมเข้า"><ZoomIn size={20} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowAddMenu(s => !s); }} className={`h-10 pl-2.5 pr-3 rounded-xl text-sm font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/30 transition-all active:scale-95 flex-shrink-0 ${showAddMenu ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`} aria-label="เพิ่มเนื้อหา" title="เพิ่มเนื้อหา">
+                                    <Plus size={18} /> เพิ่ม <ChevronDown size={14} className={`transition-transform ${showAddMenu ? 'rotate-180' : ''}`} />
+                                </button>
 
-                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+                                {tDivider}
+
+                                <button onClick={undo} disabled={!canUndo} className={canUndo ? tbtn : `${tbtn} opacity-30 cursor-not-allowed`} aria-label="ย้อนกลับ (Undo)" title="ย้อนกลับ (Undo)"><RotateCcw size={18} /></button>
+                                <button onClick={redo} disabled={!canRedo} className={canRedo ? tbtn : `${tbtn} opacity-30 cursor-not-allowed`} aria-label="ทำซ้ำ (Redo)" title="ทำซ้ำ (Redo)"><RotateCw size={18} /></button>
+
+                                {tDivider}
+
+                                <button onClick={() => setZoomLevel(z => Math.max(50, z - 10))} className={tbtn} aria-label="ซูมออก" title="ซูมออก"><ZoomOut size={18} /></button>
+                                <span className="text-xs text-gray-500 dark:text-slate-400 font-semibold min-w-[42px] text-center select-none tabular-nums">{zoomLevel}%</span>
+                                <button onClick={() => setZoomLevel(z => Math.min(150, z + 10))} className={tbtn} aria-label="ซูมเข้า" title="ซูมเข้า"><ZoomIn size={18} /></button>
+
+                                {tDivider}
 
                                 <FontPicker value={fontId} onChange={setFontId} />
 
-                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
-                                <button onClick={() => setIsViewOnly(!isViewOnly)} className={`p-3 rounded-xl transition-all ${isViewOnly ? 'bg-orange-50 text-orange-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} title={isViewOnly ? "โหมดมุมมอง (ดูอย่างเดียว)" : "โหมดแก้ไข"}>{isViewOnly ? <Hand size={20} /> : <MousePointer2 size={20} />}</button>
-                                <button onClick={() => setShowSolution(!showSolution)} className={`p-3 rounded-xl transition-all ${showSolution ? 'bg-blue-50 text-blue-600' : 'text-gray-400 dark:text-slate-500'}`} aria-label="ซ่อน/แสดงเฉลย" title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={20} /> : <EyeOff size={20} />}</button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={`p-3 rounded-xl transition-all ${showGrid ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} aria-label="เปิด/ปิดตารางกริด" title="เปิด/ปิดตารางกริด"><Grid3X3 size={20} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={`p-3 rounded-xl transition-all ${watermark.enabled ? 'bg-cyan-50 text-cyan-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} aria-label="ลายน้ำ" title="ลายน้ำ"><Droplets size={20} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowTweaks(s => !s); }} className={`p-3 rounded-xl transition-all ${showTweaks ? 'bg-teal-50 text-teal-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} aria-label="ปรับดีไซน์" title="ปรับดีไซน์ (สี/ฟอนต์/กระดาษ)"><SlidersHorizontal size={20} /></button>
-                                <button onClick={() => window.print()} className="p-3 hover:bg-gray-100 text-gray-400 dark:text-slate-500 rounded-xl" aria-label="พิมพ์" title="พิมพ์"><Printer size={20} /></button>
+                                {tDivider}
+
+                                <button onClick={() => setIsViewOnly(!isViewOnly)} className={isViewOnly ? `${tbtnActive} bg-orange-50 text-orange-600` : tbtn} aria-label="สลับโหมดแก้ไข/มุมมอง" title={isViewOnly ? "โหมดมุมมอง (ดูอย่างเดียว)" : "โหมดแก้ไข"}>{isViewOnly ? <Hand size={18} /> : <MousePointer2 size={18} />}</button>
+                                <button onClick={() => setShowSolution(!showSolution)} className={showSolution ? `${tbtnActive} bg-blue-50 text-blue-600` : tbtn} aria-label="ซ่อน/แสดงเฉลย" title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={18} /> : <EyeOff size={18} />}</button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={showGrid ? `${tbtnActive} bg-emerald-50 text-emerald-600` : tbtn} aria-label="เปิด/ปิดตารางกริด" title="เปิด/ปิดตารางกริด"><Grid3X3 size={18} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={watermark.enabled ? `${tbtnActive} bg-cyan-50 text-cyan-600` : tbtn} aria-label="ลายน้ำ" title="ลายน้ำ"><Droplets size={18} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowTweaks(s => !s); }} className={showTweaks ? `${tbtnActive} bg-teal-50 text-teal-600` : tbtn} aria-label="ปรับดีไซน์" title="ปรับดีไซน์ (สี/ฟอนต์/กระดาษ)"><SlidersHorizontal size={18} /></button>
+                                <button onClick={() => window.print()} className={tbtn} aria-label="พิมพ์" title="พิมพ์"><Printer size={18} /></button>
                             </>
                         ) : (
                             <>
-                                <button onClick={() => setSelectedItemId(null)} className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 rounded-lg mr-2 hover:bg-gray-200 transition-colors" aria-label="ยกเลิกการเลือก" title="ยกเลิกการเลือก"><X size={16} /></button>
+                                <button onClick={() => setSelectedItemId(null)} className="h-10 w-10 flex items-center justify-center bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-all active:scale-90 flex-shrink-0" aria-label="ยกเลิกการเลือก" title="ยกเลิกการเลือก"><X size={18} /></button>
+                                <span className="px-2.5 h-8 inline-flex items-center rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 text-xs font-bold whitespace-nowrap flex-shrink-0">{selectedTypeLabel}</span>
 
-                                <button
-                                    onClick={() => handleMoveItem(selectedItemId, 'up')}
-                                    disabled={!selectedItemStatus.up}
-                                    className={`p-3 rounded-xl transition-all ${selectedItemStatus.up ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'text-gray-200 cursor-not-allowed'}`}
-                                    aria-label="เลื่อนขึ้น" title="เลื่อนขึ้น"
-                                >
-                                    <ChevronUp size={20} />
-                                </button>
+                                {tDivider}
 
-                                <button
-                                    onClick={() => handleMoveItem(selectedItemId, 'down')}
-                                    disabled={!selectedItemStatus.down}
-                                    className={`p-3 rounded-xl transition-all ${selectedItemStatus.down ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'text-gray-200 cursor-not-allowed'}`}
-                                    aria-label="เลื่อนลง" title="เลื่อนลง"
-                                >
-                                    <ChevronDown size={20} />
-                                </button>
+                                <button onClick={() => handleMoveItem(selectedItemId, 'up')} disabled={!selectedItemStatus.up} className={selectedItemStatus.up ? tbtn : `${tbtn} opacity-30 cursor-not-allowed`} aria-label="เลื่อนขึ้น" title="เลื่อนขึ้น"><ChevronUp size={18} /></button>
+                                <button onClick={() => handleMoveItem(selectedItemId, 'down')} disabled={!selectedItemStatus.down} className={selectedItemStatus.down ? tbtn : `${tbtn} opacity-30 cursor-not-allowed`} aria-label="เลื่อนลง" title="เลื่อนลง"><ChevronDown size={18} /></button>
 
                                 {isTextLikeSelected && (
                                     <>
-                                        <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+                                        {tDivider}
                                         <div className="flex items-center gap-1.5 px-1 flex-shrink-0" title="ปรับขนาดตัวอักษร">
                                             <ALargeSmall size={18} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
                                             <input
@@ -1309,73 +1349,52 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                                 step={1}
                                                 value={getEffectiveFontPx(selectedItem)}
                                                 onChange={(e) => handleUpdateItem(selectedItemId, { fontScale: Number(e.target.value) })}
-                                                className="w-20 sm:w-28 accent-blue-600 cursor-pointer"
+                                                className="w-20 sm:w-24 accent-blue-600 cursor-pointer"
                                                 aria-label="ขนาดตัวอักษร"
                                             />
                                             <span className="text-xs text-gray-500 dark:text-slate-400 font-medium min-w-[34px] text-center select-none tabular-nums">{getEffectiveFontPx(selectedItem)}px</span>
                                             {typeof selectedItem.fontScale === 'number' && (
-                                                <button
-                                                    onClick={() => handleUpdateItem(selectedItemId, { fontScale: null })}
-                                                    className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                                    aria-label="ขนาดอัตโนมัติ" title="กลับเป็นขนาดอัตโนมัติ"
-                                                >
-                                                    <RotateCcw size={14} />
-                                                </button>
+                                                <button onClick={() => handleUpdateItem(selectedItemId, { fontScale: null })} className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" aria-label="ขนาดอัตโนมัติ" title="กลับเป็นขนาดอัตโนมัติ"><RotateCcw size={14} /></button>
                                             )}
                                         </div>
                                     </>
                                 )}
 
-                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+                                {tDivider}
 
-                                <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 dark:text-slate-400 hover:text-blue-600 rounded-xl transition-all" aria-label="แทรกข้อความ" title="แทรกข้อความ"><Type size={20} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowAddMenu(s => !s); }} className={`h-10 pl-2.5 pr-3 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all active:scale-95 flex-shrink-0 ${showAddMenu ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`} aria-label="แทรกเนื้อหา" title="แทรกถัดจากกล่องนี้"><Plus size={18} /> แทรก <ChevronDown size={14} className={`transition-transform ${showAddMenu ? 'rotate-180' : ''}`} /></button>
 
-                                <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 dark:text-slate-400 hover:text-teal-600 rounded-xl transition-all" aria-label="แทรก Markdown" title="แทรก Markdown"><FileText size={20} /></button>
+                                <button onClick={() => handleDuplicateItem(selectedItemId)} className={tbtn} aria-label="ทำสำเนา" title="ทำสำเนา (Duplicate)"><Copy size={18} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowBorderPopover(s => !s); }} className={(selectedItem && ((selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || selectedItem.fillColor)) || showBorderPopover ? `${tbtnActive} bg-teal-50 text-teal-600` : tbtn} aria-label="กรอบและสีพื้นกล่อง" title="กรอบและสีพื้นกล่อง"><Square size={18} /></button>
 
-                                <button onClick={handleAddColumns} className="p-3 hover:bg-indigo-50 text-gray-500 dark:text-slate-400 hover:text-indigo-600 rounded-xl transition-all" aria-label="แทรกกล่อง 2 คอลัมน์" title="แทรกกล่อง 2 คอลัมน์"><Columns2 size={20} /></button>
+                                {tDivider}
 
-                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 dark:text-slate-400 hover:text-purple-600 rounded-xl transition-all" aria-label="แทรกรูปภาพ" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
-
-                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'divider', style: 'solid', thickness: 2, color: '#e5e7eb' })} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 hover:text-gray-700 rounded-xl transition-all" aria-label="แทรกเส้นคั่น" title="แทรกเส้นคั่น"><Minus size={20} /></button>
-
-                                <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'spacer', height: 100 })} className="p-3 hover:bg-amber-50 text-gray-500 dark:text-slate-400 hover:text-amber-600 rounded-xl transition-all" aria-label="แทรกช่องว่าง" title="แทรกช่องว่าง"><MoveVertical size={20} /></button>
-
-                                <button onClick={() => setShowTemplatePicker(true)} className="p-3 hover:bg-green-50 text-gray-500 dark:text-slate-400 hover:text-green-700 rounded-xl transition-all" aria-label="แทรกเทมเพลต (Templates)" title="แทรกเทมเพลต (Templates)"><LayoutTemplate size={20} /></button>
-
-                                <button onClick={() => setShowImportModal(true)} className="p-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all" aria-label="แทรกเนื้อหาด้วย AI (Gemini)" title="แทรกเนื้อหาด้วย AI (Gemini)"><Sparkles size={20} /></button>
-
-                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
-
-                                <button onClick={() => handleDuplicateItem(selectedItemId)} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 hover:text-gray-700 rounded-xl transition-all" aria-label="ทำสำเนา (Duplicate)" title="ทำสำเนา (Duplicate)"><Copy size={20} /></button>
-
-                                <button onClick={(e) => { e.stopPropagation(); setShowBorderPopover(s => !s); }} className={`p-3 rounded-xl transition-all ${(selectedItem && ((selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || selectedItem.fillColor)) || showBorderPopover ? 'bg-teal-50 text-teal-600' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-700'}`} aria-label="กรอบกล่อง" title="กรอบและสีพื้นกล่อง"><Square size={20} /></button>
-
-                                <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
-
-                                <button onClick={() => handleDeleteQuestion(selectedItemId)} className="p-3 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-all" aria-label="ลบรายการ" title="ลบรายการ"><Trash2 size={20} /></button>
+                                <button onClick={() => handleDeleteQuestion(selectedItemId)} className="h-10 w-10 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition-all active:scale-90 flex-shrink-0" aria-label="ลบรายการ" title="ลบรายการ"><Trash2 size={18} /></button>
                             </>
                         )}
 
-                        <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
+                        {tDivider}
 
-                        <div className="flex items-center gap-2 pr-1">
+                        <div className="flex items-center gap-2 pr-0.5 flex-shrink-0">
                             <button
                                 onClick={handleManualSave}
                                 disabled={!hasUnsavedChanges || saveStatus === 'saving'}
-                                className={`h-11 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 ${hasUnsavedChanges && saveStatus !== 'saving'
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
-                                    : 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 cursor-not-allowed'
+                                className={`h-10 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm active:scale-95 ${hasUnsavedChanges && saveStatus !== 'saving'
+                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/30'
+                                    : 'bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed'
                                     }`}
                                 aria-label="บันทึกการเปลี่ยนแปลง" title="บันทึกการเปลี่ยนแปลง"
                             >
                                 <Save size={18} />
                                 บันทึก
                             </button>
-                            <div className="flex flex-col min-w-[64px]">
-                                {saveStatus === 'saving' && <span className="text-[11px] text-yellow-600 font-bold animate-pulse">กำลังบันทึก…</span>}
-                                {saveStatus === 'saved' && <span className="text-[11px] text-green-600 font-bold">บันทึกแล้ว</span>}
-                                {saveStatus === 'error' && <span className="text-[11px] text-red-600 font-bold">บันทึกไม่สำเร็จ</span>}
-                            </div>
+                            {saveStatus !== 'idle' && (
+                                <div className="flex flex-col min-w-[58px]">
+                                    {saveStatus === 'saving' && <span className="text-[11px] text-yellow-600 font-bold animate-pulse">กำลังบันทึก…</span>}
+                                    {saveStatus === 'saved' && <span className="text-[11px] text-green-600 font-bold">บันทึกแล้ว</span>}
+                                    {saveStatus === 'error' && <span className="text-[11px] text-red-600 font-bold">ไม่สำเร็จ</span>}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
