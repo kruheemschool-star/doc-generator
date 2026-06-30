@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2 } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -9,6 +9,7 @@ import ImageItem from './ImageItem';
 import SpacerItem from './SpacerItem';
 import DividerItem from './DividerItem';
 import MarkdownItem from './MarkdownItem';
+import ColumnsItem from './ColumnsItem';
 import QuestionEditorModal from './QuestionEditorModal';
 import ErrorBoundary from './ErrorBoundary';
 import TemplatePicker from './TemplatePicker';
@@ -276,6 +277,15 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     };
     const handleAddMarkdown = () => {
         const newItem = { id: uuidv4(), type: 'markdown', content: '> พิมพ์เนื้อหา Markdown ที่นี่...', size: 'medium' };
+        if (selectedItemId) {
+            handleAddQuestionBelow(selectedItemId, newItem);
+        } else {
+            handleAddQuestion(newItem);
+        }
+    };
+
+    const handleAddColumns = () => {
+        const newItem = { id: uuidv4(), type: 'columns', left: 'เนื้อหาฝั่งซ้าย...', right: 'เนื้อหาฝั่งขวา...' };
         if (selectedItemId) {
             handleAddQuestionBelow(selectedItemId, newItem);
         } else {
@@ -744,6 +754,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         if (q.type === 'markdown') return (
             <ErrorBoundary key={q.id}>
                 <MarkdownItem {...commonProps} content={q.content} size={q.size || globalFontSize} fontScale={q.fontScale} showSolution={showSolution} />
+            </ErrorBoundary>
+        );
+        if (q.type === 'columns') return (
+            <ErrorBoundary key={q.id}>
+                <ColumnsItem {...commonProps} left={q.left} right={q.right} />
             </ErrorBoundary>
         );
         if (q.type === 'image') return (
@@ -1235,6 +1250,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             <>
                                 <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 dark:text-slate-400 hover:text-blue-600 rounded-xl transition-all" aria-label="เพิ่มกล่องข้อความ" title="เพิ่มกล่องข้อความ"><Type size={20} /></button>
                                 <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 dark:text-slate-400 hover:text-teal-600 rounded-xl transition-all" aria-label="เพิ่ม Markdown" title="เพิ่ม Markdown"><FileText size={20} /></button>
+                                <button onClick={handleAddColumns} className="p-3 hover:bg-indigo-50 text-gray-500 dark:text-slate-400 hover:text-indigo-600 rounded-xl transition-all" aria-label="เพิ่มกล่อง 2 คอลัมน์" title="เพิ่มกล่อง 2 คอลัมน์"><Columns2 size={20} /></button>
                                 <button onClick={handleAddImage} className="p-3 hover:bg-purple-50 text-gray-500 dark:text-slate-400 hover:text-purple-600 rounded-xl transition-all" aria-label="เพิ่มรูปภาพ" title="เพิ่มรูปภาพ"><ImageIcon size={20} /></button>
                                 <button onClick={handleAddDivider} className="p-3 hover:bg-rose-50 text-gray-500 dark:text-slate-400 hover:text-rose-600 rounded-xl transition-all" aria-label="เพิ่มเส้นคั่น" title="เพิ่มเส้นคั่น"><Minus size={20} /></button>
                                 <button onClick={() => setShowTemplatePicker(true)} className="p-3 hover:bg-green-50 text-gray-500 dark:text-slate-400 hover:text-green-700 rounded-xl transition-all" aria-label="เทมเพลตหน้า (Templates)" title="เทมเพลตหน้า (Templates)"><LayoutTemplate size={20} /></button>
@@ -1315,6 +1331,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <button onClick={handleAddText} className="p-3 hover:bg-blue-50 text-gray-500 dark:text-slate-400 hover:text-blue-600 rounded-xl transition-all" aria-label="แทรกข้อความ" title="แทรกข้อความ"><Type size={20} /></button>
 
                                 <button onClick={handleAddMarkdown} className="p-3 hover:bg-teal-50 text-gray-500 dark:text-slate-400 hover:text-teal-600 rounded-xl transition-all" aria-label="แทรก Markdown" title="แทรก Markdown"><FileText size={20} /></button>
+
+                                <button onClick={handleAddColumns} className="p-3 hover:bg-indigo-50 text-gray-500 dark:text-slate-400 hover:text-indigo-600 rounded-xl transition-all" aria-label="แทรกกล่อง 2 คอลัมน์" title="แทรกกล่อง 2 คอลัมน์"><Columns2 size={20} /></button>
 
                                 <button onClick={() => handleAddQuestionBelow(selectedItemId, { id: uuidv4(), type: 'image', src: '', size: 'medium' })} className="p-3 hover:bg-purple-50 text-gray-500 dark:text-slate-400 hover:text-purple-600 rounded-xl transition-all" aria-label="แทรกรูปภาพ" title="แทรกรูปภาพ"><ImageIcon size={20} /></button>
 
