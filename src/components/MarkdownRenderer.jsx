@@ -136,17 +136,17 @@ const MarkdownRenderer = ({ content, baseFontPx }) => {
                     h1: ({ node, ...props }) => (
                         <h1
                             className="font-bold mt-2 mb-2 pb-2 border-b-2"
-                            style={{ color: PALETTE.greenDeep, borderColor: PALETTE.green, fontSize: '1.875em', fontFamily: HEAD_FONT_STACK }}
+                            style={{ color: `var(--doc-heading, ${PALETTE.greenDeep})`, borderColor: `var(--doc-accent, ${PALETTE.green})`, fontSize: '1.875em', fontFamily: `var(--doc-head-font, ${HEAD_FONT_STACK})` }}
                             {...props}
                         />
                     ),
                     // h2 — marker-pen highlight under the text (lecture-note look)
                     h2: ({ node, children, ...props }) => (
-                        <h2 className="font-bold mt-3 mb-2" style={{ fontSize: '1.5em', fontFamily: HEAD_FONT_STACK }} {...props}>
+                        <h2 className="font-bold mt-3 mb-2" style={{ fontSize: '1.5em', fontFamily: `var(--doc-head-font, ${HEAD_FONT_STACK})` }} {...props}>
                             <span
                                 style={{
-                                    color: PALETTE.greenDeep,
-                                    backgroundImage: `linear-gradient(transparent 62%, ${PALETTE.highlight} 62%)`,
+                                    color: `var(--doc-heading, ${PALETTE.greenDeep})`,
+                                    backgroundImage: `linear-gradient(transparent 62%, var(--doc-highlight, ${PALETTE.highlight}) 62%)`,
                                     padding: '0 0.12em',
                                     boxDecorationBreak: 'clone',
                                     WebkitBoxDecorationBreak: 'clone',
@@ -158,9 +158,9 @@ const MarkdownRenderer = ({ content, baseFontPx }) => {
                     ),
                     // h3 — coral dot + blue sub-heading text
                     h3: ({ node, children, ...props }) => (
-                        <h3 className="font-semibold mt-2 mb-1" style={{ fontSize: '1.2em', fontFamily: HEAD_FONT_STACK }} {...props}>
-                            <span style={{ color: PALETTE.accent }}>●</span>{' '}
-                            <span style={{ color: PALETTE.subhead }}>{children}</span>
+                        <h3 className="font-semibold mt-2 mb-1" style={{ fontSize: '1.2em', fontFamily: `var(--doc-head-font, ${HEAD_FONT_STACK})` }} {...props}>
+                            <span style={{ color: `var(--doc-accent, ${PALETTE.accent})` }}>●</span>{' '}
+                            <span style={{ color: `var(--doc-subhead, ${PALETTE.subhead})` }}>{children}</span>
                         </h3>
                     ),
 
@@ -260,7 +260,7 @@ const MarkdownRenderer = ({ content, baseFontPx }) => {
                     a: ({ node, ...props }) => (
                         <a
                             className="underline decoration-dotted underline-offset-4"
-                            style={{ color: PALETTE.green }}
+                            style={{ color: `var(--doc-accent, ${PALETTE.green})` }}
                             {...props}
                         />
                     ),

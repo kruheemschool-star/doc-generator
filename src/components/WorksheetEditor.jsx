@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -14,6 +14,8 @@ import ErrorBoundary from './ErrorBoundary';
 import TemplatePicker from './TemplatePicker';
 import FontPicker from './FontPicker';
 import ImportPreview from './ImportPreview';
+import TweaksPanel from './TweaksPanel';
+import { DEFAULT_DOC_THEME, normalizeTheme, themeToCssVars } from '../data/docThemes';
 import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions, isSolutionOnlyExport, solutionsToMarkdownBlocks } from '../utils/importParser';
 import { useToast, ToastContainer } from './Toast';
 import useAutoPagination from '../hooks/useAutoPagination';
@@ -55,6 +57,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [fontId, setFontId] = useState(activeDocument?.fontId || DEFAULT_FONT_ID);
     const fontStack = getFontStack(fontId);
 
+    // --- Document Theme (Tweaks panel — colors, head font, paper grid) ---
+    const [docTheme, setDocTheme] = useState(() => normalizeTheme(activeDocument?.theme));
+    const [showTweaks, setShowTweaks] = useState(false);
+
     // --- Toast notifications ---
     const { toasts, addToast, removeToast } = useToast();
 
@@ -67,11 +73,12 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [saveStatus, setSaveStatus] = useState('saved');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-    // Track unsaved changes (documentTitle included so renaming alone is also tracked).
+    // Track unsaved changes (documentTitle + docTheme included so renaming or a
+    // design tweak alone is also tracked).
     useEffect(() => {
         setHasUnsavedChanges(true);
         setSaveStatus('unsaved');
-    }, [pages, fontId, documentTitle]);
+    }, [pages, fontId, documentTitle, docTheme]);
 
     const handleManualSave = useCallback(async () => {
         if (!onSave || !pages) return;
@@ -81,7 +88,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         setSaveStatus('saving');
         try {
             // Awaits the real Firestore write so success/failure is reported accurately.
-            await onSave(pages, documentTitle, { fontId });
+            await onSave(pages, documentTitle, { fontId, theme: docTheme });
             setSaveStatus('saved');
             setHasUnsavedChanges(false);
             addToast('บันทึกเรียบร้อย', 'success', 2000);
@@ -90,7 +97,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             setSaveStatus('error');
             addToast(e?.message || 'บันทึกไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 5000);
         }
-    }, [onSave, pages, documentTitle, fontId, saveStatus, addToast]);
+    }, [onSave, pages, documentTitle, fontId, docTheme, saveStatus, addToast]);
 
     const handleBackWithConfirmation = () => {
         if (hasUnsavedChanges) {
@@ -859,10 +866,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
             <div className="flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
                 <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 lg:p-12 custom-scrollbar bg-slate-100/50 dark:bg-slate-950 print:p-0 print:overflow-visible" onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); }}>
-                    <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack }}>
+                    <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack, ...themeToCssVars(docTheme) }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
-                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`sheet-paper w-[210mm] min-h-[297mm] bg-white shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden ${showGrid ? 'grid-active' : ''}`}>
+                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`sheet-paper w-[210mm] min-h-[297mm] shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden ${showGrid ? 'grid-active' : ''}`}>
                                     {/* Grid Overlay */}
                                     {showGrid && (
                                         <div
@@ -932,7 +939,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             {/* Left: logo + brand */}
                                             <div className="flex items-center gap-2.5">
                                                 <img src="/kruheem-logo.png" alt="คณิตศาสตร์ครูฮีม" className="w-[38px] h-[38px] object-contain" />
-                                                <span className="text-[17px] font-bold tracking-wide whitespace-nowrap" style={{ fontFamily: "'Itim', 'Sarabun', sans-serif", color: '#0f766e' }}>คณิตศาสตร์ครูฮีม</span>
+                                                <span className="text-[17px] font-bold tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--doc-head-font, 'Itim', 'Sarabun', sans-serif)", color: "var(--doc-accent, #0f766e)" }}>คณิตศาสตร์ครูฮีม</span>
                                             </div>
                                             {/* Right: contact channels + page chrome */}
                                             <div className="flex flex-col items-end gap-1">
@@ -972,7 +979,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             </div>
                                         </div>
                                         {/* Teal brand divider under the header */}
-                                        <div className="mt-1.5 h-[3px] w-full rounded-full" style={{ backgroundColor: '#0f766e' }} />
+                                        <div className="mt-1.5 h-[3px] w-full rounded-full" style={{ backgroundColor: "var(--doc-accent, #0f766e)" }} />
                                     </div>
                                     <div className="px-[18mm] pt-[22mm] pb-[12mm]" data-page-content>
                                         <Droppable droppableId={page.id}>
@@ -1176,6 +1183,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <button onClick={() => setShowSolution(!showSolution)} className={`p-3 rounded-xl transition-all ${showSolution ? 'bg-blue-50 text-blue-600' : 'text-gray-400 dark:text-slate-500'}`} aria-label="ซ่อน/แสดงเฉลย" title="ซ่อน/แสดงเฉลย">{showSolution ? <Eye size={20} /> : <EyeOff size={20} />}</button>
                                 <button onClick={(e) => { e.stopPropagation(); setShowGrid(!showGrid); }} className={`p-3 rounded-xl transition-all ${showGrid ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} aria-label="เปิด/ปิดตารางกริด" title="เปิด/ปิดตารางกริด"><Grid3X3 size={20} /></button>
                                 <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={`p-3 rounded-xl transition-all ${watermark.enabled ? 'bg-cyan-50 text-cyan-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} aria-label="ลายน้ำ" title="ลายน้ำ"><Droplets size={20} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowTweaks(s => !s); }} className={`p-3 rounded-xl transition-all ${showTweaks ? 'bg-teal-50 text-teal-600' : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100'}`} aria-label="ปรับดีไซน์" title="ปรับดีไซน์ (สี/ฟอนต์/กระดาษ)"><SlidersHorizontal size={20} /></button>
                                 <button onClick={() => window.print()} className="p-3 hover:bg-gray-100 text-gray-400 dark:text-slate-500 rounded-xl" aria-label="พิมพ์" title="พิมพ์"><Printer size={20} /></button>
                             </>
                         ) : (
@@ -1398,6 +1406,16 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     onInsertSection={handleInsertSectionTemplate}
                     onInsertPage={handleInsertPageTemplate}
                     onInsertDocument={handleInsertDocumentTemplate}
+                />
+
+                {/* Tweaks Panel — live per-document design controls */}
+                <TweaksPanel
+                    open={showTweaks}
+                    onClose={() => setShowTweaks(false)}
+                    theme={docTheme}
+                    onChange={setDocTheme}
+                    fontId={fontId}
+                    onFontIdChange={setFontId}
                 />
 
                 {/* Toast Notifications */}
