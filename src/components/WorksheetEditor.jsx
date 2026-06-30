@@ -58,6 +58,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // --- Toast notifications ---
     const { toasts, addToast, removeToast } = useToast();
 
+    // --- Document Title State (Subtitle) ---
+    // Declared before the unsaved-changes effect / handleManualSave below, which
+    // reference it in their dependency arrays (avoids a TDZ ReferenceError).
+    const [documentTitle, setDocumentTitle] = useState(activeDocument?.subtitle || '');
+
     // --- Manual Save State ---
     const [saveStatus, setSaveStatus] = useState('saved');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -155,9 +160,6 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // --- Selection & Editing State ---
     const [selectedItemId, setSelectedItemId] = useState(null);
     const [editingItemId, setEditingItemId] = useState(null);
-
-    // --- Document Title State (Subtitle) ---
-    const [documentTitle, setDocumentTitle] = useState(activeDocument?.subtitle || '');
 
     // --- Import Modal State ---
     const [showImportModal, setShowImportModal] = useState(false);
