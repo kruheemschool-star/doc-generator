@@ -148,6 +148,36 @@ const A_TEMPLATES = [
             { type: 'spacer', height: 4 },
         ],
     },
+    {
+        id: 'a9-note',
+        category: 'section',
+        templateName: 'กล่องจดบันทึก',
+        icon: '📝',
+        description: 'กล่องโน้ตพื้นครีม ขอบมน สำหรับจดบันทึก/สรุป',
+        items: [
+            {
+                type: 'markdown',
+                content: '📝 **บันทึก**\n\n*เขียนสรุปหรือโน้ตของคุณที่นี่...*',
+                size: 'medium',
+                borderStyle: 'solid',
+                borderWidth: 2,
+                borderColor: PALETTE.noteBorder,
+                fillColor: PALETTE.goldTint,
+                borderRadius: 12,
+            },
+        ],
+    },
+    {
+        id: 'a10-scratch',
+        category: 'section',
+        templateName: 'กล่องทดเลข',
+        icon: '✏️',
+        description: 'พื้นที่ว่างมีกรอบ สำหรับให้นักเรียนทดเลข/แสดงวิธีทำ',
+        items: [
+            { type: 'markdown', content: '✏️ **ทดเลข / แสดงวิธีทำ**', size: 'small' },
+            { type: 'spacer', height: 170 },
+        ],
+    },
 ];
 
 // ============================================================
