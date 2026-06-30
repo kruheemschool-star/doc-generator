@@ -42,7 +42,7 @@ const formats = [
     'align', 'script', 'size'
 ];
 
-const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
+const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditStart, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [QuillComponent, setQuillComponent] = useState(null);
@@ -87,6 +87,15 @@ const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelet
             loadQuill();
         }
     }, [isExplicitEditing, loadQuill]);
+
+    // Open the editor AND tell the parent (pauses pagination so the taller edit
+    // UI can't reflow this item onto another page and remount it mid-edit).
+    const beginEdit = () => {
+        if (isViewOnly || isEditing) return;
+        if (onEditStart) onEditStart(id);
+        setIsEditing(true);
+        loadQuill();
+    };
 
     const handleSave = () => {
         // Read HTML straight from the Quill DOM. react-quill's onChange value can
@@ -175,7 +184,7 @@ const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelet
                                 : 'bg-transparent border-transparent hover:border-gray-200 hover:bg-gray-50/50 p-4'
                             }`}
                         style={!isEditing && !isSelected && frameStyle ? frameStyle : undefined}
-                        onDoubleClick={() => { if (!isViewOnly) { setIsEditing(true); loadQuill(); } }}
+                        onDoubleClick={beginEdit}
                     >
                         {isEditing ? (
                             <div className="w-full">

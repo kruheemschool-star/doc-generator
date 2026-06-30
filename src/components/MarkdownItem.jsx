@@ -29,7 +29,7 @@ const splitAnswerContent = (content) => {
     };
 };
 
-const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
+const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditStart, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [showPreview, setShowPreview] = useState(true);
@@ -168,6 +168,14 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
         }
     }, [isExplicitEditing]);
 
+    // Open the editor AND tell the parent (so pagination pauses and the item
+    // can't be reflowed onto another page mid-edit, which would remount it).
+    const beginEdit = () => {
+        if (isViewOnly || isEditing) return;
+        if (onEditStart) onEditStart(id);
+        setIsEditing(true);
+    };
+
     const handleSave = () => {
         onUpdate(id, text);
         setIsEditing(false);
@@ -234,7 +242,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                                 : 'bg-transparent border-transparent hover:border-gray-200 hover:bg-gray-50/50 py-3 px-4'
                             }`}
                         style={!isEditing && !isSelected && frameStyle ? frameStyle : undefined}
-                        onDoubleClick={() => !isViewOnly && !isEditing && setIsEditing(true)}
+                        onDoubleClick={beginEdit}
                     >
                         {isEditing ? (
                             <div className="w-full" onClick={(e) => e.stopPropagation()}>
@@ -353,7 +361,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                         {!isEditing && !isViewOnly && (
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                                    onClick={(e) => { e.stopPropagation(); beginEdit(); }}
                                     className="bg-white/95 backdrop-blur border border-gray-200 shadow-sm rounded-lg px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center gap-1.5"
                                 >
                                     <Edit size={12} />

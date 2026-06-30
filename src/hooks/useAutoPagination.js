@@ -14,7 +14,10 @@ const itemSelector = (id) => `[data-rfd-draggable-id="${CSS.escape(String(id))}"
 const pagesSignature = (pages) =>
     pages.map(p => p.questions.map(q => q.id).join(',')).join('|');
 
-const useAutoPagination = (pages, setPages, replacePages) => {
+// `isPaused` freezes the bin-packing pass — used while an item is being edited so
+// the (much taller) edit UI can't push the item onto another page, which would
+// remount it and throw away the open editor, its unsaved text, and focus.
+const useAutoPagination = (pages, setPages, replacePages, isPaused = false) => {
     const pageRefs = useRef({});
     const [isChecking, setIsChecking] = useState(false);
     const [overflowPages, setOverflowPages] = useState(new Set());
@@ -53,6 +56,7 @@ const useAutoPagination = (pages, setPages, replacePages) => {
     // packing greedily means even a 100-question import lays out in a single update.
     useLayoutEffect(() => {
         if (isChecking) return;
+        if (isPaused) return; // editing in progress — don't reflow/remount the open item
         if (pages.length > MAX_PAGES_SAFETY) {
             console.error('AutoPagination: max pages reached, stopping to prevent a loop.');
             return;
@@ -131,7 +135,7 @@ const useAutoPagination = (pages, setPages, replacePages) => {
             const b = Array.from(newOverflow).sort().join(',');
             return a === b ? prev : newOverflow;
         });
-    }, [pages, isChecking, resizeTick, setPages, replacePages]);
+    }, [pages, isChecking, resizeTick, setPages, replacePages, isPaused]);
 
     const isPageOverflow = useCallback((pageId) => overflowPages.has(pageId), [overflowPages]);
 

@@ -20,7 +20,7 @@ const SafeColumn = ({ content }) => (
 
 const TEXTAREA_CLASS = 'w-full min-h-[150px] p-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-y';
 
-const ColumnsItem = memo(({ id, index, left, right, onUpdate, onDelete, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
+const ColumnsItem = memo(({ id, index, left, right, onUpdate, onDelete, onMove, isSelected, onSelect, isExplicitEditing, onEditStart, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [leftText, setLeftText] = useState(left || '');
     const [rightText, setRightText] = useState(right || '');
@@ -28,6 +28,14 @@ const ColumnsItem = memo(({ id, index, left, right, onUpdate, onDelete, onMove, 
     useEffect(() => { setLeftText(left || ''); }, [left]);
     useEffect(() => { setRightText(right || ''); }, [right]);
     useEffect(() => { if (isExplicitEditing) setIsEditing(true); }, [isExplicitEditing]);
+
+    // Open the editor AND tell the parent (pauses pagination so the taller edit
+    // UI can't reflow this item onto another page and remount it mid-edit).
+    const beginEdit = () => {
+        if (isViewOnly || isEditing) return;
+        if (onEditStart) onEditStart(id);
+        setIsEditing(true);
+    };
 
     const handleSave = () => {
         onUpdate(id, { left: leftText, right: rightText });
@@ -76,7 +84,7 @@ const ColumnsItem = memo(({ id, index, left, right, onUpdate, onDelete, onMove, 
                                 : 'bg-transparent border-transparent hover:border-gray-200 hover:bg-gray-50/50 py-3 px-4'
                             }`}
                         style={!isEditing && !isSelected && frameStyle ? frameStyle : undefined}
-                        onDoubleClick={() => !isViewOnly && !isEditing && setIsEditing(true)}
+                        onDoubleClick={beginEdit}
                     >
                         {isEditing ? (
                             <div className="w-full" onClick={(e) => e.stopPropagation()}>
@@ -109,7 +117,7 @@ const ColumnsItem = memo(({ id, index, left, right, onUpdate, onDelete, onMove, 
 
                         {!isEditing && !isViewOnly && (
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-                                <button onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} className="bg-white/95 backdrop-blur border border-gray-200 shadow-sm rounded-lg px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center gap-1.5">
+                                <button onClick={(e) => { e.stopPropagation(); beginEdit(); }} className="bg-white/95 backdrop-blur border border-gray-200 shadow-sm rounded-lg px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center gap-1.5">
                                     <Edit size={12} /><span>แก้ไข</span>
                                 </button>
                             </div>

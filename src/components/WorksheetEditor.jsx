@@ -185,7 +185,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [editingQuestionId, setEditingQuestionId] = useState(null);
 
     // --- Pagination Hook ---
-    const { pageRefs, overflowPages, isPageOverflow } = useAutoPagination(pages, setPages, replacePages);
+    const { pageRefs, overflowPages, isPageOverflow } = useAutoPagination(pages, setPages, replacePages, editingItemId !== null);
 
     // --- State Cleanup & Recovery ---
     const handleTrimEmptyPages = useCallback(() => {
@@ -468,6 +468,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     }, [setPages]);
 
     const handleEditEnd = useCallback(() => setEditingItemId(null), []);
+    // Tell the editor which item is open so pagination pauses (prevents the
+    // taller edit UI from reflowing the item onto another page and remounting it).
+    const handleEditStart = useCallback((itemId) => setEditingItemId(itemId), []);
 
     const handleDeletePage = useCallback((pageIndex) => {
         if (!window.confirm("คุณแน่ใจหรือไม่ที่จะลบหน้านี้? การกระทำนี้ไม่สามารถย้อนกลับได้")) return;
@@ -746,6 +749,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             isSelected: q.id === selectedItemId,
             onSelect: setSelectedItemId,
             isExplicitEditing: q.id === editingItemId,
+            onEditStart: handleEditStart,
             onEditEnd: handleEditEnd,
             canMoveUp: !isFirstItem,
             canMoveDown: !isLastItem,
