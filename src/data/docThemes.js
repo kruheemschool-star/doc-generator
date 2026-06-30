@@ -21,7 +21,34 @@ export const DEFAULT_DOC_THEME = {
     gridOn: true,           // notebook grid on/off
     gridAlpha: 0.07,        // grid line opacity (0–0.2)
     gridSize: 26,           // grid cell size in px
+    headerRule: 'single',   // page-header divider: 'single' or 'double' (Editorial)
 };
+
+// Selectable presets shown at the top of the Tweaks panel. Picking one applies the
+// whole theme object; the user can then fine-tune individual controls.
+export const DOC_THEME_PRESETS = [
+    {
+        id: 'kruheem',
+        label: 'ครูฮีม (สมุด)',
+        theme: { ...DEFAULT_DOC_THEME },
+    },
+    {
+        id: 'editorial',
+        label: 'Editorial',
+        theme: {
+            headFontId: 'ibm-plex-thai',
+            accent: '#ff4d2e',     // orange-red — question numbers, links, emphasis
+            heading: '#16130f',    // ink headings
+            subhead: '#3a342c',
+            highlight: '#ffe0d8',  // soft coral marker
+            paper: '#ffffff',
+            gridOn: false,         // clean paper, no notebook grid
+            gridAlpha: 0.07,
+            gridSize: 26,
+            headerRule: 'double',  // 3px + 1px ink rule under the running head
+        },
+    },
+];
 
 // Merge a possibly-partial saved theme onto the defaults so every key exists.
 export const normalizeTheme = (theme) => ({ ...DEFAULT_DOC_THEME, ...(theme || {}) });

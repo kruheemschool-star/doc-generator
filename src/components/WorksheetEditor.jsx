@@ -1044,8 +1044,15 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                                 </div>
                                             </div>
                                         </div>
-                                        {/* Teal brand divider under the header */}
-                                        <div className="mt-1.5 h-[3px] w-full rounded-full" style={{ backgroundColor: "var(--doc-accent, #0f766e)" }} />
+                                        {/* Brand divider under the header — double ink rule for Editorial, single accent otherwise */}
+                                        {docTheme.headerRule === 'double' ? (
+                                            <div className="mt-1.5">
+                                                <div className="h-[3px] w-full" style={{ backgroundColor: "var(--doc-heading, #16130f)" }} />
+                                                <div className="mt-[2px] h-px w-full" style={{ backgroundColor: "var(--doc-heading, #16130f)" }} />
+                                            </div>
+                                        ) : (
+                                            <div className="mt-1.5 h-[3px] w-full rounded-full" style={{ backgroundColor: "var(--doc-accent, #0f766e)" }} />
+                                        )}
                                     </div>
                                     <div className="px-[18mm] pt-[22mm] pb-[12mm]" data-page-content>
                                         <Droppable droppableId={page.id}>

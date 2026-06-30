@@ -1,7 +1,7 @@
 import React from 'react';
 import { SlidersHorizontal, X, RotateCcw, Type, Palette, FileText } from 'lucide-react';
 import { DOCUMENT_FONTS, FONT_CATEGORIES } from '../data/documentFonts';
-import { DEFAULT_DOC_THEME } from '../data/docThemes';
+import { DEFAULT_DOC_THEME, DOC_THEME_PRESETS } from '../data/docThemes';
 
 /**
  * Tweaks panel — live, per-document design controls (colors, fonts, paper grid).
@@ -90,6 +90,24 @@ const TweaksPanel = ({ open, onClose, theme, onChange, fontId, onFontIdChange })
 
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-800">
+                    <h3 className="text-sm font-bold text-gray-800 dark:text-slate-100 mb-1.5">พรีเซ็ต</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                        {DOC_THEME_PRESETS.map(p => {
+                            const active = theme.accent === p.theme.accent && theme.gridOn === p.theme.gridOn;
+                            return (
+                                <button
+                                    key={p.id}
+                                    onClick={() => onChange({ ...theme, ...p.theme })}
+                                    className={`py-2 rounded-xl text-sm font-bold border transition ${active ? 'bg-teal-50 border-teal-400 text-teal-700' : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-300'}`}
+                                >
+                                    {p.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
                 <Section icon={<Type size={15} className="text-amber-500" />} title="ตัวอักษร">
                     <FontSelect label="ฟอนต์หัวข้อ" value={theme.headFontId} onChange={v => set('headFontId', v)} />
                     <FontSelect label="ฟอนต์เนื้อหา" value={fontId} onChange={onFontIdChange} />
