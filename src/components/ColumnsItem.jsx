@@ -50,17 +50,17 @@ const ColumnsItem = memo(({ id, index, left, right, onUpdate, onDelete, onMove, 
                     className={`group relative mb-1 transition-all ${snapshot.isDragging ? 'z-50 opacity-90' : ''} ${isEditing ? 'z-20' : ''}`}
                     onClick={(e) => { if (isViewOnly) return; e.stopPropagation(); if (!isEditing) onSelect && onSelect(id); }}
                 >
-                    {!isEditing && !isViewOnly && (
+                    {!isViewOnly && (
                         <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
                             <div {...provided.dragHandleProps} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab" title="Drag to reorder">
                                 <GripVertical size={16} />
                             </div>
-                            {canMoveUp && (
+                            {!isEditing && canMoveUp && (
                                 <button onClick={(e) => { e.stopPropagation(); onMove(id, 'up'); }} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded" title="Move up">
                                     <ChevronUp size={16} />
                                 </button>
                             )}
-                            {canMoveDown && (
+                            {!isEditing && canMoveDown && (
                                 <button onClick={(e) => { e.stopPropagation(); onMove(id, 'down'); }} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded" title="Move down">
                                     <ChevronDown size={16} />
                                 </button>
