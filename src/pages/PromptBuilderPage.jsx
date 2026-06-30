@@ -259,16 +259,16 @@ const PromptBuilderPage = () => {
 
     const SelectWrapper = ({ label, value, onChange, options, disabled = false, icon: Icon }) => (
         <div className="relative group transition-all duration-300">
-            <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+            <label className="block text-[11px] font-bold text-[#8a8175] mb-1.5 uppercase tracking-widest pl-1 font-display">
                 {label}
             </label>
-            <div className={`relative rounded-xl transition-all duration-300 ${disabled ? 'opacity-50' : 'hover:shadow-lg hover:shadow-blue-500/5'}`}>
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors">
+            <div className={`relative rounded-[10px] transition-all duration-300 ${disabled ? 'opacity-50' : ''}`}>
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a8175] group-hover:text-ink transition-colors">
                     {Icon ? <Icon size={16} strokeWidth={2.5} /> : <Layers size={16} strokeWidth={2.5} />}
                 </div>
                 <select
-                    className={`w-full p-3 pl-11 pr-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold text-slate-700 dark:text-slate-300 text-sm shadow-sm
-                    ${disabled ? 'cursor-not-allowed bg-slate-50 dark:bg-slate-900' : 'hover:border-blue-300 cursor-pointer'} `}
+                    className={`w-full p-3 pl-11 pr-10 bg-paper border border-line rounded-[10px] appearance-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all font-semibold text-[#3a342c] text-sm
+                    ${disabled ? 'cursor-not-allowed bg-canvas-2' : 'hover:border-ink/30 cursor-pointer'} `}
                     value={value}
                     onChange={onChange}
                     disabled={disabled}
@@ -277,7 +277,7 @@ const PromptBuilderPage = () => {
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                 </select>
-                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-hover:text-blue-500 transition-colors">
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#b3aa97] pointer-events-none group-hover:text-ink transition-colors">
                     <ChevronDown size={18} strokeWidth={3} />
                 </div>
             </div>
@@ -287,17 +287,17 @@ const PromptBuilderPage = () => {
     // Item 1: Loading state
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-[#F1F5F9] dark:bg-slate-950">
+            <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-canvas">
                 <div className="flex flex-col items-center gap-4">
-                    <Loader2 size={40} className="text-blue-600 animate-spin" />
-                    <p className="text-slate-500 dark:text-slate-400 font-semibold text-sm">กำลังโหลดค่าที่บันทึกไว้...</p>
+                    <Loader2 size={40} className="text-accent animate-spin" />
+                    <p className="text-[#6b6357] font-semibold text-sm font-thai">กำลังโหลดค่าที่บันทึกไว้...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-[#F1F5F9] dark:bg-slate-950 font-sans selection:bg-blue-600 selection:text-white">
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-canvas font-thai selection:bg-accent selection:text-white">
             {/* Item 1: Toast Container */}
             <ToastContainer toasts={toasts} removeToast={removeToast} />
             {/* Item 5: Template Manager Modal */}
@@ -310,25 +310,25 @@ const PromptBuilderPage = () => {
             />
 
             {/* --- Left Panel --- */}
-            <div className="w-full lg:w-[62%] h-full overflow-y-auto p-4 sm:p-6 lg:p-10 custom-scrollbar relative z-0">
+            <div className="w-full lg:w-[62%] h-full overflow-y-auto p-4 sm:p-6 lg:p-10 custom-scrollbar relative z-0 bg-canvas">
                 <div className="max-w-4xl mx-auto space-y-10 pb-32">
 
-                    {/* Glass Header */}
+                    {/* Header */}
                     <div className="relative">
                         <div className="flex justify-between items-start mb-4">
-                            <div className="space-y-2">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/10 rounded-full text-blue-600 font-bold uppercase tracking-tighter text-[10px] animate-in slide-in-from-left duration-700">
+                            <div className="space-y-2.5">
+                                <div className="inline-flex items-center gap-2 text-accent font-bold uppercase tracking-[0.07em] text-[10px] font-display animate-in slide-in-from-left duration-700">
                                     <Sparkles size={12} fill="currentColor" />
                                     <span>Advanced AI Prompt Architecture</span>
                                 </div>
-                                <h1 className="text-4xl font-extrabold text-slate-900 dark:text-slate-100 leading-[1.1] font-outfit tracking-tight">
-                                    MathCraft <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500">AI</span>
+                                <h1 className="text-4xl font-extrabold text-ink leading-[1.0] font-display tracking-[-0.03em]">
+                                    MathCraft <span className="text-accent">AI</span>
                                 </h1>
                             </div>
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleReset}
-                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm active:scale-95"
+                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-[#6b6357] bg-paper border border-line rounded-[10px] hover:border-ink/30 hover:text-ink transition-all active:scale-95"
                                 >
                                     <Undo2 size={14} className="group-hover:-rotate-45 transition-transform" />
                                     RESET
@@ -336,45 +336,45 @@ const PromptBuilderPage = () => {
                                 <button
                                     onClick={() => setIsTemplateOpen(true)}
                                     aria-label="เปิด Templates"
-                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm active:scale-95"
+                                    className="group flex items-center gap-2 px-4 py-2 text-xs font-bold text-[#6b6357] bg-paper border border-line rounded-[10px] hover:border-ink/30 hover:text-ink transition-all active:scale-95"
                                 >
                                     <FileText size={14} />
                                     TEMPLATES
                                 </button>
                             </div>
                         </div>
-                        <p className="text-slate-500 dark:text-slate-400 max-w-xl text-[15px] font-medium leading-relaxed">
+                        <p className="text-[#6b6357] max-w-xl text-[15px] font-medium leading-relaxed">
                             สร้างคำสั่งที่ทรงพลังเพื่อเปลี่ยน AI ให้เป็นผู้ช่วยเตรียมเนื้อหาและข้อสอบตามหลักสูตร สสวท. อย่างมืออาชีพ
                         </p>
                     </div>
 
                     {/* Section 1: Core Configuration */}
-                    <section className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white transition-all hover:shadow-[0_20px_50px_rgba(59,130,246,0.08)] group/card">
+                    <section className="bg-paper p-8 rounded-[16px] border border-line transition-all group/card">
                         <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30 group-hover/card:scale-110 transition-transform duration-500">
+                            <div className="w-12 h-12 bg-ink rounded-[12px] flex items-center justify-center text-white">
                                 <Layers size={22} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h2 className="text-xl font-extrabold text-slate-800 dark:text-slate-200 font-outfit tracking-tight">Core Context</h2>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-0.5">ข้อมูลพื้นฐานของเอกสาร</p>
+                                <h2 className="text-xl font-extrabold text-ink font-display tracking-tight">Core Context</h2>
+                                <p className="text-[#8a8175] text-xs font-bold uppercase tracking-widest mt-0.5 font-display">ข้อมูลพื้นฐานของเอกสาร</p>
                             </div>
                         </div>
 
                         {/* Mode Switcher */}
-                        <div className="flex flex-wrap gap-2.5 mb-8 bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-2xl border border-slate-100 dark:border-slate-800" role="tablist" aria-label="เลือกโหมดการสร้างคำสั่ง">
+                        <div className="flex flex-wrap gap-2 mb-8 bg-canvas p-2 rounded-[14px] border border-line" role="tablist" aria-label="เลือกโหมดการสร้างคำสั่ง">
                             {[
-                                { id: 'content', label: 'บทเรียน', icon: <BookOpen size={16} />, color: 'blue' },
-                                { id: 'practice', label: 'แบบฝึกหัด', icon: <PenTool size={16} />, color: 'teal' },
-                                { id: 'exam', label: 'ข้อสอบ', icon: <FileText size={16} />, color: 'indigo' },
-                                { id: 'flashcard', label: 'แฟลชการ์ด', icon: <ClipboardCopy size={16} />, color: 'emerald' },
-                                { id: 'web_quiz', label: 'แนวข้อสอบเว็บ', icon: <Globe size={16} />, color: 'sky' },
-                                { id: 'gifted_quiz', label: 'Gifted เว็บ', icon: <Award size={16} />, color: 'orange' },
-                                { id: 'svg_question', label: 'โจทย์+รูป', icon: <ImageIcon size={16} />, color: 'purple' },
-                                { id: 'math_figure', label: 'สร้างรูป', icon: <Shapes size={16} />, color: 'pink' },
-                                { id: 'figure_from_text', label: 'รูปจากโจทย์', icon: <Wand2 size={16} />, color: 'violet' },
-                                { id: 'transcribe', label: 'พิมพ์ตาม', icon: <ScanText size={16} />, color: 'cyan' },
-                                { id: 'summary', label: 'สรุปสูตร', icon: <Zap size={16} />, color: 'amber' },
-                                { id: 'mistake', label: 'วิเคราะห์', icon: <Brain size={16} />, color: 'rose' },
+                                { id: 'content', label: 'บทเรียน', icon: <BookOpen size={16} /> },
+                                { id: 'practice', label: 'แบบฝึกหัด', icon: <PenTool size={16} /> },
+                                { id: 'exam', label: 'ข้อสอบ', icon: <FileText size={16} /> },
+                                { id: 'flashcard', label: 'แฟลชการ์ด', icon: <ClipboardCopy size={16} /> },
+                                { id: 'web_quiz', label: 'แนวข้อสอบเว็บ', icon: <Globe size={16} /> },
+                                { id: 'gifted_quiz', label: 'Gifted เว็บ', icon: <Award size={16} /> },
+                                { id: 'svg_question', label: 'โจทย์+รูป', icon: <ImageIcon size={16} /> },
+                                { id: 'math_figure', label: 'สร้างรูป', icon: <Shapes size={16} /> },
+                                { id: 'figure_from_text', label: 'รูปจากโจทย์', icon: <Wand2 size={16} /> },
+                                { id: 'transcribe', label: 'พิมพ์ตาม', icon: <ScanText size={16} /> },
+                                { id: 'summary', label: 'สรุปสูตร', icon: <Zap size={16} /> },
+                                { id: 'mistake', label: 'วิเคราะห์', icon: <Brain size={16} /> },
                             ].map(item => (
                                 <button
                                     key={item.id}
@@ -382,13 +382,13 @@ const PromptBuilderPage = () => {
                                     role="tab"
                                     aria-selected={formData.mode === item.id}
                                     aria-label={`โหมด ${item.label}`}
-                                    className={`flex-1 min-w-[100px] py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2.5 
+                                    className={`flex-1 min-w-[100px] py-3 px-4 rounded-[10px] font-bold text-xs transition-all flex items-center justify-center gap-2.5
                                     ${formData.mode === item.id
-                                            ? `bg-slate-900 text-white shadow-xl shadow-slate-900/20 scale-[1.03]`
-                                            : 'text-slate-500 dark:text-slate-400 hover:bg-white hover:text-slate-800 hover:shadow-md'
+                                            ? `bg-ink text-white`
+                                            : 'text-[#6b6357] hover:bg-paper hover:text-ink'
                                         } `}
                                 >
-                                    <span className={`transition-transform duration-300 ${formData.mode === item.id ? 'scale-110 text-blue-400' : 'text-slate-400'} `}>
+                                    <span className={`transition-transform duration-300 ${formData.mode === item.id ? 'scale-110 text-accent' : 'text-[#8a8175]'} `}>
                                         {item.icon}
                                     </span>
                                     {item.label}
@@ -430,15 +430,15 @@ const PromptBuilderPage = () => {
 
                             <div className="space-y-6">
                                 <div className="relative group">
-                                    <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+                                    <label className="block text-[11px] font-bold text-[#8a8175] mb-1.5 uppercase tracking-widest pl-1 font-display">
                                         บทเรียน (Chapter)
                                     </label>
                                     <div className="relative">
-                                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-focus-within:text-blue-500">
+                                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a8175] pointer-events-none group-focus-within:text-ink">
                                             <BookOpen size={18} strokeWidth={2.5} />
                                         </div>
                                         <select
-                                            className="w-full p-4 pl-12 pr-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-base font-bold text-slate-800 dark:text-slate-200 shadow-sm hover:border-blue-300 cursor-pointer"
+                                            className="w-full p-4 pl-12 pr-10 bg-paper border border-line rounded-[12px] appearance-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all text-base font-bold text-ink hover:border-ink/30 cursor-pointer"
                                             value={formData.chapter}
                                             onChange={(e) => handleChange('chapter', e.target.value)}
                                             aria-label="เลือกบทเรียน"
@@ -447,24 +447,24 @@ const PromptBuilderPage = () => {
                                             {availableChapters.map((chapter, idx) => (
                                                 <option key={idx} value={chapter}>{chapter}</option>
                                             ))}
-                                            <option value="custom" className="text-blue-600 font-bold">+ ระบุบทเรียนเอง</option>
+                                            <option value="custom" className="text-accent font-bold">+ ระบุบทเรียนเอง</option>
                                         </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={20} strokeWidth={3} />
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[#b3aa97] pointer-events-none" size={20} strokeWidth={3} />
                                     </div>
                                 </div>
 
                                 {formData.chapter && formData.chapter !== 'custom' && (
                                     <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-                                        <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+                                        <label className="block text-[11px] font-bold text-[#8a8175] mb-1.5 uppercase tracking-widest pl-1 font-display">
                                             เจาะจงเนื้อหา (Sub-Topic)
-                                            <span className="ml-2 text-slate-300 font-medium normal-case">(ทางเลือก)</span>
+                                            <span className="ml-2 text-[#b3aa97] font-medium normal-case">(ทางเลือก)</span>
                                         </label>
                                         <div className="relative group">
-                                            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                                            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a8175]">
                                                 <List size={18} strokeWidth={2.5} />
                                             </div>
                                             <select
-                                                className="w-full p-3.5 pl-12 pr-10 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl appearance-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-semibold text-slate-600 dark:text-slate-400 hover:border-blue-300 cursor-pointer"
+                                                className="w-full p-3.5 pl-12 pr-10 bg-canvas border border-line rounded-[12px] appearance-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all text-sm font-semibold text-[#3a342c] hover:border-ink/30 cursor-pointer"
                                                 value={formData.selectedTopic}
                                                 onChange={(e) => handleChange('selectedTopic', e.target.value)}
                                             >
@@ -472,18 +472,18 @@ const PromptBuilderPage = () => {
                                                 {availableTopics.map((topic, idx) => (
                                                     <option key={idx} value={topic}>{topic}</option>
                                                 ))}
-                                                <option value="custom" className="text-blue-600">+ กำหนดเอง</option>
+                                                <option value="custom" className="text-accent">+ กำหนดเอง</option>
                                             </select>
-                                            <ChevronDown size={16} strokeWidth={3} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                            <ChevronDown size={16} strokeWidth={3} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#b3aa97]" />
                                         </div>
                                     </div>
                                 )}
 
                                 {/* Item 3: Chapter warning */}
                                 {!formData.chapter && (
-                                    <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl animate-in fade-in duration-300">
-                                        <AlertCircle size={16} className="text-amber-500 shrink-0" />
-                                        <span className="text-xs font-semibold text-amber-700">กรุณาเลือกบทเรียนเพื่อให้ Prompt สมบูรณ์ยิ่งขึ้น</span>
+                                    <div className="flex items-center gap-2 px-4 py-2.5 bg-[#fae9e7] border border-[#c2483c]/25 rounded-[10px] animate-in fade-in duration-300">
+                                        <AlertCircle size={16} className="text-[#c2483c] shrink-0" />
+                                        <span className="text-xs font-semibold text-[#a23a30]">กรุณาเลือกบทเรียนเพื่อให้ Prompt สมบูรณ์ยิ่งขึ้น</span>
                                     </div>
                                 )}
 
@@ -491,7 +491,7 @@ const PromptBuilderPage = () => {
                                     <div className="animate-in zoom-in-95 duration-300">
                                         <input
                                             type="text"
-                                            className="w-full p-4 bg-blue-50/30 border-2 border-dashed border-blue-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white outline-none transition-all placeholder:text-blue-300 text-blue-900 font-bold"
+                                            className="w-full p-4 bg-canvas border border-dashed border-line-2 rounded-[12px] focus:ring-2 focus:ring-accent/15 focus:border-accent focus:bg-paper outline-none transition-all placeholder:text-[#b3aa97] text-ink font-bold"
                                             placeholder="ระบุหัวข้อที่ต้องการ เช่น เลขยกกำลังที่มีฐานเป็นลบ..."
                                             value={formData.customTopic}
                                             onChange={(e) => handleChange('customTopic', e.target.value)}
@@ -500,7 +500,7 @@ const PromptBuilderPage = () => {
                                         />
                                         {/* Item 3: Character counter */}
                                         <div className="flex justify-end mt-1 pr-1">
-                                            <span className={`text-[10px] font-bold ${formData.customTopic.length >= 180 ? 'text-amber-500' : 'text-slate-300'}`}>
+                                            <span className={`text-[10px] font-bold ${formData.customTopic.length >= 180 ? 'text-accent' : 'text-[#b3aa97]'}`}>
                                                 {formData.customTopic.length}/200
                                             </span>
                                         </div>
@@ -509,33 +509,33 @@ const PromptBuilderPage = () => {
 
                                 {formData.mode === 'flashcard' && (
                                     <div className="space-y-5 animate-in fade-in slide-in-from-top-4 duration-500">
-                                        <div className="rounded-3xl border border-emerald-100 bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(59,130,246,0.05))] p-5">
+                                        <div className="rounded-[16px] border border-line bg-canvas p-5">
                                             <div className="flex items-start justify-between gap-4">
                                                 <div>
-                                                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
+                                                    <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.07em] text-accent font-display">
                                                         <ClipboardCopy size={12} />
                                                         Flashcard Blueprint
                                                     </div>
-                                                    <h3 className="mt-3 text-lg font-black text-slate-900 dark:text-slate-100">กำหนดคอร์สและรายละเอียดบทให้ชัดก่อนสร้างการ์ด</h3>
-                                                    <p className="mt-1 text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+                                                    <h3 className="mt-3 text-lg font-extrabold text-ink">กำหนดคอร์สและรายละเอียดบทให้ชัดก่อนสร้างการ์ด</h3>
+                                                    <p className="mt-1 text-sm font-medium leading-relaxed text-[#6b6357]">
                                                         ระบบจะยึดคอร์สเรียนของแต่ละชั้นเป็นบริบทหลัก แล้วแตกการ์ดตามบทและหัวข้อย่อย เพื่อให้ได้การ์ดที่สอนเป็นลำดับจริงใช้งานจริง
                                                     </p>
                                                 </div>
-                                                <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 px-4 py-3 text-right shadow-sm">
-                                                    <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Course Snapshot</div>
-                                                    <div className="mt-1 text-sm font-black text-slate-800 dark:text-slate-200">{derivedCourseLabel}</div>
+                                                <div className="rounded-[12px] bg-paper border border-line px-4 py-3 text-right">
+                                                    <div className="text-[10px] font-bold uppercase tracking-[0.07em] text-[#8a8175] font-display">Course Snapshot</div>
+                                                    <div className="mt-1 text-sm font-extrabold text-ink">{derivedCourseLabel}</div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
-                                                    ชื่อคอร์ส <span className="text-rose-400">*</span>
+                                                <label className="block text-[11px] font-bold text-[#8a8175] mb-1.5 uppercase tracking-widest pl-1 font-display">
+                                                    ชื่อคอร์ส <span className="text-accent">*</span>
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    className="w-full p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-semibold text-slate-700 dark:text-slate-300 placeholder:text-slate-300"
+                                                    className="w-full p-3.5 bg-paper border border-line rounded-[12px] focus:ring-2 focus:ring-accent/15 focus:border-accent outline-none transition-all text-sm font-semibold text-[#3a342c] placeholder:text-[#b3aa97]"
                                                     placeholder={derivedCourseLabel}
                                                     value={formData.courseName}
                                                     onChange={(e) => handleChange('courseName', e.target.value)}
@@ -543,10 +543,10 @@ const PromptBuilderPage = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
+                                                <label className="block text-[11px] font-bold text-[#8a8175] mb-1.5 uppercase tracking-widest pl-1 font-display">
                                                     แนวการ์ด
                                                 </label>
-                                                <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                                <div className="grid grid-cols-3 gap-2 p-1.5 bg-canvas rounded-[12px] border border-line">
                                                     {[
                                                         { id: 'concept', label: 'คอนเซปต์', desc: 'นิยามและกฎเท่านั้น' },
                                                         { id: 'mixed', label: 'ผสม', desc: 'นิยาม + โจทย์สั้น' },
@@ -555,10 +555,10 @@ const PromptBuilderPage = () => {
                                                         <button
                                                             key={option.id}
                                                             onClick={() => handleChange('flashcardFocus', option.id)}
-                                                            className={`rounded-xl px-3 py-3 text-left transition-all ${formData.flashcardFocus === option.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 dark:text-slate-400 hover:bg-white hover:text-slate-800'}`}
+                                                            className={`rounded-[10px] px-3 py-3 text-left transition-all ${formData.flashcardFocus === option.id ? 'bg-ink text-white' : 'text-[#6b6357] hover:bg-paper hover:text-ink'}`}
                                                         >
-                                                            <div className="text-xs font-black">{option.label}</div>
-                                                            <div className={`mt-1 text-[9px] font-bold ${formData.flashcardFocus === option.id ? 'text-slate-400' : 'text-slate-300'}`}>{option.desc}</div>
+                                                            <div className="text-xs font-extrabold">{option.label}</div>
+                                                            <div className={`mt-1 text-[9px] font-bold ${formData.flashcardFocus === option.id ? 'text-[#a39a8c]' : 'text-[#b3aa97]'}`}>{option.desc}</div>
                                                         </button>
                                                     ))}
                                                 </div>
@@ -566,11 +566,11 @@ const PromptBuilderPage = () => {
                                         </div>
 
                                         <div>
-                                            <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
-                                                รายละเอียดของบท <span className="text-rose-400">*</span>
+                                            <label className="block text-[11px] font-bold text-[#8a8175] mb-1.5 uppercase tracking-widest pl-1 font-display">
+                                                รายละเอียดของบท <span className="text-accent">*</span>
                                             </label>
                                             <textarea
-                                                className="w-full min-h-[120px] p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-medium text-slate-700 dark:text-slate-300 placeholder:text-slate-300 resize-y"
+                                                className="w-full min-h-[120px] p-4 bg-paper border border-line rounded-[12px] focus:ring-2 focus:ring-accent/15 focus:border-accent outline-none transition-all text-sm font-medium text-[#3a342c] placeholder:text-[#b3aa97] resize-y"
                                                 placeholder="เช่น เริ่มจากนิยามสมการ, ตัวแปร, การย้ายข้าง, สมการ 2 ขั้นตอน, โจทย์ประยุกต์ และจุดที่นักเรียนมักสับสนในบทนี้"
                                                 value={formData.chapterDetails}
                                                 onChange={(e) => handleChange('chapterDetails', e.target.value)}
@@ -582,9 +582,9 @@ const PromptBuilderPage = () => {
                                                     { title: 'บท', text: formData.chapter === 'custom' ? formData.customTopic || 'ระบุบทเอง' : formData.chapter || 'ยังไม่ได้เลือกบท' },
                                                     { title: 'หัวข้อย่อย', text: formData.selectedTopic === 'custom' ? formData.customTopic || 'กำหนดเอง' : formData.selectedTopic || 'ครอบคลุมทั้งบท' },
                                                 ].map((item) => (
-                                                    <div key={item.title} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 px-4 py-3">
-                                                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{item.title}</div>
-                                                        <div className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-300 leading-snug">{item.text}</div>
+                                                    <div key={item.title} className="rounded-[12px] border border-line bg-canvas px-4 py-3">
+                                                        <div className="text-[10px] font-bold uppercase tracking-[0.07em] text-[#8a8175] font-display">{item.title}</div>
+                                                        <div className="mt-1 text-sm font-bold text-[#3a342c] leading-snug">{item.text}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -597,51 +597,50 @@ const PromptBuilderPage = () => {
                         {/* Math Figure mode: Figure category + instructions */}
                         {formData.mode === 'math_figure' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                                <div className="p-5 bg-pink-50/50 border border-pink-200 rounded-2xl">
+                                <div className="p-5 bg-canvas border border-line rounded-[12px]">
                                     <div className="flex items-center gap-2 mb-4">
-                                        <Shapes size={18} className="text-pink-600" />
-                                        <span className="text-sm font-bold text-pink-800">โหมดสร้างรูปคณิตศาสตร์ — แนบรูปต้นฉบับใน Gemini</span>
+                                        <Shapes size={18} className="text-ink" />
+                                        <span className="text-sm font-bold text-ink">โหมดสร้างรูปคณิตศาสตร์ — แนบรูปต้นฉบับใน Gemini</span>
                                     </div>
-                                    <p className="text-xs text-pink-600 leading-relaxed">
+                                    <p className="text-xs text-[#6b6357] leading-relaxed">
                                         ระบบจะสร้างโค้ด SVG ตามรูปต้นฉบับที่แนบมา เพื่อให้ได้รูปทางคณิตศาสตร์ที่สวยงาม เส้นหนา ตัวอักษรไม่ซ้อนทับเส้น สามารถนำโค้ดไปวางในระบบเพื่อแสดงผลได้ทันที
                                     </p>
                                 </div>
 
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
+                                    <label className="block text-[11px] font-bold text-[#8a8175] mb-4 uppercase tracking-widest pl-1 font-display">
                                         หมวดหมู่รูปภาพ (Figure Category)
                                     </label>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
                                         {[
-                                            { id: 'geometry', label: 'เรขาคณิต', desc: 'สามเหลี่ยม สี่เหลี่ยม วงกลม', icon: '📐' },
-                                            { id: 'graph', label: 'กราฟ', desc: 'เส้นตรง พาราโบลา พิกัด', icon: '📈' },
-                                            { id: 'number_line', label: 'เส้นจำนวน', desc: 'Number Line', icon: '📏' },
-                                            { id: 'diagram', label: 'แผนภาพ', desc: 'Venn, Tree Diagram', icon: '🔀' },
-                                            { id: 'construction', label: 'การสร้าง', desc: 'วงเวียน สันตรง', icon: '🔧' },
-                                            { id: 'mixed', label: 'ตามรูปต้นฉบับ', desc: 'ให้ AI วิเคราะห์เอง', icon: '🎨' },
+                                            { id: 'geometry', label: 'เรขาคณิต', desc: 'สามเหลี่ยม สี่เหลี่ยม วงกลม' },
+                                            { id: 'graph', label: 'กราฟ', desc: 'เส้นตรง พาราโบลา พิกัด' },
+                                            { id: 'number_line', label: 'เส้นจำนวน', desc: 'Number Line' },
+                                            { id: 'diagram', label: 'แผนภาพ', desc: 'Venn, Tree Diagram' },
+                                            { id: 'construction', label: 'การสร้าง', desc: 'วงเวียน สันตรง' },
+                                            { id: 'mixed', label: 'ตามรูปต้นฉบับ', desc: 'ให้ AI วิเคราะห์เอง' },
                                         ].map(t => (
                                             <button
                                                 key={t.id}
                                                 onClick={() => handleChange('svgImageType', t.id)}
-                                                className={`p-3 rounded-2xl border-2 text-left transition-all
+                                                className={`p-3.5 rounded-[12px] border text-left transition-all
                                                     ${formData.svgImageType === t.id
-                                                        ? 'border-pink-600 bg-pink-50/20 ring-4 ring-pink-500/5'
-                                                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
+                                                        ? 'border-ink bg-canvas ring-2 ring-ink/10'
+                                                        : 'border-line bg-canvas text-[#6b6357] hover:border-ink/30'
                                                     } `}
                                             >
-                                                <span className="text-lg">{t.icon}</span>
-                                                <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-pink-600' : 'text-slate-700 dark:text-slate-300'}`}>{t.label}</div>
-                                                <div className="text-[9px] font-bold text-slate-400 leading-tight">{t.desc}</div>
+                                                <div className={`font-extrabold text-[11px] ${formData.svgImageType === t.id ? 'text-ink' : 'text-[#3a342c]'}`}>{t.label}</div>
+                                                <div className="text-[9px] font-bold text-[#8a8175] leading-tight mt-0.5">{t.desc}</div>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 p-4 bg-amber-50/50 border border-amber-200 rounded-2xl">
-                                    <Paperclip size={18} className="text-amber-600 shrink-0" />
+                                <div className="flex items-center gap-3 p-4 bg-canvas border border-line rounded-[12px]">
+                                    <Paperclip size={18} className="text-accent shrink-0" />
                                     <div>
-                                        <span className="text-xs font-bold text-amber-800">อย่าลืมแนบรูปต้นฉบับ!</span>
-                                        <p className="text-[10px] text-amber-600 mt-0.5">คัดลอกคำสั่งด้านขวา แล้วแนบรูปต้นฉบับใน Gemini เพื่อให้ AI สร้าง SVG ตามรูปนั้น</p>
+                                        <span className="text-xs font-bold text-ink">อย่าลืมแนบรูปต้นฉบับ!</span>
+                                        <p className="text-[10px] text-[#6b6357] mt-0.5">คัดลอกคำสั่งด้านขวา แล้วแนบรูปต้นฉบับใน Gemini เพื่อให้ AI สร้าง SVG ตามรูปนั้น</p>
                                     </div>
                                 </div>
                             </div>
@@ -650,22 +649,22 @@ const PromptBuilderPage = () => {
                         {/* Figure-from-text mode: paste question -> AI analyzes -> SVG */}
                         {formData.mode === 'figure_from_text' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                                <div className="p-5 bg-violet-50/50 border border-violet-200 rounded-2xl">
+                                <div className="p-5 bg-canvas border border-line rounded-[12px]">
                                     <div className="flex items-center gap-2 mb-4">
-                                        <Wand2 size={18} className="text-violet-600" />
-                                        <span className="text-sm font-bold text-violet-800">โหมดสร้างรูปจากโจทย์ — วาง "ข้อความโจทย์" แล้ว AI วิเคราะห์เอง</span>
+                                        <Wand2 size={18} className="text-ink" />
+                                        <span className="text-sm font-bold text-ink">โหมดสร้างรูปจากโจทย์ — วาง "ข้อความโจทย์" แล้ว AI วิเคราะห์เอง</span>
                                     </div>
-                                    <p className="text-xs text-violet-600 leading-relaxed">
+                                    <p className="text-xs text-[#6b6357] leading-relaxed">
                                         ต่างจากโหมด "สร้างรูป" ที่ต้องแนบรูปต้นฉบับ — โหมดนี้ AI จะ<strong>อ่านและวิเคราะห์เนื้อหาโจทย์</strong> เพื่อออกแบบรูปประกอบที่เหมาะสมขึ้นมาเอง ไม่ต้องมีรูปต้นฉบับ เหมาะกับโจทย์ที่มีแต่ข้อความแต่ยังขาดรูป
                                     </p>
                                 </div>
 
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest pl-1">
-                                        ข้อความโจทย์ <span className="text-violet-500 font-medium normal-case">(วางโจทย์ที่ต้องการให้สร้างรูป)</span>
+                                    <label className="block text-[11px] font-bold text-[#8a8175] mb-2 uppercase tracking-widest pl-1 font-display">
+                                        ข้อความโจทย์ <span className="text-[#8a8175] font-medium normal-case">(วางโจทย์ที่ต้องการให้สร้างรูป)</span>
                                     </label>
                                     <textarea
-                                        className="w-full h-40 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium text-slate-700 dark:text-slate-300 placeholder:text-slate-300 resize-none leading-relaxed"
+                                        className="w-full h-40 p-4 bg-paper border border-line rounded-[12px] focus:ring-2 focus:ring-accent/15 focus:border-accent outline-none transition-all text-sm font-medium text-[#3a342c] placeholder:text-[#b3aa97] resize-none leading-relaxed"
                                         placeholder={'วางโจทย์คณิตศาสตร์ที่นี่ เช่น\n"รูปสามเหลี่ยม ABC มีมุม A = 90°, AB = 3 ซม., AC = 4 ซม. จงหาความยาว BC"\n\nวางได้หลายข้อ — AI จะสร้าง SVG แยกให้แต่ละข้อ'}
                                         value={formData.figureSourceText}
                                         onChange={(e) => handleChange('figureSourceText', e.target.value)}
@@ -674,40 +673,39 @@ const PromptBuilderPage = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
+                                    <label className="block text-[11px] font-bold text-[#8a8175] mb-4 uppercase tracking-widest pl-1 font-display">
                                         หมวดหมู่รูปภาพ (Figure Category)
                                     </label>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
                                         {[
-                                            { id: 'mixed', label: 'วิเคราะห์เอง', desc: 'ให้ AI เลือกจากโจทย์', icon: '🪄' },
-                                            { id: 'geometry', label: 'เรขาคณิต', desc: 'สามเหลี่ยม สี่เหลี่ยม วงกลม', icon: '📐' },
-                                            { id: 'graph', label: 'กราฟ', desc: 'เส้นตรง พาราโบลา พิกัด', icon: '📈' },
-                                            { id: 'number_line', label: 'เส้นจำนวน', desc: 'Number Line', icon: '📏' },
-                                            { id: 'diagram', label: 'แผนภาพ', desc: 'Venn, Tree Diagram', icon: '🔀' },
-                                            { id: 'construction', label: 'การสร้าง', desc: 'วงเวียน สันตรง', icon: '🔧' },
+                                            { id: 'mixed', label: 'วิเคราะห์เอง', desc: 'ให้ AI เลือกจากโจทย์' },
+                                            { id: 'geometry', label: 'เรขาคณิต', desc: 'สามเหลี่ยม สี่เหลี่ยม วงกลม' },
+                                            { id: 'graph', label: 'กราฟ', desc: 'เส้นตรง พาราโบลา พิกัด' },
+                                            { id: 'number_line', label: 'เส้นจำนวน', desc: 'Number Line' },
+                                            { id: 'diagram', label: 'แผนภาพ', desc: 'Venn, Tree Diagram' },
+                                            { id: 'construction', label: 'การสร้าง', desc: 'วงเวียน สันตรง' },
                                         ].map(t => (
                                             <button
                                                 key={t.id}
                                                 onClick={() => handleChange('svgImageType', t.id)}
-                                                className={`p-3 rounded-2xl border-2 text-left transition-all
+                                                className={`p-3.5 rounded-[12px] border text-left transition-all
                                                     ${formData.svgImageType === t.id
-                                                        ? 'border-violet-600 bg-violet-50/20 ring-4 ring-violet-500/5'
-                                                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
+                                                        ? 'border-ink bg-canvas ring-2 ring-ink/10'
+                                                        : 'border-line bg-canvas text-[#6b6357] hover:border-ink/30'
                                                     } `}
                                             >
-                                                <span className="text-lg">{t.icon}</span>
-                                                <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-violet-600' : 'text-slate-700 dark:text-slate-300'}`}>{t.label}</div>
-                                                <div className="text-[9px] font-bold text-slate-400 leading-tight">{t.desc}</div>
+                                                <div className={`font-extrabold text-[11px] ${formData.svgImageType === t.id ? 'text-ink' : 'text-[#3a342c]'}`}>{t.label}</div>
+                                                <div className="text-[9px] font-bold text-[#8a8175] leading-tight mt-0.5">{t.desc}</div>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 p-4 bg-violet-50/50 border border-violet-200 rounded-2xl">
-                                    <Wand2 size={18} className="text-violet-600 shrink-0" />
+                                <div className="flex items-center gap-3 p-4 bg-canvas border border-line rounded-[12px]">
+                                    <Wand2 size={18} className="text-accent shrink-0" />
                                     <div>
-                                        <span className="text-xs font-bold text-violet-800">เคล็ดลับ</span>
-                                        <p className="text-[10px] text-violet-600 mt-0.5">ถ้าวางข้อความโจทย์ในช่องด้านบนแล้ว ไม่ต้องแนบรูปใน Gemini — คัดลอกคำสั่งด้านขวาไปวางได้เลย</p>
+                                        <span className="text-xs font-bold text-ink">เคล็ดลับ</span>
+                                        <p className="text-[10px] text-[#6b6357] mt-0.5">ถ้าวางข้อความโจทย์ในช่องด้านบนแล้ว ไม่ต้องแนบรูปใน Gemini — คัดลอกคำสั่งด้านขวาไปวางได้เลย</p>
                                     </div>
                                 </div>
                             </div>
@@ -716,24 +714,24 @@ const PromptBuilderPage = () => {
                         {/* Transcribe-only: Range inputs */}
                         {formData.mode === 'transcribe' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                                <div className="p-5 bg-cyan-50/50 border border-cyan-200 rounded-2xl">
+                                <div className="p-5 bg-canvas border border-line rounded-[12px]">
                                     <div className="flex items-center gap-2 mb-4">
-                                        <ScanText size={18} className="text-cyan-600" />
-                                        <span className="text-sm font-bold text-cyan-800">โหมดพิมพ์ตาม — แนบเอกสาร/รูปภาพใน Gemini</span>
+                                        <ScanText size={18} className="text-ink" />
+                                        <span className="text-sm font-bold text-ink">โหมดพิมพ์ตาม — แนบเอกสาร/รูปภาพใน Gemini</span>
                                     </div>
-                                    <p className="text-xs text-cyan-600 leading-relaxed">
+                                    <p className="text-xs text-[#6b6357] leading-relaxed">
                                         ระบบจะพิมพ์โจทย์ตามเอกสารที่แนบให้เหมือนต้นฉบับทุกประการ โดยลบหมายเลขข้อออกให้อัตโนมัติ
                                     </p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
-                                            ระบุหน้า <span className="text-slate-300 font-medium normal-case">(ทางเลือก)</span>
+                                        <label className="block text-[11px] font-bold text-[#8a8175] mb-1.5 uppercase tracking-widest pl-1 font-display">
+                                            ระบุหน้า <span className="text-[#b3aa97] font-medium normal-case">(ทางเลือก)</span>
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all text-sm font-semibold text-slate-700 dark:text-slate-300 placeholder:text-slate-300"
+                                            className="w-full p-3.5 bg-paper border border-line rounded-[12px] focus:ring-2 focus:ring-accent/15 focus:border-accent outline-none transition-all text-sm font-semibold text-[#3a342c] placeholder:text-[#b3aa97]"
                                             placeholder="เช่น หน้า 1-3 หรือ หน้า 5"
                                             value={formData.transcribePageRange}
                                             onChange={(e) => handleChange('transcribePageRange', e.target.value)}
@@ -741,12 +739,12 @@ const PromptBuilderPage = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest pl-1">
-                                            ระบุข้อ <span className="text-slate-300 font-medium normal-case">(ทางเลือก)</span>
+                                        <label className="block text-[11px] font-bold text-[#8a8175] mb-1.5 uppercase tracking-widest pl-1 font-display">
+                                            ระบุข้อ <span className="text-[#b3aa97] font-medium normal-case">(ทางเลือก)</span>
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all text-sm font-semibold text-slate-700 dark:text-slate-300 placeholder:text-slate-300"
+                                            className="w-full p-3.5 bg-paper border border-line rounded-[12px] focus:ring-2 focus:ring-accent/15 focus:border-accent outline-none transition-all text-sm font-semibold text-[#3a342c] placeholder:text-[#b3aa97]"
                                             placeholder="เช่น ข้อ 1-5 หรือ ข้อ 3,7,10"
                                             value={formData.transcribeQuestionRange}
                                             onChange={(e) => handleChange('transcribeQuestionRange', e.target.value)}
@@ -757,21 +755,21 @@ const PromptBuilderPage = () => {
 
                                 {/* Question Type for Transcribe */}
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest pl-1">ประเภทโจทย์</label>
-                                    <div className="flex gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                    <label className="block text-[11px] font-bold text-[#8a8175] mb-3 uppercase tracking-widest pl-1 font-display">ประเภทโจทย์</label>
+                                    <div className="flex gap-2 p-1.5 bg-canvas rounded-[12px] border border-line">
                                         <button
                                             onClick={() => handleChange('questionType', 'objective')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'objective' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'}`}
+                                            className={`flex-1 py-3 px-4 rounded-[10px] font-bold text-xs transition-all ${formData.questionType === 'objective' ? 'bg-ink text-white' : 'text-[#6b6357] hover:text-ink'}`}
                                         >
                                             <div>ปรนัย</div>
-                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'objective' ? 'text-slate-400' : 'text-slate-300'}`}>ตัวเลือก 4 ข้อ</div>
+                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'objective' ? 'text-[#a39a8c]' : 'text-[#b3aa97]'}`}>ตัวเลือก 4 ข้อ</div>
                                         </button>
                                         <button
                                             onClick={() => handleChange('questionType', 'subjective')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'subjective' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'}`}
+                                            className={`flex-1 py-3 px-4 rounded-[10px] font-bold text-xs transition-all ${formData.questionType === 'subjective' ? 'bg-ink text-white' : 'text-[#6b6357] hover:text-ink'}`}
                                         >
                                             <div>อัตนัย</div>
-                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'subjective' ? 'text-slate-400' : 'text-slate-300'}`}>แสดงวิธีทำ</div>
+                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'subjective' ? 'text-[#a39a8c]' : 'text-[#b3aa97]'}`}>แสดงวิธีทำ</div>
                                         </button>
                                     </div>
                                 </div>
@@ -783,65 +781,64 @@ const PromptBuilderPage = () => {
                     {!['transcribe', 'figure_from_text'].includes(formData.mode) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Source Card */}
-                            <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card h-full flex flex-col">
+                            <section className="bg-paper p-8 rounded-[16px] border border-line group/card h-full flex flex-col">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-pink-500/20">
+                                    <div className="w-10 h-10 bg-ink rounded-[10px] flex items-center justify-center text-white">
                                         <Paperclip size={18} strokeWidth={2.5} />
                                     </div>
-                                    <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 font-outfit">แหล่งข้อมูล</h2>
+                                    <h2 className="text-lg font-bold text-ink font-display">แหล่งข้อมูล</h2>
                                 </div>
                                 <div className="space-y-3 flex-1">
                                     {[
-                                        { id: 'ai-free', label: 'AI Knowledge', icon: <Sparkles size={16} />, color: 'blue' },
-                                        { id: 'attachment', label: 'My Documents', icon: <Paperclip size={16} />, color: 'pink' },
+                                        { id: 'ai-free', label: 'AI Knowledge', icon: <Sparkles size={16} /> },
+                                        { id: 'attachment', label: 'My Documents', icon: <Paperclip size={16} /> },
                                     ].map(src => (
                                         <button
                                             key={src.id}
                                             onClick={() => handleChange('source', src.id)}
-                                            className={`w-full p-4 rounded-2xl border-2 text-left transition-all flex items-center justify-between group/btn
+                                            className={`w-full p-4 rounded-[12px] border text-left transition-all flex items-center justify-between group/btn
                                         ${formData.source === src.id
-                                                    ? 'border-blue-600 bg-blue-50/20 ring-4 ring-blue-500/5'
-                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
+                                                    ? 'border-ink bg-canvas ring-2 ring-ink/10'
+                                                    : 'border-line bg-canvas text-[#6b6357] hover:border-ink/30'
                                                 } `}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${formData.source === src.id ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400 group-hover/btn:bg-slate-300'} `}>
+                                                <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors ${formData.source === src.id ? 'bg-ink text-white' : 'bg-paper-2 text-[#8a8175]'} `}>
                                                     {src.icon}
                                                 </div>
-                                                <span className={`font-bold text-xs ${formData.source === src.id ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'} `}>{src.label}</span>
+                                                <span className={`font-bold text-xs ${formData.source === src.id ? 'text-ink' : 'text-[#6b6357]'} `}>{src.label}</span>
                                             </div>
-                                            {formData.source === src.id && <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse" />}
+                                            {formData.source === src.id && <div className="w-2 h-2 bg-accent rounded-full" />}
                                         </button>
                                     ))}
                                 </div>
                             </section>
 
                             {/* Tone Card */}
-                            <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card h-full flex flex-col">
+                            <section className="bg-paper p-8 rounded-[16px] border border-line group/card h-full flex flex-col">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                                    <div className="w-10 h-10 bg-ink rounded-[10px] flex items-center justify-center text-white">
                                         <Type size={18} strokeWidth={2.5} />
                                     </div>
-                                    <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 font-outfit">น้ำเสียง</h2>
+                                    <h2 className="text-lg font-bold text-ink font-display">น้ำเสียง</h2>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 flex-1">
                                     {[
-                                        { id: 'friendly', label: 'ครูฮีม ใจดี', icon: '😊' },
-                                        { id: 'academic', label: 'ครูฮีม วิชาการ', icon: '🎓' },
-                                        { id: 'fun', label: 'ครูฮีม สนุก', icon: '🤘' },
-                                        { id: 'detailed', label: 'ครูฮีม ละเอียด', icon: '🧐' },
+                                        { id: 'friendly', label: 'ครูฮีม ใจดี' },
+                                        { id: 'academic', label: 'ครูฮีม วิชาการ' },
+                                        { id: 'fun', label: 'ครูฮีม สนุก' },
+                                        { id: 'detailed', label: 'ครูฮีม ละเอียด' },
                                     ].map(t => (
                                         <button
                                             key={t.id}
                                             onClick={() => handleChange('tone', t.id)}
-                                            className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-1.5
+                                            className={`p-4 rounded-[12px] border text-center transition-all flex items-center justify-center
                                         ${formData.tone === t.id
-                                                    ? 'border-indigo-600 bg-indigo-50/20 shadow-sm'
-                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
+                                                    ? 'border-ink bg-canvas ring-2 ring-ink/10'
+                                                    : 'border-line bg-canvas text-[#6b6357] hover:border-ink/30'
                                                 } `}
                                         >
-                                            <span className="text-xl">{t.icon}</span>
-                                            <span className="font-bold text-[10px] uppercase tracking-tighter">{t.label}</span>
+                                            <span className={`font-bold text-[11px] ${formData.tone === t.id ? 'text-ink' : 'text-[#6b6357]'}`}>{t.label}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -851,16 +848,15 @@ const PromptBuilderPage = () => {
 
                     {/* Section 3: Fine-Tuning - Hidden for Transcribe and Math Figure */}
                     {!['transcribe', 'math_figure', 'figure_from_text'].includes(formData.mode) && (
-                        <section className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white group/card overflow-hidden relative">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl -mr-16 -mt-16 rounded-full" />
+                        <section className="bg-paper p-8 rounded-[16px] border border-line group/card overflow-hidden relative">
 
                             <div className="flex items-center gap-4 mb-8">
-                                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-slate-900/20 group-hover/card:rotate-12 transition-transform duration-500">
+                                <div className="w-12 h-12 bg-ink rounded-[12px] flex items-center justify-center text-white">
                                     <Sliders size={22} strokeWidth={2.5} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-extrabold text-slate-800 dark:text-slate-200 font-outfit tracking-tight">Advanced Config</h2>
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-0.5">
+                                    <h2 className="text-xl font-extrabold text-ink font-display tracking-tight">Advanced Config</h2>
+                                    <p className="text-[#8a8175] text-xs font-bold uppercase tracking-widest mt-0.5 font-display">
                                         {formData.mode === 'summary'
                                             ? 'ปรับแต่งความยาวของสรุป'
                                             : formData.mode === 'flashcard'
@@ -873,28 +869,27 @@ const PromptBuilderPage = () => {
                             {/* Summary Length Selector (only for summary mode) */}
                             {formData.mode === 'summary' && (
                                 <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
-                                    <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
+                                    <label className="block text-[11px] font-bold text-[#8a8175] mb-4 uppercase tracking-widest pl-1 font-display">
                                         ความยาวของสรุป (Summary Length)
                                     </label>
                                     <div className="grid grid-cols-3 gap-3">
                                         {[
-                                            { id: 'short', label: 'สั้น', words: '~200 คำ', desc: 'สรุปเฉพาะสูตรหลัก', icon: '⚡', color: 'emerald' },
-                                            { id: 'medium', label: 'กลาง', words: '~500 คำ', desc: 'สูตร + เทคนิค + จุดระวัง', icon: '📋', color: 'blue' },
-                                            { id: 'long', label: 'ยาว', words: '~800 คำ', desc: 'ครบทุกหัวข้อ + ตัวอย่างประกอบ', icon: '📖', color: 'amber' },
+                                            { id: 'short', label: 'สั้น', words: '~200 คำ', desc: 'สรุปเฉพาะสูตรหลัก' },
+                                            { id: 'medium', label: 'กลาง', words: '~500 คำ', desc: 'สูตร + เทคนิค + จุดระวัง' },
+                                            { id: 'long', label: 'ยาว', words: '~800 คำ', desc: 'ครบทุกหัวข้อ + ตัวอย่างประกอบ' },
                                         ].map(len => (
                                             <button
                                                 key={len.id}
                                                 onClick={() => handleChange('summaryLength', len.id)}
-                                                className={`p-4 rounded-2xl border-2 text-center transition-all
+                                                className={`p-4 rounded-[12px] border text-center transition-all
                                                 ${formData.summaryLength === len.id
-                                                        ? 'border-amber-500 bg-amber-50/20 ring-4 ring-amber-500/5'
-                                                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
+                                                        ? 'border-ink bg-canvas ring-2 ring-ink/10'
+                                                        : 'border-line bg-canvas text-[#6b6357] hover:border-ink/30'
                                                     } `}
                                             >
-                                                <span className="text-2xl">{len.icon}</span>
-                                                <div className={`font-black text-sm mt-1.5 ${formData.summaryLength === len.id ? 'text-amber-600' : 'text-slate-700 dark:text-slate-300'}`}>{len.label}</div>
-                                                <div className={`text-xs font-bold mt-0.5 ${formData.summaryLength === len.id ? 'text-amber-500' : 'text-slate-400'}`}>{len.words}</div>
-                                                <div className="text-[9px] font-bold text-slate-400 leading-tight mt-1">{len.desc}</div>
+                                                <div className={`font-extrabold text-sm ${formData.summaryLength === len.id ? 'text-ink' : 'text-[#3a342c]'}`}>{len.label}</div>
+                                                <div className={`text-xs font-bold mt-0.5 ${formData.summaryLength === len.id ? 'text-accent' : 'text-[#8a8175]'}`}>{len.words}</div>
+                                                <div className="text-[9px] font-bold text-[#8a8175] leading-tight mt-1">{len.desc}</div>
                                             </button>
                                         ))}
                                     </div>
@@ -905,12 +900,12 @@ const PromptBuilderPage = () => {
                             {formData.mode !== 'summary' && (
                                 <div className="mb-10">
                                     <div className="flex justify-between items-end mb-4 px-1">
-                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">ระดับความยาก (Difficulty)</label>
-                                        <span className={`text-xs font-black uppercase px-2.5 py-1 rounded-md tracking-tighter
-                                    ${formData.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' : ''}
-                                    ${formData.difficulty === 'medium' ? 'bg-blue-100 text-blue-700' : ''}
-                                    ${formData.difficulty === 'hard' ? 'bg-orange-100 text-orange-700' : ''}
-                                    ${formData.difficulty === 'exam' ? 'bg-rose-600 text-white shadow-lg shadow-rose-200' : ''}
+                                        <label className="text-[11px] font-bold text-[#8a8175] uppercase tracking-widest font-display">ระดับความยาก (Difficulty)</label>
+                                        <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-[5px] tracking-tight
+                                    ${formData.difficulty === 'easy' ? 'bg-canvas-2 text-[#3a342c]' : ''}
+                                    ${formData.difficulty === 'medium' ? 'bg-canvas-2 text-[#3a342c]' : ''}
+                                    ${formData.difficulty === 'hard' ? 'bg-ink text-white' : ''}
+                                    ${formData.difficulty === 'exam' ? 'bg-accent text-white' : ''}
                                 `}>
                                             {formData.difficulty === 'exam' ? 'Exam Mode' : formData.difficulty}
                                         </span>
@@ -919,13 +914,13 @@ const PromptBuilderPage = () => {
                                         <input
                                             type="range"
                                             min="0" max="3" step="1"
-                                            className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-slate-900"
+                                            className="w-full h-1.5 bg-canvas-2 rounded-full appearance-none cursor-pointer accent-ink"
                                             value={['easy', 'medium', 'hard', 'exam'].indexOf(formData.difficulty)}
                                             onChange={(e) => handleChange('difficulty', ['easy', 'medium', 'hard', 'exam'][e.target.value])}
                                         />
                                         <div className="absolute top-0 left-0 w-full flex justify-between pointer-events-none px-1">
                                             {[0, 1, 2, 3].map(i => (
-                                                <div key={i} className={`w-1.5 h-1.5 rounded-full mt-2.5 ${i <= ['easy', 'medium', 'hard', 'exam'].indexOf(formData.difficulty) ? 'bg-slate-900' : 'bg-slate-200'} `} />
+                                                <div key={i} className={`w-1.5 h-1.5 rounded-full mt-2.5 ${i <= ['easy', 'medium', 'hard', 'exam'].indexOf(formData.difficulty) ? 'bg-ink' : 'bg-line-2'} `} />
                                             ))}
                                         </div>
                                     </div>
@@ -933,26 +928,26 @@ const PromptBuilderPage = () => {
                             )}
 
                             {formData.mode === 'flashcard' && (
-                                <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-6 items-start p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100 animate-in zoom-in-95 duration-500">
+                                <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-6 items-start p-6 bg-canvas rounded-[16px] border border-line animate-in zoom-in-95 duration-500">
                                     <div className="space-y-3">
-                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">จำนวนแฟลชการ์ด</label>
+                                        <label className="block text-[11px] font-bold text-[#8a8175] uppercase tracking-widest font-display">จำนวนแฟลชการ์ด</label>
                                         <div className="flex items-center gap-4">
                                             <input
                                                 type="number"
                                                 min={1}
                                                 max={50}
-                                                className="w-24 p-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-2xl font-black text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all shadow-sm"
+                                                className="w-24 p-4 bg-paper border border-line rounded-[12px] text-2xl font-extrabold text-ink font-display focus:ring-2 focus:ring-accent/15 focus:border-accent outline-none transition-all"
                                                 value={formData.questionCount}
                                                 onChange={(e) => handleChange('questionCount', e.target.value)}
                                                 aria-label="จำนวนแฟลชการ์ด"
                                             />
-                                            <span className="font-bold text-slate-400">CARDS</span>
-                                            <span className="text-[9px] font-bold text-slate-300">(1-50)</span>
+                                            <span className="font-bold text-[#8a8175] font-display">CARDS</span>
+                                            <span className="text-[9px] font-bold text-[#b3aa97]">(1-50)</span>
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">รูปแบบด้านหลังการ์ด</label>
-                                        <div className="grid grid-cols-3 gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                        <label className="block text-[11px] font-bold text-[#8a8175] uppercase tracking-widest mb-3 font-display">รูปแบบด้านหลังการ์ด</label>
+                                        <div className="grid grid-cols-3 gap-2 p-1.5 bg-paper rounded-[12px] border border-line">
                                             {[
                                                 { id: 'concise', label: 'สั้น', desc: 'ไม่เกิน 20 คำ' },
                                                 { id: 'balanced', label: 'สมดุล', desc: 'ประมาณ 30 คำ' },
@@ -961,10 +956,10 @@ const PromptBuilderPage = () => {
                                                 <button
                                                     key={option.id}
                                                     onClick={() => handleChange('flashcardAnswerStyle', option.id)}
-                                                    className={`rounded-xl px-3 py-3 text-left transition-all ${formData.flashcardAnswerStyle === option.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 hover:text-slate-800'}`}
+                                                    className={`rounded-[10px] px-3 py-3 text-left transition-all ${formData.flashcardAnswerStyle === option.id ? 'bg-ink text-white' : 'text-[#6b6357] hover:bg-canvas hover:text-ink'}`}
                                                 >
-                                                    <div className="text-xs font-black">{option.label}</div>
-                                                    <div className={`mt-1 text-[9px] font-bold ${formData.flashcardAnswerStyle === option.id ? 'text-slate-400' : 'text-slate-300'}`}>{option.desc}</div>
+                                                    <div className="text-xs font-extrabold">{option.label}</div>
+                                                    <div className={`mt-1 text-[9px] font-bold ${formData.flashcardAnswerStyle === option.id ? 'text-[#a39a8c]' : 'text-[#b3aa97]'}`}>{option.desc}</div>
                                                 </button>
                                             ))}
                                         </div>
@@ -975,29 +970,28 @@ const PromptBuilderPage = () => {
                             {/* SVG Image Type Selector (only for svg_question mode) */}
                             {formData.mode === 'svg_question' && (
                                 <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
-                                    <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
+                                    <label className="block text-[11px] font-bold text-[#8a8175] mb-4 uppercase tracking-widest pl-1 font-display">
                                         ประเภทรูปภาพ (SVG Image Type)
                                     </label>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
                                         {[
-                                            { id: 'geometry', label: 'เรขาคณิต', desc: 'สามเหลี่ยม สี่เหลี่ยม วงกลม', icon: '📐' },
-                                            { id: 'graph', label: 'กราฟ', desc: 'เส้นตรง พาราโบลา พิกัด', icon: '📈' },
-                                            { id: 'number_line', label: 'เส้นจำนวน', desc: 'Number Line', icon: '📏' },
-                                            { id: 'diagram', label: 'แผนภาพ', desc: 'Venn, Tree Diagram', icon: '🔀' },
-                                            { id: 'mixed', label: 'ผสม', desc: 'เลือกอัตโนมัติตามโจทย์', icon: '🎨' },
+                                            { id: 'geometry', label: 'เรขาคณิต', desc: 'สามเหลี่ยม สี่เหลี่ยม วงกลม' },
+                                            { id: 'graph', label: 'กราฟ', desc: 'เส้นตรง พาราโบลา พิกัด' },
+                                            { id: 'number_line', label: 'เส้นจำนวน', desc: 'Number Line' },
+                                            { id: 'diagram', label: 'แผนภาพ', desc: 'Venn, Tree Diagram' },
+                                            { id: 'mixed', label: 'ผสม', desc: 'เลือกอัตโนมัติตามโจทย์' },
                                         ].map(t => (
                                             <button
                                                 key={t.id}
                                                 onClick={() => handleChange('svgImageType', t.id)}
-                                                className={`p-3 rounded-2xl border-2 text-left transition-all
+                                                className={`p-3.5 rounded-[12px] border text-left transition-all
                                             ${formData.svgImageType === t.id
-                                                        ? 'border-purple-600 bg-purple-50/20 ring-4 ring-purple-500/5'
-                                                        : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200'
+                                                        ? 'border-ink bg-canvas ring-2 ring-ink/10'
+                                                        : 'border-line bg-canvas text-[#6b6357] hover:border-ink/30'
                                                     } `}
                                             >
-                                                <span className="text-lg">{t.icon}</span>
-                                                <div className={`font-black text-[11px] mt-1 ${formData.svgImageType === t.id ? 'text-purple-600' : 'text-slate-700 dark:text-slate-300'}`}>{t.label}</div>
-                                                <div className="text-[9px] font-bold text-slate-400 leading-tight">{t.desc}</div>
+                                                <div className={`font-extrabold text-[11px] ${formData.svgImageType === t.id ? 'text-ink' : 'text-[#3a342c]'}`}>{t.label}</div>
+                                                <div className="text-[9px] font-bold text-[#8a8175] leading-tight mt-0.5">{t.desc}</div>
                                             </button>
                                         ))}
                                     </div>
@@ -1006,33 +1000,33 @@ const PromptBuilderPage = () => {
 
                             {/* Components Chip Set */}
                             <div className="mb-10">
-                                <label className="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-widest pl-1">
+                                <label className="block text-[11px] font-bold text-[#8a8175] mb-4 uppercase tracking-widest pl-1 font-display">
                                     เลือกออปชันเสริม
                                     {allowedComponents.length === 0 && (
-                                        <span className="ml-2 text-slate-300 font-medium normal-case">(ไม่มีออปชันสำหรับโหมดนี้)</span>
+                                        <span className="ml-2 text-[#b3aa97] font-medium normal-case">(ไม่มีออปชันสำหรับโหมดนี้)</span>
                                     )}
                                 </label>
                                 <div className="flex flex-wrap gap-2.5">
                                     {/* Item 9: Only show options allowed for current mode */}
                                     {[
-                                        { id: 'dummyChoice', label: 'ช้อยส์หลอกดักทาง', color: 'blue' },
-                                        { id: 'realWorldApp', label: 'ประยุกต์ใช้จริง', color: 'emerald' },
-                                        { id: 'addHint', label: 'เพิ่มคำใบ้', color: 'amber' },
-                                        { id: 'crossChapter', label: 'ผสมข้ามบท', color: 'indigo' },
-                                        { id: 'mistake', label: 'จุดที่มักผิด', color: 'rose' },
-                                        { id: 'bulletPoints', label: 'สรุปเป็นข้อๆ', color: 'amber' },
-                                        { id: 'comparisonTable', label: 'ตารางเปรียบเทียบ', color: 'cyan' },
-                                        { id: 'stepByStep', label: 'ทีละขั้นตอน', color: 'violet' },
+                                        { id: 'dummyChoice', label: 'ช้อยส์หลอกดักทาง' },
+                                        { id: 'realWorldApp', label: 'ประยุกต์ใช้จริง' },
+                                        { id: 'addHint', label: 'เพิ่มคำใบ้' },
+                                        { id: 'crossChapter', label: 'ผสมข้ามบท' },
+                                        { id: 'mistake', label: 'จุดที่มักผิด' },
+                                        { id: 'bulletPoints', label: 'สรุปเป็นข้อๆ' },
+                                        { id: 'comparisonTable', label: 'ตารางเปรียบเทียบ' },
+                                        { id: 'stepByStep', label: 'ทีละขั้นตอน' },
                                     ].filter(comp => allowedComponents.includes(comp.id)).map(comp => (
                                         <button
                                             key={comp.id}
                                             onClick={() => handleComponentChange(comp.id)}
                                             aria-label={`เปิด/ปิดออปชัน ${comp.label}`}
                                             aria-pressed={formData.components[comp.id]}
-                                            className={`px-4 py-2.5 rounded-2xl border-2 font-bold text-xs transition-all flex items-center gap-2.5 active:scale-95
+                                            className={`px-4 py-2.5 rounded-[10px] border font-bold text-xs transition-all flex items-center gap-2.5 active:scale-95
                                         ${formData.components[comp.id]
-                                                    ? `border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/10`
-                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:border-slate-200'
+                                                    ? `border-ink bg-ink text-white`
+                                                    : 'border-line bg-canvas text-[#6b6357] hover:border-ink/30'
                                                 } `}
                                         >
                                             <Check size={14} strokeWidth={4} className={`transition-all duration-300 ${formData.components[comp.id] ? 'scale-100 opacity-100' : 'scale-0 opacity-0 w-0'} `} />
@@ -1044,58 +1038,58 @@ const PromptBuilderPage = () => {
 
                             {/* Quantities for Practice/Exam/SVG Question/Transcribe */}
                             {['practice', 'exam', 'web_quiz', 'gifted_quiz', 'svg_question'].includes(formData.mode) && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 bg-slate-50/80 rounded-3xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-500">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 bg-canvas rounded-[16px] border border-line animate-in zoom-in-95 duration-500">
                                     <div className="space-y-3">
-                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest">จำนวนข้อสอบ</label>
+                                        <label className="block text-[11px] font-bold text-[#8a8175] uppercase tracking-widest font-display">จำนวนข้อสอบ</label>
                                         <div className="flex items-center gap-4">
                                             <input
                                                 type="number"
                                                 min={1}
                                                 max={50}
-                                                className="w-24 p-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-2xl font-black text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
+                                                className="w-24 p-4 bg-paper border border-line rounded-[12px] text-2xl font-extrabold text-ink font-display focus:ring-2 focus:ring-accent/15 focus:border-accent outline-none transition-all"
                                                 value={formData.questionCount}
                                                 onChange={(e) => handleChange('questionCount', e.target.value)}
                                                 aria-label="จำนวนข้อสอบ"
                                             />
-                                            <span className="font-bold text-slate-400">ITEMS</span>
-                                            <span className="text-[9px] font-bold text-slate-300">(1-50)</span>
+                                            <span className="font-bold text-[#8a8175] font-display">ITEMS</span>
+                                            <span className="text-[9px] font-bold text-[#b3aa97]">(1-50)</span>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 p-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                    <div className="flex gap-2 p-1.5 bg-paper rounded-[12px] border border-line">
                                         <button
                                             onClick={() => handleChange('questionType', 'objective')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'objective' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'} `}
+                                            className={`flex-1 py-3 px-4 rounded-[10px] font-bold text-xs transition-all ${formData.questionType === 'objective' ? 'bg-ink text-white' : 'text-[#6b6357] hover:text-ink'} `}
                                         >
                                             <div>ปรนัย</div>
-                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'objective' ? 'text-slate-400' : 'text-slate-300'}`}>ตัวเลือก 4 ข้อ</div>
+                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'objective' ? 'text-[#a39a8c]' : 'text-[#b3aa97]'}`}>ตัวเลือก 4 ข้อ</div>
                                         </button>
                                         <button
                                             onClick={() => handleChange('questionType', 'subjective')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'subjective' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'} `}
+                                            className={`flex-1 py-3 px-4 rounded-[10px] font-bold text-xs transition-all ${formData.questionType === 'subjective' ? 'bg-ink text-white' : 'text-[#6b6357] hover:text-ink'} `}
                                         >
                                             <div>อัตนัย</div>
-                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'subjective' ? 'text-slate-400' : 'text-slate-300'}`}>แสดงวิธีทำ</div>
+                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'subjective' ? 'text-[#a39a8c]' : 'text-[#b3aa97]'}`}>แสดงวิธีทำ</div>
                                         </button>
                                         <button
                                             onClick={() => handleChange('questionType', 'word_problem')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs transition-all ${formData.questionType === 'word_problem' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-900'} `}
+                                            className={`flex-1 py-3 px-4 rounded-[10px] font-bold text-xs transition-all ${formData.questionType === 'word_problem' ? 'bg-ink text-white' : 'text-[#6b6357] hover:text-ink'} `}
                                         >
                                             <div>โจทย์ปัญหา</div>
-                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'word_problem' ? 'text-slate-400' : 'text-slate-300'}`}>เน้นวิเคราะห์</div>
+                                            <div className={`text-[9px] font-medium mt-0.5 ${formData.questionType === 'word_problem' ? 'text-[#a39a8c]' : 'text-[#b3aa97]'}`}>เน้นวิเคราะห์</div>
                                         </button>
                                     </div>
                                     {formData.questionType === 'word_problem' && (
-                                        <div className="md:col-span-2 flex gap-3 p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100 animate-in slide-in-from-top-2">
-                                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest self-center px-2">รูปแบบโจทย์ปัญหา:</span>
+                                        <div className="md:col-span-2 flex gap-3 p-3 bg-paper rounded-[12px] border border-line animate-in slide-in-from-top-2">
+                                            <span className="text-[10px] font-bold text-[#8a8175] uppercase tracking-widest self-center px-2 font-display">รูปแบบโจทย์ปัญหา:</span>
                                             <button
                                                 onClick={() => handleChange('wordProblemType', 'objective')}
-                                                className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all ${formData.wordProblemType === 'objective' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-indigo-600'} `}
+                                                className={`flex-1 py-2 px-3 rounded-[8px] font-bold text-xs transition-all ${formData.wordProblemType === 'objective' ? 'bg-accent text-white' : 'bg-canvas text-[#6b6357] hover:text-ink'} `}
                                             >
                                                 ปรนัย (มีตัวเลือก)
                                             </button>
                                             <button
                                                 onClick={() => handleChange('wordProblemType', 'subjective')}
-                                                className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition-all ${formData.wordProblemType === 'subjective' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-indigo-600'} `}
+                                                className={`flex-1 py-2 px-3 rounded-[8px] font-bold text-xs transition-all ${formData.wordProblemType === 'subjective' ? 'bg-accent text-white' : 'bg-canvas text-[#6b6357] hover:text-ink'} `}
                                             >
                                                 อัตนัย (แสดงวิธีทำ)
                                             </button>
@@ -1119,7 +1113,7 @@ const PromptBuilderPage = () => {
                                     ];
                                 return (
                                     <div className="mt-8">
-                                        <label className="block text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-widest pl-1">
+                                        <label className="block text-[11px] font-bold text-[#8a8175] mb-3 uppercase tracking-widest pl-1 font-display">
                                             {isQMode ? 'ระดับความละเอียดของเฉลย' : 'ระดับความลึกของเนื้อหา'}
                                         </label>
                                         <div className={`grid gap-3 ${isQMode ? 'grid-cols-3' : 'grid-cols-2'}`}>
@@ -1127,14 +1121,14 @@ const PromptBuilderPage = () => {
                                                 <button
                                                     key={len.id}
                                                     onClick={() => handleChange('contentLength', len.id)}
-                                                    className={`p-5 rounded-2xl border-2 text-left transition-all h-full
+                                                    className={`p-5 rounded-[12px] border text-left transition-all h-full
                                                         ${formData.contentLength === len.id
-                                                            ? 'border-blue-600 bg-blue-50/10 ring-4 ring-blue-500/5'
-                                                            : 'border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 hover:border-slate-200 hover:bg-white'
+                                                            ? 'border-ink bg-canvas ring-2 ring-ink/10'
+                                                            : 'border-line bg-canvas text-[#6b6357] hover:border-ink/30'
                                                         } `}
                                                 >
-                                                    <div className={`font-black text-xs mb-1 uppercase tracking-tight ${formData.contentLength === len.id ? 'text-blue-600' : 'text-slate-800 dark:text-slate-200'}`}>{len.label}</div>
-                                                    <div className="text-[10px] font-bold text-slate-400 leading-tight">{len.desc}</div>
+                                                    <div className={`font-extrabold text-xs mb-1 uppercase tracking-tight ${formData.contentLength === len.id ? 'text-ink' : 'text-[#3a342c]'}`}>{len.label}</div>
+                                                    <div className="text-[10px] font-bold text-[#8a8175] leading-tight">{len.desc}</div>
                                                 </button>
                                             ))}
                                         </div>

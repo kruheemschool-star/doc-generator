@@ -79,29 +79,29 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] flex items-center justify-center p-4" onClick={onClose}>
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-[9998] flex items-center justify-center p-4 font-thai" onClick={onClose}>
             <div
                 ref={modalRef}
                 role="dialog"
                 aria-modal="true"
                 aria-label="จัดการ Template"
                 tabIndex={-1}
-                className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden animate-in zoom-in-95 fade-in duration-300"
+                className="bg-paper border border-line rounded-2xl shadow-[0_24px_60px_-20px_rgba(20,18,15,0.45)] w-full max-w-lg max-h-[80vh] overflow-hidden animate-in zoom-in-95 fade-in duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between p-6 border-b border-line">
                     <div>
-                        <h2 className="text-lg font-black text-slate-900 dark:text-slate-100">Prompt Templates</h2>
-                        <p className="text-xs text-slate-400 font-semibold mt-0.5">บันทึกและเรียกใช้ค่าที่ตั้งไว้</p>
+                        <h2 className="text-lg font-bold text-ink tracking-tight">Prompt Templates</h2>
+                        <p className="text-xs text-[#8a8175] font-medium mt-1">บันทึกและเรียกใช้ค่าที่ตั้งไว้</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors" aria-label="ปิด">
-                        <X size={20} className="text-slate-400" />
+                    <button onClick={onClose} className="p-2 border border-line rounded-[10px] text-[#6b6357] hover:bg-paper-2 hover:text-ink transition-colors" aria-label="ปิด">
+                        <X size={18} />
                     </button>
                 </div>
 
                 {/* Save new template */}
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50">
+                <div className="p-4 border-b border-line bg-canvas">
                     {showSaveForm ? (
                         <div className="flex gap-2">
                             <input
@@ -110,7 +110,7 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                                 value={templateName}
                                 onChange={(e) => setTemplateName(e.target.value)}
                                 maxLength={60}
-                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                className="flex-1 px-4 py-2.5 rounded-[10px] bg-paper border border-line text-sm font-semibold text-[#3a342c] placeholder:text-[#b3aa97] focus:ring-2 focus:ring-accent/15 focus:border-accent outline-none transition-all"
                                 autoFocus
                                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                                 aria-label="ชื่อ Template"
@@ -118,14 +118,14 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                             <button
                                 onClick={handleSave}
                                 disabled={!templateName.trim() || isSaving}
-                                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-500 disabled:opacity-50 transition-all flex items-center gap-1.5"
+                                className="px-4 py-2.5 bg-accent text-white rounded-[10px] text-xs font-bold hover:bg-accent-press disabled:opacity-50 transition-all flex items-center gap-1.5"
                             >
                                 {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                 บันทึก
                             </button>
                             <button
                                 onClick={() => { setShowSaveForm(false); setTemplateName(''); }}
-                                className="px-3 py-2.5 text-slate-400 hover:text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all"
+                                className="px-3 py-2.5 text-[#6b6357] hover:text-ink rounded-[10px] text-xs font-bold hover:bg-paper-2 transition-all"
                             >
                                 ยกเลิก
                             </button>
@@ -133,7 +133,7 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                     ) : (
                         <button
                             onClick={() => setShowSaveForm(true)}
-                            className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-400 hover:border-blue-300 hover:text-blue-500 transition-all flex items-center justify-center gap-2"
+                            className="w-full py-3 border border-dashed border-line-2 rounded-[10px] text-xs font-bold text-[#6b6357] hover:border-accent hover:text-accent transition-all flex items-center justify-center gap-2"
                         >
                             <Plus size={16} /> บันทึกค่าปัจจุบันเป็น Template
                         </button>
@@ -141,34 +141,34 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                 </div>
 
                 {/* Template list */}
-                <div className="overflow-y-auto max-h-[45vh] p-4 space-y-2">
+                <div className="overflow-y-auto max-h-[45vh] p-4 space-y-2 custom-scrollbar">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-12">
-                            <Loader2 size={24} className="text-blue-500 animate-spin" />
+                            <Loader2 size={24} className="text-accent animate-spin" />
                         </div>
                     ) : templates.length === 0 ? (
-                        <div className="text-center py-12 text-slate-300">
-                            <FileText size={40} className="mx-auto mb-3 opacity-50" />
-                            <p className="text-sm font-bold">ยังไม่มี Template</p>
+                        <div className="text-center py-12 text-[#8a8175]">
+                            <FileText size={40} className="mx-auto mb-3 opacity-40" />
+                            <p className="text-sm font-bold text-[#3a342c]">ยังไม่มี Template</p>
                             <p className="text-xs mt-1">กดปุ่มด้านบนเพื่อบันทึกค่าปัจจุบัน</p>
                         </div>
                     ) : (
                         templates.map(tmpl => (
                             <div
                                 key={tmpl.id}
-                                className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-blue-200 hover:shadow-md transition-all group"
+                                className="flex items-center gap-3 p-4 bg-paper border border-line rounded-[14px] hover:border-ink/30 hover:shadow-[0_4px_14px_-10px_rgba(40,44,80,0.4)] transition-all group"
                             >
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">{tmpl.name}</div>
+                                    <div className="font-bold text-sm text-ink truncate">{tmpl.name}</div>
                                     <div className="flex gap-2 mt-1.5 flex-wrap">
-                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold">
+                                        <span className="px-2 py-0.5 text-accent bg-accent/10 rounded-[5px] text-[10px] font-bold">
                                             {getModeLabel(tmpl.formData?.mode)}
                                         </span>
-                                        <span className="px-2 py-0.5 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-md text-[10px] font-bold">
+                                        <span className="px-2 py-0.5 bg-canvas-2 text-[#6b6357] rounded-[5px] text-[10px] font-bold">
                                             {tmpl.formData?.grade}
                                         </span>
                                         {tmpl.formData?.chapter && (
-                                            <span className="px-2 py-0.5 bg-slate-50 dark:bg-slate-900 text-slate-400 rounded-md text-[10px] font-medium truncate max-w-[150px]">
+                                            <span className="px-2 py-0.5 bg-canvas-2 text-[#8a8175] rounded-[5px] text-[10px] font-medium truncate max-w-[150px]">
                                                 {tmpl.formData.chapter}
                                             </span>
                                         )}
@@ -177,7 +177,7 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                                 <div className="flex gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => handleLoad(tmpl)}
-                                        className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"
+                                        className="p-2.5 border border-line text-ink rounded-[10px] hover:bg-ink hover:text-white transition-colors"
                                         aria-label={`โหลด ${tmpl.name}`}
                                         title="โหลด Template"
                                     >
@@ -185,7 +185,7 @@ const TemplateManager = ({ isOpen, onClose, currentFormData, onLoadTemplate, add
                                     </button>
                                     <button
                                         onClick={() => handleDelete(tmpl.id, tmpl.name)}
-                                        className="p-2.5 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors"
+                                        className="p-2.5 border border-line text-[#c2483c] rounded-[10px] hover:bg-[#fae9e7] hover:border-[#c2483c]/40 transition-colors"
                                         aria-label={`ลบ ${tmpl.name}`}
                                         title="ลบ Template"
                                     >

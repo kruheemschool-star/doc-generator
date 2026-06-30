@@ -29,26 +29,24 @@ const PromptPreview = ({
     );
 
     return (
-        <div className="w-full lg:w-[38%] bg-[#0B0F19] flex flex-col shadow-[inset_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden relative border-l border-slate-800/50 min-h-[40vh] lg:min-h-0">
-            {/* Visual Glow */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[150px] -mr-80 -mt-80 rounded-full" />
+        <div className="w-full lg:w-[38%] bg-ink flex flex-col overflow-hidden relative border-l border-line min-h-[40vh] lg:min-h-0 font-thai">
 
             {/* Header Section */}
-            <div className="h-20 border-b border-white/5 flex items-center justify-between px-6 lg:px-8 bg-black/20 backdrop-blur-md relative z-10">
+            <div className="h-20 border-b border-white/10 flex items-center justify-between px-6 lg:px-8 relative z-10">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 text-emerald-400">
+                    <div className="w-8 h-8 rounded-[8px] bg-ink-soft flex items-center justify-center border border-white/10 text-accent">
                         <Terminal size={14} strokeWidth={2.5} />
                     </div>
                     <div>
-                        <h3 className="text-white font-black font-outfit text-xs tracking-widest leading-none">PREVIEW</h3>
-                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter mt-1 block">Live AI Instruction</span>
+                        <h3 className="text-white font-bold font-display text-xs tracking-[0.18em] leading-none">PREVIEW</h3>
+                        <span className="text-[9px] font-semibold text-[#807868] uppercase tracking-[0.06em] mt-1.5 block font-display">Live AI Instruction</span>
                     </div>
                 </div>
                 <div className="flex gap-2.5">
                     <button
                         onClick={onOpenGemini}
                         aria-label="เปิด Gemini"
-                        className="h-10 px-4 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all flex items-center gap-2 text-[11px] font-bold uppercase border border-white/10 hover:border-white/20 active:scale-95 tracking-wider"
+                        className="h-10 px-4 rounded-[10px] hover:bg-white/5 text-[#a39a8c] hover:text-white transition-all flex items-center gap-2 text-[11px] font-bold uppercase border border-white/10 hover:border-white/25 active:scale-95 tracking-wider font-display"
                     >
                         <ExternalLink size={14} strokeWidth={2.5} />
                         Open Gemini
@@ -60,34 +58,34 @@ const PromptPreview = ({
                                 onClick={onCopy}
                                 disabled={!generatedPrompt}
                                 aria-label="คัดลอกคำสั่ง"
-                                className={`h-10 px-5 rounded-l-xl font-bold text-[11px] transition-all flex items-center gap-2 active:scale-95 shadow-lg shadow-blue-600/20 tracking-wider
-                                ${isCopied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50'} `}
+                                className={`h-10 px-5 rounded-l-[10px] font-bold text-[11px] transition-all flex items-center gap-2 active:scale-95 tracking-wider font-display
+                                ${isCopied ? 'bg-[#3f8a5f] text-white' : 'bg-accent text-white hover:bg-accent-press disabled:opacity-50'} `}
                             >
                                 {isCopied ? <Check size={14} strokeWidth={3} /> : <ClipboardCopy size={14} />}
-                                {isCopied ? 'COPIED ✓' : 'COPY PROMPT'}
+                                {isCopied ? 'COPIED' : 'COPY PROMPT'}
                             </button>
                             <button
                                 onClick={() => setShowCopyMenu(!showCopyMenu)}
                                 disabled={!generatedPrompt}
                                 aria-label="ตัวเลือกการคัดลอก"
-                                className={`h-10 px-2 rounded-r-xl border-l border-white/20 font-bold text-[11px] transition-all active:scale-95 shadow-lg shadow-blue-600/20
-                                ${isCopied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50'} `}
+                                className={`h-10 px-2 rounded-r-[10px] border-l border-white/25 font-bold text-[11px] transition-all active:scale-95
+                                ${isCopied ? 'bg-[#3f8a5f] text-white' : 'bg-accent text-white hover:bg-accent-press disabled:opacity-50'} `}
                             >
                                 ▾
                             </button>
                         </div>
                         {/* Copy format dropdown */}
                         {showCopyMenu && (
-                            <div className="absolute right-0 top-12 bg-[#1a1f2e] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute right-0 top-12 bg-ink-soft border border-white/10 rounded-[12px] shadow-2xl z-50 overflow-hidden min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
                                 <button
                                     onClick={() => { onCopy(); setShowCopyMenu(false); }}
-                                    className="w-full px-4 py-3 text-left text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2"
+                                    className="w-full px-4 py-3 text-left text-xs font-semibold text-[#d8d0c2] hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2"
                                 >
                                     <ClipboardCopy size={12} /> Copy as Plain Text
                                 </button>
                                 <button
                                     onClick={() => { onCopyMarkdown(); setShowCopyMenu(false); }}
-                                    className="w-full px-4 py-3 text-left text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 border-t border-white/5"
+                                    className="w-full px-4 py-3 text-left text-xs font-semibold text-[#d8d0c2] hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 border-t border-white/10"
                                 >
                                     <Code size={12} /> Copy as Markdown
                                 </button>
@@ -98,14 +96,14 @@ const PromptPreview = ({
             </div>
 
             {/* Item 12: Tab bar for Preview / Expected Output */}
-            <div className="flex border-b border-white/5 relative z-10">
+            <div className="flex border-b border-white/10 relative z-10">
                 <button
                     onClick={() => setActiveTab('preview')}
                     aria-label="แสดง Preview"
                     role="tab"
                     aria-selected={activeTab === 'preview'}
-                    className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all
-                        ${activeTab === 'preview' ? 'text-blue-400 border-b-2 border-blue-400 bg-white/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-400'}`}
+                    className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all font-display
+                        ${activeTab === 'preview' ? 'text-white border-b-2 border-accent bg-white/5' : 'text-[#807868] hover:text-[#a39a8c]'}`}
                 >
                     <Eye size={12} /> Prompt Preview
                 </button>
@@ -114,8 +112,8 @@ const PromptPreview = ({
                     aria-label="แสดง Expected Output"
                     role="tab"
                     aria-selected={activeTab === 'output'}
-                    className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all
-                        ${activeTab === 'output' ? 'text-emerald-400 border-b-2 border-emerald-400 bg-white/5' : 'text-slate-600 dark:text-slate-400 hover:text-slate-400'}`}
+                    className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all font-display
+                        ${activeTab === 'output' ? 'text-white border-b-2 border-accent bg-white/5' : 'text-[#807868] hover:text-[#a39a8c]'}`}
                 >
                     <Code size={12} /> Expected Output
                 </button>
@@ -126,51 +124,51 @@ const PromptPreview = ({
                 {activeTab === 'preview' ? (
                     // --- Prompt Preview Tab ---
                     generatedPrompt ? (
-                        <div className="bg-[#131926] rounded-3xl p-8 border border-white/5 shadow-2xl animate-in fade-in zoom-in-95 duration-700 min-h-full">
-                            <div className="flex gap-2 mb-6 opacity-30">
-                                <div className="w-3 h-3 rounded-full bg-rose-500" />
-                                <div className="w-3 h-3 rounded-full bg-amber-500" />
-                                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                        <div className="bg-ink-soft rounded-[16px] p-8 border border-white/10 animate-in fade-in zoom-in-95 duration-700 min-h-full">
+                            <div className="flex gap-2 mb-6 opacity-40">
+                                <div className="w-2.5 h-2.5 rounded-full bg-white/25" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-white/25" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-accent/60" />
                             </div>
                             {formData.mode === 'transcribe' && (
-                                <div className="mb-6 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl">
-                                    <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs mb-2">
+                                <div className="mb-6 p-4 bg-accent/10 border border-accent/25 rounded-[12px]">
+                                    <div className="flex items-center gap-2 text-accent font-bold text-xs mb-2">
                                         <Paperclip size={14} />
-                                        <span>📎 อย่าลืมแนบเอกสาร!</span>
+                                        <span>อย่าลืมแนบเอกสาร!</span>
                                     </div>
-                                    <p className="text-[11px] text-cyan-300/70 leading-relaxed">
+                                    <p className="text-[11px] text-[#d8d0c2] leading-relaxed">
                                         คัดลอกคำสั่งนี้ไปวางใน Gemini แล้ว<strong>แนบรูปภาพ/เอกสารโจทย์สอบ</strong>ไปพร้อมกัน AI จะพิมพ์โจทย์ตามให้เหมือนต้นฉบับทุกประการ
                                     </p>
                                 </div>
                             )}
-                            <div className="font-mono text-[13px] leading-relaxed text-slate-300 whitespace-pre-wrap selection:bg-blue-500/30">
+                            <div className="font-mono text-[13px] leading-relaxed text-[#e8e1d3] whitespace-pre-wrap selection:bg-accent/30">
                                 {generatedPrompt}
                             </div>
                         </div>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-700 dark:text-slate-300 gap-6 opacity-30 select-none">
-                            <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center animate-[spin_10s_linear_infinite]">
+                        <div className="h-full flex flex-col items-center justify-center text-[#a39a8c] gap-6 opacity-40 select-none">
+                            <div className="w-20 h-20 rounded-full border-2 border-dashed border-white/15 flex items-center justify-center animate-[spin_10s_linear_infinite]">
                                 <Terminal size={32} />
                             </div>
-                            <p className="text-center text-[10px] font-black tracking-[0.2em] uppercase">Ready to generate your command</p>
+                            <p className="text-center text-[10px] font-bold tracking-[0.2em] uppercase font-display">Ready to generate your command</p>
                         </div>
                     )
                 ) : (
                     // --- Item 12: Expected Output Tab ---
-                    <div className="bg-[#131926] rounded-3xl p-8 border border-white/5 shadow-2xl animate-in fade-in zoom-in-95 duration-500 min-h-full">
-                        <div className="flex gap-2 mb-4 opacity-30">
-                            <div className="w-3 h-3 rounded-full bg-rose-500" />
-                            <div className="w-3 h-3 rounded-full bg-amber-500" />
-                            <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                    <div className="bg-ink-soft rounded-[16px] p-8 border border-white/10 animate-in fade-in zoom-in-95 duration-500 min-h-full">
+                        <div className="flex gap-2 mb-4 opacity-40">
+                            <div className="w-2.5 h-2.5 rounded-full bg-white/25" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-white/25" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-accent/60" />
                         </div>
                         <div className="flex items-center gap-2 mb-4">
-                            <Code size={14} className="text-emerald-400" />
-                            <span className="text-emerald-400 font-bold text-xs uppercase tracking-widest">JSON Output Structure</span>
+                            <Code size={14} className="text-accent" />
+                            <span className="text-white font-bold text-xs uppercase tracking-widest font-display">JSON Output Structure</span>
                         </div>
-                        <p className="text-slate-500 dark:text-slate-400 text-[11px] font-medium mb-4 leading-relaxed">
+                        <p className="text-[#a39a8c] text-[11px] font-medium mb-4 leading-relaxed">
                             AI จะส่งผลลัพธ์กลับมาในรูปแบบ JSON ตามโครงสร้างด้านล่าง คุณสามารถนำไป import เข้าระบบได้ทันที
                         </p>
-                        <pre className="font-mono text-[12px] leading-relaxed text-emerald-300/80 whitespace-pre-wrap bg-black/30 rounded-2xl p-6 border border-emerald-500/10">
+                        <pre className="font-mono text-[12px] leading-relaxed text-[#cfc7b8] whitespace-pre-wrap bg-black/30 rounded-[12px] p-6 border border-white/10">
                             {outputSkeleton}
                         </pre>
                     </div>
@@ -178,17 +176,17 @@ const PromptPreview = ({
             </div>
 
             {/* Status Bar — Save status indicator */}
-            <div className="p-4 bg-black/40 backdrop-blur-xl text-[9px] font-bold text-slate-500 dark:text-slate-400 flex justify-between px-6 lg:px-8 border-t border-white/5 relative z-10">
+            <div className="p-4 text-[9px] font-bold text-[#807868] flex justify-between px-6 lg:px-8 border-t border-white/10 relative z-10 font-display">
                 <div className="flex gap-6">
-                    <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> ENGINE: GPT-4/GEMINI READY</span>
+                    <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" /> ENGINE: GPT-4/GEMINI READY</span>
                     <span>LENGTH: ~{generatedPrompt?.length ?? 0} chars</span>
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1.5">
-                        {saveStatus === 'saving' && <><Loader2 size={10} className="animate-spin text-blue-400" /> SAVING...</>}
-                        {saveStatus === 'saved' && <><Save size={10} className="text-emerald-400" /> SAVED</>}
-                        {saveStatus === 'error' && <><AlertCircle size={10} className="text-rose-400" /> SAVE FAILED</>}
-                        {saveStatus === 'idle' && <><Save size={10} className="text-slate-600 dark:text-slate-400" /> AUTO-SAVE</>}
+                        {saveStatus === 'saving' && <><Loader2 size={10} className="animate-spin text-accent" /> SAVING...</>}
+                        {saveStatus === 'saved' && <><Save size={10} className="text-[#5cba85]" /> SAVED</>}
+                        {saveStatus === 'error' && <><AlertCircle size={10} className="text-[#e06a5c]" /> SAVE FAILED</>}
+                        {saveStatus === 'idle' && <><Save size={10} className="text-[#5e5749]" /> AUTO-SAVE</>}
                     </span>
                     <span>LOCALE: TH_TH / EN_US</span>
                 </div>
