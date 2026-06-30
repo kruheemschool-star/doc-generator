@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useLayoutEffect, useCallback, useRef, useId } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeOff, Bold, Italic, Heading2, Heading3, List, ListOrdered, Quote, Sigma, Link2 } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import ErrorBoundary from './ErrorBoundary';
 import { SIZE_TO_PX } from '../data/documentFonts';
@@ -32,7 +32,7 @@ const splitAnswerContent = (content) => {
 const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
-    const [showPreview, setShowPreview] = useState(false);
+    const [showPreview, setShowPreview] = useState(true);
     const textAreaRef = useRef(null);
     const textareaId = useId();
     const answerRef = useRef(null);
@@ -70,6 +70,66 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
             textarea.setSelectionRange(start + icon.length, start + icon.length);
         }, 0);
     };
+
+    // Word-like formatting buttons — apply markdown to the current textarea selection.
+    const applyFormat = (type) => {
+        const ta = textAreaRef.current;
+        if (!ta) return;
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        const sel = text.slice(start, end);
+        let next = text, selStart = start, selEnd = end;
+
+        const wrap = (mark, placeholder) => {
+            const inner = sel || placeholder;
+            next = text.slice(0, start) + mark + inner + mark + text.slice(end);
+            selStart = start + mark.length;
+            selEnd = selStart + inner.length;
+        };
+        const linePrefix = (prefix) => {
+            const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+            next = text.slice(0, lineStart) + prefix + text.slice(lineStart);
+            selStart = selEnd = start + prefix.length;
+        };
+
+        switch (type) {
+            case 'bold': wrap('**', 'ข้อความ'); break;
+            case 'italic': wrap('*', 'ข้อความ'); break;
+            case 'imath': wrap('$', 'x'); break;
+            case 'bmath': {
+                const inner = sel || 'x = y';
+                next = text.slice(0, start) + '\n$$\n' + inner + '\n$$\n' + text.slice(end);
+                selStart = start + 4; selEnd = selStart + inner.length;
+                break;
+            }
+            case 'h2': linePrefix('## '); break;
+            case 'h3': linePrefix('### '); break;
+            case 'ul': linePrefix('- '); break;
+            case 'ol': linePrefix('1. '); break;
+            case 'quote': linePrefix('> '); break;
+            case 'link': {
+                const label = sel || 'ข้อความ';
+                next = text.slice(0, start) + '[' + label + '](https://)' + text.slice(end);
+                selStart = start + 1; selEnd = selStart + label.length;
+                break;
+            }
+            default: return;
+        }
+        setText(next);
+        setTimeout(() => { ta.focus(); ta.setSelectionRange(selStart, selEnd); }, 0);
+    };
+
+    const FORMAT_BUTTONS = [
+        { type: 'bold', icon: Bold, title: 'ตัวหนา' },
+        { type: 'italic', icon: Italic, title: 'ตัวเอียง' },
+        { type: 'h2', icon: Heading2, title: 'หัวข้อใหญ่' },
+        { type: 'h3', icon: Heading3, title: 'หัวข้อรอง' },
+        { type: 'ul', icon: List, title: 'รายการจุด' },
+        { type: 'ol', icon: ListOrdered, title: 'รายการตัวเลข' },
+        { type: 'quote', icon: Quote, title: 'กล่องคำพูด/โน้ต' },
+        { type: 'imath', icon: Sigma, title: 'สมการในบรรทัด' },
+        { type: 'link', icon: Link2, title: 'ลิงก์' },
+    ];
 
     // Sync with external content updates (Crucial for Import)
     useEffect(() => {
@@ -168,6 +228,31 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                                 </div>
                                 <div className={showPreview ? 'grid grid-cols-2 gap-3' : ''}>
                                     <div className="flex flex-col gap-2">
+                                        {/* Formatting toolbar — Word-like buttons that apply to the selection */}
+                                        <div className="flex flex-wrap items-center gap-1 p-1.5 bg-gray-50 rounded-lg border border-gray-200 shadow-inner">
+                                            {FORMAT_BUTTONS.map(b => {
+                                                const Icon = b.icon;
+                                                return (
+                                                    <button
+                                                        key={b.type}
+                                                        onMouseDown={(e) => e.preventDefault()}
+                                                        onClick={(e) => { e.stopPropagation(); applyFormat(b.type); }}
+                                                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded-md transition-all"
+                                                        title={b.title}
+                                                    >
+                                                        <Icon size={16} />
+                                                    </button>
+                                                );
+                                            })}
+                                            <button
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={(e) => { e.stopPropagation(); applyFormat('bmath'); }}
+                                                className="h-8 px-2 flex items-center justify-center text-gray-600 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded-md transition-all font-mono text-xs font-bold"
+                                                title="สมการแยกบรรทัด"
+                                            >
+                                                $$
+                                            </button>
+                                        </div>
                                         {/* Icon Toolbar */}
                                         <div className="flex flex-wrap gap-1 p-2 bg-gray-50 rounded-lg border border-gray-200 shadow-inner max-h-[100px] overflow-y-auto custom-scrollbar">
                                             {EDUCATION_ICONS.map((icon, idx) => (
