@@ -47,7 +47,8 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
     const EDUCATION_ICONS = [
         '📚', '📖', '✏️', '📝', '📐', '📏', '🎒', '🎓', '💡', '🧠',
         '🔢', '✖️', '➗', '🧩', '🏫', '🖍️', '🖌️', '🔍', '🔬', '🧪',
-        '⭐', '🌟', '🔥', '✅', '❌', '❓', '❗', '💯', '🏆', '🥇'
+        '⭐', '🌟', '🔥', '✅', '❌', '❓', '❗', '💯', '🏆', '🥇',
+        '🚨', '⚠️', '😉', '🐷'
     ];
 
     const handleInsertIcon = (icon) => {
