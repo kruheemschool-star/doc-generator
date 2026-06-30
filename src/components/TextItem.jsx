@@ -42,7 +42,7 @@ const formats = [
     'align', 'script', 'size'
 ];
 
-const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly }) => {
+const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [QuillComponent, setQuillComponent] = useState(null);
@@ -168,6 +168,7 @@ const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelet
                                 ? 'bg-blue-50/10 border-blue-400 ring-2 ring-blue-50 p-4'
                                 : 'bg-transparent border-transparent hover:border-gray-200 hover:bg-gray-50/50 p-4'
                             }`}
+                        style={!isEditing && !isSelected && frameStyle ? frameStyle : undefined}
                         onDoubleClick={() => { if (!isViewOnly) { setIsEditing(true); loadQuill(); } }}
                     >
                         {isEditing ? (

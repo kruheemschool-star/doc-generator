@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -16,6 +16,7 @@ import FontPicker from './FontPicker';
 import ImportPreview from './ImportPreview';
 import TweaksPanel from './TweaksPanel';
 import { DEFAULT_DOC_THEME, normalizeTheme, themeToCssVars } from '../data/docThemes';
+import { buildFrameStyle, DEFAULT_FRAME, FRAME_STYLE_OPTIONS } from '../utils/itemFrame';
 import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions, isSolutionOnlyExport, solutionsToMarkdownBlocks } from '../utils/importParser';
 import { useToast, ToastContainer } from './Toast';
 import useAutoPagination from '../hooks/useAutoPagination';
@@ -139,6 +140,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     });
     const [showWatermarkPanel, setShowWatermarkPanel] = useState(false);
     const watermarkImageInputRef = useRef(null);
+    const [showBorderPopover, setShowBorderPopover] = useState(false);
 
     const handleWatermarkImageUpload = (e) => {
         const file = e.target.files?.[0];
@@ -730,7 +732,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             onEditEnd: handleEditEnd,
             canMoveUp: !isFirstItem,
             canMoveDown: !isLastItem,
-            isViewOnly
+            isViewOnly,
+            frameStyle: buildFrameStyle(q),
         };
 
         if (q.type === 'text') return (
@@ -1157,6 +1160,53 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 )}
 
                 <div className="fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden floating-toolbar max-w-[calc(100vw-1rem)]">
+                    {/* Per-item border (frame) popover */}
+                    {showBorderPopover && selectedItem && (
+                        <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[300px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-2xl p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2 text-gray-800 dark:text-slate-100"><Square size={16} className="text-teal-600" /><span className="font-bold text-sm">กรอบกล่อง</span></div>
+                                <button onClick={() => setShowBorderPopover(false)} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 rounded" aria-label="ปิด"><X size={16} /></button>
+                            </div>
+                            <div className="mb-3">
+                                <div className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5">รูปแบบเส้น</div>
+                                <div className="grid grid-cols-4 gap-1.5">
+                                    {FRAME_STYLE_OPTIONS.map(opt => {
+                                        const active = (selectedItem.borderStyle || 'none') === opt.value;
+                                        return (
+                                            <button
+                                                key={opt.value}
+                                                onClick={() => {
+                                                    if (opt.value === 'none') { handleUpdateItem(selectedItemId, { borderStyle: 'none' }); return; }
+                                                    const patch = { borderStyle: opt.value };
+                                                    if (!selectedItem.borderColor) patch.borderColor = DEFAULT_FRAME.borderColor;
+                                                    if (selectedItem.borderWidth == null) patch.borderWidth = DEFAULT_FRAME.borderWidth;
+                                                    if (selectedItem.borderRadius == null) patch.borderRadius = DEFAULT_FRAME.borderRadius;
+                                                    handleUpdateItem(selectedItemId, patch);
+                                                }}
+                                                className={`py-2 rounded-lg text-xs font-medium border transition ${active ? 'bg-teal-50 border-teal-400 text-teal-700' : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-300'}`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <div className={`${(selectedItem.borderStyle && selectedItem.borderStyle !== 'none') ? '' : 'opacity-40 pointer-events-none'}`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-medium text-gray-500 dark:text-slate-400">ความหนา</span>
+                                    <span className="text-[11px] font-mono text-gray-400 dark:text-slate-500">{selectedItem.borderWidth ?? DEFAULT_FRAME.borderWidth}px</span>
+                                </div>
+                                <input type="range" min="1" max="6" step="1" value={selectedItem.borderWidth ?? DEFAULT_FRAME.borderWidth} onChange={e => handleUpdateItem(selectedItemId, { borderWidth: parseInt(e.target.value, 10) })} className="w-full accent-teal-600 mb-3" aria-label="ความหนาเส้นกรอบ" />
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-gray-500 dark:text-slate-400">สีเส้น</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[11px] font-mono text-gray-400 dark:text-slate-500 uppercase">{selectedItem.borderColor || DEFAULT_FRAME.borderColor}</span>
+                                        <input type="color" value={selectedItem.borderColor || DEFAULT_FRAME.borderColor} onChange={e => handleUpdateItem(selectedItemId, { borderColor: e.target.value })} className="w-8 h-8 rounded-lg border border-gray-200 dark:border-slate-700 cursor-pointer p-0.5 bg-transparent" aria-label="สีเส้นกรอบ" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-gray-100 dark:border-slate-800 shadow-2xl rounded-2xl p-2 sm:p-2.5 flex items-center gap-1 sm:gap-2 overflow-x-auto custom-scrollbar">
                         {!selectedItemId ? (
                             <>
@@ -1256,6 +1306,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
 
                                 <button onClick={() => handleDuplicateItem(selectedItemId)} className="p-3 hover:bg-gray-100 text-gray-500 dark:text-slate-400 hover:text-gray-700 rounded-xl transition-all" aria-label="ทำสำเนา (Duplicate)" title="ทำสำเนา (Duplicate)"><Copy size={20} /></button>
+
+                                <button onClick={(e) => { e.stopPropagation(); setShowBorderPopover(s => !s); }} className={`p-3 rounded-xl transition-all ${(selectedItem && selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || showBorderPopover ? 'bg-teal-50 text-teal-600' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-700'}`} aria-label="กรอบกล่อง" title="กรอบกล่อง (เส้นขอบ)"><Square size={20} /></button>
 
                                 <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 mx-1"></div>
 

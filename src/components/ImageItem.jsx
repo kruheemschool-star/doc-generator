@@ -3,7 +3,7 @@ import { Draggable } from '@hello-pangea/dnd';
 import { Trash2, GripVertical, Image as ImageIcon, Upload, ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
 import { fileToCompressedDataURL } from '../utils/imageCompression';
 
-const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
+const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     // content can be used for caption if needed, src is the image source
     const [isHovered, setIsHovered] = useState(false);
     const [uploadError, setUploadError] = useState('');
@@ -86,10 +86,13 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                         </div>
                     )}
 
-                    <div className={`relative rounded-lg overflow-hidden border-2 transition-all p-2 ${isSelected
+                    <div
+                        className={`relative rounded-lg overflow-hidden border-2 transition-all p-2 ${isSelected
                         ? 'border-blue-400 ring-2 ring-blue-50 bg-blue-50/10'
                         : 'border-transparent hover:border-blue-200'
-                        } ${!src ? 'w-full bg-gray-50 border-dashed border-gray-300' : ''}`}>
+                        } ${!src ? 'w-full bg-gray-50 border-dashed border-gray-300' : ''}`}
+                        style={!isSelected && src && frameStyle ? frameStyle : undefined}
+                    >
 
                         {src ? (
                             <div className="relative group/image">

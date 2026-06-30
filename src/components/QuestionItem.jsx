@@ -38,7 +38,7 @@ const cleanQuestionText = (text) => {
   return cleaned;
 };
 
-const QuestionItem = React.memo(({ id, index, no, question, options, solution, type, svg, questionImage, spaceNeeded, layoutColumn, isSelected, onSelect, onMove, canMoveUp, canMoveDown, onUpdate, onEdit, isViewOnly, fontSize, showSolution, onDelete }) => {
+const QuestionItem = React.memo(({ id, index, no, question, options, solution, type, svg, questionImage, spaceNeeded, layoutColumn, isSelected, onSelect, onMove, canMoveUp, canMoveDown, onUpdate, onEdit, isViewOnly, fontSize, showSolution, onDelete, frameStyle }) => {
   const imageInputRef = useRef(null);
   const solutionRef = useRef(null);
   const [solutionHeight, setSolutionHeight] = useState(0);
@@ -95,6 +95,7 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
+          style={{ ...provided.draggableProps.style, ...(!isSelected && !snapshot.isDragging && frameStyle ? frameStyle : {}) }}
           onClick={(e) => {
             if (isViewOnly) return;
             e.stopPropagation();

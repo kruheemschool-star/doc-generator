@@ -29,7 +29,7 @@ const splitAnswerContent = (content) => {
     };
 };
 
-const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly }) => {
+const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [showPreview, setShowPreview] = useState(false);
@@ -147,6 +147,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                                 ? 'bg-blue-50/10 border-blue-400 ring-2 ring-blue-50 py-3 px-4'
                                 : 'bg-transparent border-transparent hover:border-gray-200 hover:bg-gray-50/50 py-3 px-4'
                             }`}
+                        style={!isEditing && !isSelected && frameStyle ? frameStyle : undefined}
                         onDoubleClick={() => !isViewOnly && !isEditing && setIsEditing(true)}
                     >
                         {isEditing ? (
