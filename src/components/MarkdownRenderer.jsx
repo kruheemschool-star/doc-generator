@@ -8,6 +8,7 @@ import { AlertTriangle, BookOpen, Lightbulb, Info, FileText, Ruler, Target } fro
 
 // Print-friendly palette — single source of truth in src/data/pageTemplates.js
 import { PALETTE } from '../data/pageTemplates';
+import { HEAD_FONT_STACK } from '../data/documentFonts';
 
 /**
  * Pre-process markdown:
@@ -135,23 +136,32 @@ const MarkdownRenderer = ({ content, baseFontPx }) => {
                     h1: ({ node, ...props }) => (
                         <h1
                             className="font-bold mt-2 mb-2 pb-2 border-b-2"
-                            style={{ color: PALETTE.greenDeep, borderColor: PALETTE.green, fontSize: '1.875em' }}
+                            style={{ color: PALETTE.greenDeep, borderColor: PALETTE.green, fontSize: '1.875em', fontFamily: HEAD_FONT_STACK }}
                             {...props}
                         />
                     ),
-                    h2: ({ node, ...props }) => (
-                        <h2
-                            className="font-semibold mt-2 mb-2"
-                            style={{ color: PALETTE.greenDeep, fontSize: '1.5em' }}
-                            {...props}
-                        />
+                    // h2 — marker-pen highlight under the text (lecture-note look)
+                    h2: ({ node, children, ...props }) => (
+                        <h2 className="font-bold mt-3 mb-2" style={{ fontSize: '1.5em', fontFamily: HEAD_FONT_STACK }} {...props}>
+                            <span
+                                style={{
+                                    color: PALETTE.greenDeep,
+                                    backgroundImage: `linear-gradient(transparent 62%, ${PALETTE.highlight} 62%)`,
+                                    padding: '0 0.12em',
+                                    boxDecorationBreak: 'clone',
+                                    WebkitBoxDecorationBreak: 'clone',
+                                }}
+                            >
+                                {children}
+                            </span>
+                        </h2>
                     ),
-                    h3: ({ node, ...props }) => (
-                        <h3
-                            className="font-medium mt-2 mb-1"
-                            style={{ color: PALETTE.ink, fontSize: '1.25em' }}
-                            {...props}
-                        />
+                    // h3 — coral dot + blue sub-heading text
+                    h3: ({ node, children, ...props }) => (
+                        <h3 className="font-semibold mt-2 mb-1" style={{ fontSize: '1.2em', fontFamily: HEAD_FONT_STACK }} {...props}>
+                            <span style={{ color: PALETTE.accent }}>●</span>{' '}
+                            <span style={{ color: PALETTE.subhead }}>{children}</span>
+                        </h3>
                     ),
 
                     strong: ({ node, ...props }) => (
@@ -229,9 +239,9 @@ const MarkdownRenderer = ({ content, baseFontPx }) => {
                         <th
                             className="px-4 py-2 font-bold text-left"
                             style={{
-                                backgroundColor: PALETTE.paper2,
+                                backgroundColor: PALETTE.greenTint,
                                 border: `1px solid ${PALETTE.rule}`,
-                                color: PALETTE.ink,
+                                color: PALETTE.greenDeep,
                             }}
                             {...props}
                         />

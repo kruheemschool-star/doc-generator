@@ -16,20 +16,36 @@
  */
 
 // Palette colors — ห้ามใช้สีอื่นนอกพาเลตนี้
-// Contrast ratios (vs paper #fdfaf3) target WCAG AA ≥ 4.5:1 for normal text
+// "สมุดเลคเชอร์ครูฮีม" — กระดาษขาว ลายตารางจาง โทน teal/ปะการัง/น้ำเงิน/มิ้นต์
+// Contrast ratios (vs white paper #ffffff) target WCAG AA ≥ 4.5:1 for normal text.
+// NOTE: key names are kept stable — MarkdownRenderer + page templates consume them.
 export const PALETTE = {
-    ink: '#1f2419',         // 15.8:1 ✓
-    inkSoft: '#4a4e3f',     // 7.2:1 ✓
-    paper: '#fdfaf3',
-    paper2: '#f6f1e3',
-    green: '#3d5a2c',       // 8.0:1 ✓
-    greenDeep: '#2b3f1f',   // 12.4:1 ✓
-    greenTint: '#eaf0dd',
-    gold: '#7a5c1f',        // bumped from #b8862e (4.5:1) → 8.1:1 ✓ for AA on small text
-    goldTint: '#f7ecd2',
-    warn: '#8e3a1f',        // bumped from #a64323 (5.5:1) → 7.4:1 ✓
-    warnTint: '#fbe7df',
-    rule: '#d8d2bf',
+    ink: '#26303a',         // near-black slate  ~11:1 ✓
+    inkSoft: '#586672',     // muted secondary   ~5.0:1 ✓
+    paper: '#ffffff',
+    paper2: '#f5f1e6',      // warm paper tint (table header / theorem · formula box bg)
+    green: '#0f766e',       // BRAND TEAL — dividers, links, theorem/formula/example icon  4.7:1 ✓
+    greenDeep: '#0b5a54',   // deep teal — h1/h2 heading text, summary border  6.4:1 ✓
+    greenTint: '#d7efe9',   // light mint — example / summary box bg
+    gold: '#b07d18',        // note title / tip border  4.8:1 ✓
+    goldTint: '#fff7d6',    // note / tip box bg (cream)
+    warn: '#b23a2a',        // warning red  ~6:1 ✓
+    warnTint: '#fbe3da',    // light coral
+    rule: '#e3dccb',        // hairline divider / table border
+
+    // --- Notebook role tokens (new) — chapter bar, headings, chips, cards ---
+    accent: '#e2574c',      // ปะการัง — emphasis, chapter bar bg, numbered chips
+    accentDeep: '#c0392b',  // darker coral for text-weight accents
+    subhead: '#3a5ba0',     // น้ำเงิน — sub-headings
+    varText: '#3a7d2c',     // เขียว — variables / answers
+    highlight: '#ffe27a',   // marker-pen highlight (under headings / key terms)
+    noteBg: '#fff7d6',
+    noteBorder: '#d9b94a',
+    noteTitle: '#b07d18',
+    cardBg: '#ffffff',
+    cardBorder: '#e7e0cf',  // equation card border
+    brandTeal: '#0f766e',
+    brandYellow: '#fbbf24',
 };
 
 // ============================================================

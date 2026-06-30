@@ -82,6 +82,40 @@ export const DOCUMENT_FONTS = [
         stack: "'Mali', 'Sarabun', sans-serif",
     },
 
+    // === Display / Head (สไตล์ลายมือ-สมุดเลคเชอร์) ===
+    {
+        id: 'itim',
+        name: 'Itim',
+        displayName: 'อิติม',
+        category: 'display',
+        description: 'ลายมือเป็นกันเอง อบอุ่น เหมาะเป็นฟอนต์หัวข้อ',
+        stack: "'Itim', 'Sarabun', cursive",
+    },
+    {
+        id: 'sriracha',
+        name: 'Sriracha',
+        displayName: 'ศรีราชา',
+        category: 'display',
+        description: 'ลายมือสบายๆ มีคาแรกเตอร์',
+        stack: "'Sriracha', 'Sarabun', cursive",
+    },
+    {
+        id: 'charmonman',
+        name: 'Charmonman',
+        displayName: 'จามรมาน',
+        category: 'display',
+        description: 'ลายมือหวัด ตัวเอียง เด่นมาก',
+        stack: "'Charmonman', 'Sarabun', cursive",
+    },
+    {
+        id: 'chakra-petch',
+        name: 'Chakra Petch',
+        displayName: 'จักรเพชร',
+        category: 'display',
+        description: 'เทคโน-เหลี่ยม เด่นชัด เหมาะหัวข้อใหญ่',
+        stack: "'Chakra Petch', 'Noto Sans Thai', sans-serif",
+    },
+
     // === Serif / Classic ===
     {
         id: 'pridi',
@@ -105,8 +139,12 @@ export const DEFAULT_FONT_ID = 'sarabun';
 
 export const FONT_CATEGORIES = [
     { id: 'sans', label: 'Sans (โมเดิร์น)', subtitle: 'เรียบง่าย อ่านง่าย' },
+    { id: 'display', label: 'Display (หัวข้อ)', subtitle: 'ลายมือ เด่น เป็นกันเอง' },
     { id: 'serif', label: 'Serif (คลาสสิค)', subtitle: 'มีเชิง วิชาการ' },
 ];
+
+// Heading font for the notebook look (lecture-note style); body stays user-selectable.
+export const HEAD_FONT_STACK = "'Itim', 'Sarabun', sans-serif";
 
 export const getFontById = (id) => DOCUMENT_FONTS.find(f => f.id === id) || DOCUMENT_FONTS[0];
 

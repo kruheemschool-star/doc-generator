@@ -31,8 +31,16 @@ const ensureAuth = () => {
       ? Promise.resolve(auth.currentUser)
       : signInAnonymously(auth).then(cred => cred.user)
     ).catch(error => {
-      console.error("Anonymous auth failed (enable Anonymous sign-in in Firebase Console):", error);
-      authReadyPromise = null; // allow a retry on the next call
+      // Attempt sign-in only ONCE per session. The most common cause is Anonymous
+      // sign-in not being enabled in the Firebase Console — retrying on every
+      // Firestore call would flood the console and hammer the network for nothing.
+      // After this, reads fall back to safe defaults and writes surface a toast.
+      // (Re-enable auth in the Console, then reload to retry.)
+      if (error?.code === 'auth/configuration-not-found') {
+        console.warn("Anonymous sign-in is not enabled in the Firebase Console — running without persistence. Enable Authentication → Anonymous, then reload.");
+      } else {
+        console.error("Anonymous auth failed:", error);
+      }
       throw error;
     });
   }

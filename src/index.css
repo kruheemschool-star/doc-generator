@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Mitr:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=K2D:wght@300;400;500;600;700&family=Pridi:wght@300;400;500;600;700&family=Trirong:wght@300;400;500;600;700&family=Mali:wght@300;400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Mitr:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&family=K2D:wght@300;400;500;600;700&family=Pridi:wght@300;400;500;600;700&family=Trirong:wght@300;400;500;600;700&family=Mali:wght@300;400;500;600;700&family=Itim&family=Sriracha&family=Charmonman:wght@400;700&family=Chakra+Petch:wght@300;400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -216,6 +216,10 @@
 .ql-font-mali { font-family: 'Mali', 'Sarabun', sans-serif !important; }
 .ql-font-pridi { font-family: 'Pridi', 'Trirong', serif !important; }
 .ql-font-trirong { font-family: 'Trirong', 'Pridi', serif !important; }
+.ql-font-itim { font-family: 'Itim', 'Sarabun', cursive !important; }
+.ql-font-sriracha { font-family: 'Sriracha', 'Sarabun', cursive !important; }
+.ql-font-charmonman { font-family: 'Charmonman', 'Sarabun', cursive !important; }
+.ql-font-chakra-petch { font-family: 'Chakra Petch', 'Noto Sans Thai', sans-serif !important; }
 
 /* Font picker dropdown labels — show readable font name rendered in its own font */
 .ql-snow .ql-picker.ql-font { width: 132px; }
@@ -241,6 +245,14 @@
 .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="pridi"]::before { content: 'Pridi'; font-family: 'Pridi', serif; }
 .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="trirong"]::before,
 .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="trirong"]::before { content: 'Trirong'; font-family: 'Trirong', serif; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="itim"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="itim"]::before { content: 'Itim'; font-family: 'Itim', cursive; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="sriracha"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="sriracha"]::before { content: 'Sriracha'; font-family: 'Sriracha', cursive; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="charmonman"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="charmonman"]::before { content: 'Charmonman'; font-family: 'Charmonman', cursive; }
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="chakra-petch"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="chakra-petch"]::before { content: 'Chakra Petch'; font-family: 'Chakra Petch', sans-serif; }
 
 /* RichMathEditor — WYSIWYG editor with inline math */
 .rich-math-editor .ql-editor {
@@ -296,10 +308,30 @@
   background-color: transparent !important;
 }
 
+/* Notebook lined-paper background on the A4 sheet — subtle bluish grid, like a
+   lecture notebook. Layers on top of the sheet's white background-color. */
+.sheet-paper {
+  background-color: var(--paper, #ffffff);
+  background-image:
+    repeating-linear-gradient(to bottom, rgba(74, 115, 196, 0.07) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(to right, rgba(74, 115, 196, 0.05) 0 1px, transparent 1px 26px);
+  background-position: 0 0;
+}
+
 @media print {
   @page {
     size: A4;
     margin: 0;
+  }
+
+  /* Drop the repeating-gradient grid + every shadow when printing: the gradient
+     makes the PDF render extremely heavy, and printers turn box-shadow into ugly
+     rectangles behind cards/circles. Both still show on screen. */
+  .sheet-paper {
+    background-image: none !important;
+  }
+  * {
+    box-shadow: none !important;
   }
 
   /* Reset body and html for full page printing without browser defaults */

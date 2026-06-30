@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Grid3X3, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -57,6 +57,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
     // --- Toast notifications ---
     const { toasts, addToast, removeToast } = useToast();
+
+    // --- Document Title State (Subtitle) ---
+    // Declared before the unsaved-changes effect / handleManualSave below, which
+    // reference it in their dependency arrays (avoids a TDZ ReferenceError).
+    const [documentTitle, setDocumentTitle] = useState(activeDocument?.subtitle || '');
 
     // --- Manual Save State ---
     const [saveStatus, setSaveStatus] = useState('saved');
@@ -155,9 +160,6 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // --- Selection & Editing State ---
     const [selectedItemId, setSelectedItemId] = useState(null);
     const [editingItemId, setEditingItemId] = useState(null);
-
-    // --- Document Title State (Subtitle) ---
-    const [documentTitle, setDocumentTitle] = useState(activeDocument?.subtitle || '');
 
     // --- Import Modal State ---
     const [showImportModal, setShowImportModal] = useState(false);
@@ -860,7 +862,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
-                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`w-[210mm] min-h-[297mm] bg-white shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden ${showGrid ? 'grid-active' : ''}`}>
+                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`sheet-paper w-[210mm] min-h-[297mm] bg-white shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden ${showGrid ? 'grid-active' : ''}`}>
                                     {/* Grid Overlay */}
                                     {showGrid && (
                                         <div
@@ -924,36 +926,55 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             </div>
                                         </div>
                                     )}
-                                    {/* Page Header - คณิตครูฮีม */}
-                                    <div className="absolute top-[8mm] left-[20mm] right-[20mm] flex items-center justify-between pointer-events-none select-none">
-                                        <div className="flex items-center gap-2">
-                                            <img src="/kruheem-logo.png" alt="คณิตครูฮีม" className="w-5 h-5 object-contain" />
-                                            <div className="flex flex-col">
-                                                <span className="text-[11px] font-bold tracking-wide text-black" style={{ fontFamily: "'Prompt', 'Noto Sans Thai', sans-serif" }}>คณิตครูฮีม</span>
-                                                <span className="text-[8px] text-black/60" style={{ fontFamily: "'Prompt', 'Noto Sans Thai', sans-serif" }}>line @kruheem | www.kruheemmath.com</span>
+                                    {/* Page Header — คณิตศาสตร์ครูฮีม (สมุดเลคเชอร์) */}
+                                    <div className="absolute top-[9mm] left-[16mm] right-[16mm] pointer-events-none select-none">
+                                        <div className="flex items-start justify-between">
+                                            {/* Left: logo + brand */}
+                                            <div className="flex items-center gap-2.5">
+                                                <img src="/kruheem-logo.png" alt="คณิตศาสตร์ครูฮีม" className="w-[38px] h-[38px] object-contain" />
+                                                <span className="text-[17px] font-bold tracking-wide whitespace-nowrap" style={{ fontFamily: "'Itim', 'Sarabun', sans-serif", color: '#0f766e' }}>คณิตศาสตร์ครูฮีม</span>
+                                            </div>
+                                            {/* Right: contact channels + page chrome */}
+                                            <div className="flex flex-col items-end gap-1">
+                                                <div className="flex items-center gap-3 text-[9px] font-medium text-black/70" style={{ fontFamily: "'Kanit', 'Noto Sans Thai', sans-serif" }}>
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="inline-flex items-center justify-center w-[13px] h-[13px] rounded-[3px] text-white text-[9px] font-bold leading-none" style={{ backgroundColor: '#1877f2' }}>f</span>
+                                                        คณิตครูฮีม
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="inline-flex items-center justify-center px-1 h-[13px] rounded-[3px] text-white text-[7px] font-bold leading-none" style={{ backgroundColor: '#06c755' }}>LINE</span>
+                                                        @kruheem
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <Globe size={11} style={{ color: '#0f766e' }} />
+                                                        www.kruheemmath.com
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 pointer-events-auto">
+                                                    <input
+                                                        type="text"
+                                                        value={documentTitle}
+                                                        onChange={e => setDocumentTitle(e.target.value)}
+                                                        placeholder="ชื่อเรื่อง..."
+                                                        className="text-[9px] text-black/50 font-medium bg-transparent border-none outline-none text-right w-[120px] placeholder:text-black/20 print:placeholder:text-transparent"
+                                                        style={{ fontFamily: "'Kanit', 'Noto Sans Thai', sans-serif" }}
+                                                    />
+                                                    <span className="text-[9px] text-black/30 font-medium select-none">|</span>
+                                                    <span className="text-[9px] text-black/40 font-medium select-none">{pIdx + 1}</span>
+                                                    <button
+                                                        onClick={() => handleDeletePage(pIdx)}
+                                                        className="ml-1 p-1 text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors print:hidden"
+                                                        aria-label="ลบหน้านี้" title="ลบหน้านี้"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 pointer-events-auto">
-                                            <input
-                                                type="text"
-                                                value={documentTitle}
-                                                onChange={e => setDocumentTitle(e.target.value)}
-                                                placeholder="ชื่อเรื่อง..."
-                                                className="text-[9px] text-black/50 font-medium bg-transparent border-none outline-none text-right w-[120px] placeholder:text-black/20 print:placeholder:text-transparent"
-                                                style={{ fontFamily: "'Prompt', 'Noto Sans Thai', sans-serif" }}
-                                            />
-                                            <span className="text-[9px] text-black/30 font-medium select-none">|</span>
-                                            <span className="text-[9px] text-black/40 font-medium select-none">{pIdx + 1}</span>
-                                            <button
-                                                onClick={() => handleDeletePage(pIdx)}
-                                                className="ml-1 p-1 text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors print:hidden"
-                                                aria-label="ลบหน้านี้" title="ลบหน้านี้"
-                                            >
-                                                <Trash2 size={12} />
-                                            </button>
-                                        </div>
+                                        {/* Teal brand divider under the header */}
+                                        <div className="mt-1.5 h-[3px] w-full rounded-full" style={{ backgroundColor: '#0f766e' }} />
                                     </div>
-                                    <div className="px-[20mm] pt-[16mm] pb-[10mm]" data-page-content>
+                                    <div className="px-[18mm] pt-[22mm] pb-[12mm]" data-page-content>
                                         <Droppable droppableId={page.id}>
                                             {(provided, snapshot) => (
                                                 <div {...provided.droppableProps} ref={provided.innerRef} className={`min-h-[200px] rounded-xl transition-all ${snapshot.isDraggingOver ? 'bg-blue-50/50 ring-2 ring-blue-200 ring-dashed' : ''}`}>
