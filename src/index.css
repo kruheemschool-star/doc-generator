@@ -347,21 +347,21 @@
     background-color: #ffffff !important;
     background-image: none !important;
   }
-  /* Every filled box / highlight / tint inside the sheet prints on white. The
-     !important beats per-item inline fillColor and the solution/note tints.
-     Borders, text and <img> are untouched, so structure and figures remain. */
-  .sheet-paper * {
+  /* Strip EVERY background on print — every wrapper, canvas, box, highlight and
+     tint. This beats all inline colours (var(--canvas) on the app shell, the
+     per-item fillColor, the solution/note tints) which otherwise print because
+     they sit on inline styles / print-color-adjust:exact. Borders, text and
+     <img> are untouched, so structure and figures remain. The white base + white
+     sheet below win by specificity, so the page prints black-on-white. */
+  * {
     background-color: transparent !important;
     background-image: none !important;
   }
-  /* The editor canvas sets an inline cream background (var(--canvas-3)) that would
-     otherwise beat the print:bg-white utility (inline > class). Force it white. */
+  html,
   body,
   #root,
-  main,
-  .zoom-container {
+  .sheet-paper {
     background-color: #ffffff !important;
-    background-image: none !important;
   }
   * {
     box-shadow: none !important;
