@@ -195,10 +195,6 @@
     page-break-inside: avoid;
   }
 
-  .break-after-page {
-    break-after: page;
-    page-break-after: always;
-  }
 
   /* Custom Scrollbar */
   .custom-scrollbar::-webkit-scrollbar {
@@ -418,17 +414,10 @@
     print-color-adjust: exact !important;
   }
 
-  /* Force page breaks for our A4 containers */
-  .break-after-page {
-    break-after: page !important;
-    page-break-after: always !important;
-  }
-
-  /* Remove page break on the very last page to avoid trailing blank page */
-  .break-after-page:last-child {
-    break-after: auto !important;
-    page-break-after: auto !important;
-  }
+  /* Page breaks between A4 sheets come from Tailwind's `print:break-after-page`,
+     applied per page in WorksheetEditor EXCEPT the last page — so no trailing
+     blank page. (The old `.break-after-page` rules here targeted a class nothing
+     used — the pages use `print:break-after-page` — so they never applied.) */
 
   /* Reset zoom transform for print - only target the zoom container, NOT watermarks */
   .zoom-container {

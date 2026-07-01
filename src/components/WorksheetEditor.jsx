@@ -945,7 +945,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack, ...themeToCssVars(docTheme) }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
-                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className="sheet-paper w-[210mm] min-h-[297mm] shadow-xl relative print:shadow-none print:break-after-page m-auto print:m-0 print:h-[297mm] print:overflow-hidden">
+                                <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`sheet-paper w-[210mm] min-h-[297mm] shadow-xl relative print:shadow-none ${pIdx < pages.length - 1 ? 'print:break-after-page' : ''} m-auto print:m-0 print:h-[297mm] print:overflow-hidden`}>
                                     {/* Watermark Overlay */}
                                     {watermark.enabled && (
                                         <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden watermark-overlay" style={{ opacity: watermark.opacity / 100 }}>
