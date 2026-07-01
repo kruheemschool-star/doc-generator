@@ -340,10 +340,27 @@
     margin: 0;
   }
 
-  /* Drop the repeating-gradient grid + every shadow when printing: the gradient
-     makes the PDF render extremely heavy, and printers turn box-shadow into ugly
-     rectangles behind cards/circles. Both still show on screen. */
+  /* Clean printout: white paper, no notebook tint, no grid. On screen the sheet
+     keeps its --doc-paper colour + grid; on paper it must be pure white so text
+     reads as black-on-white and printers don't waste toner on the background. */
   .sheet-paper {
+    background-color: #ffffff !important;
+    background-image: none !important;
+  }
+  /* Every filled box / highlight / tint inside the sheet prints on white. The
+     !important beats per-item inline fillColor and the solution/note tints.
+     Borders, text and <img> are untouched, so structure and figures remain. */
+  .sheet-paper * {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+  /* The editor canvas sets an inline cream background (var(--canvas-3)) that would
+     otherwise beat the print:bg-white utility (inline > class). Force it white. */
+  body,
+  #root,
+  main,
+  .zoom-container {
+    background-color: #ffffff !important;
     background-image: none !important;
   }
   * {
