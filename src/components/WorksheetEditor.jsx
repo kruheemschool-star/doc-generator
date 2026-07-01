@@ -17,7 +17,7 @@ import FontPicker from './FontPicker';
 import ImportPreview from './ImportPreview';
 import TweaksPanel from './TweaksPanel';
 import { DEFAULT_DOC_THEME, normalizeTheme, themeToCssVars } from '../data/docThemes';
-import { buildFrameStyle, DEFAULT_FRAME, DEFAULT_FILL, FRAME_STYLE_OPTIONS } from '../utils/itemFrame';
+import { buildFrameStyle, DEFAULT_FRAME, DEFAULT_FILL, FILL_PRESETS, FRAME_STYLE_OPTIONS } from '../utils/itemFrame';
 import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions, isSolutionOnlyExport, solutionsToMarkdownBlocks, splitMarkdownByHeading } from '../utils/importParser';
 import { useToast, ToastContainer } from './Toast';
 import useAutoPagination from '../hooks/useAutoPagination';
@@ -1286,10 +1286,33 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                         <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${selectedItem.fillColor ? 'translate-x-5' : ''}`} />
                                     </button>
                                 </div>
+                                {/* Quick preset swatches — one click sets the fill (turns it on too) */}
+                                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                    {FILL_PRESETS.map(c => (
+                                        <button
+                                            key={c}
+                                            onClick={() => handleUpdateItem(selectedItemId, { fillColor: c })}
+                                            className={`w-6 h-6 rounded-md border transition-transform hover:scale-110 ${selectedItem.fillColor === c ? 'ring-2 ring-teal-500 border-teal-500' : 'border-gray-200 dark:border-slate-600'}`}
+                                            style={{ backgroundColor: c }}
+                                            aria-label={`สีพื้น ${c}`}
+                                            title={c}
+                                        />
+                                    ))}
+                                    <button
+                                        onClick={() => handleUpdateItem(selectedItemId, { fillColor: null })}
+                                        className={`w-6 h-6 rounded-md border flex items-center justify-center text-gray-400 hover:text-gray-600 ${!selectedItem.fillColor ? 'ring-2 ring-teal-500 border-teal-500' : 'border-gray-200 dark:border-slate-600'}`}
+                                        style={{ backgroundImage: 'linear-gradient(45deg, transparent 45%, #ef4444 45%, #ef4444 55%, transparent 55%)' }}
+                                        aria-label="ไม่เติมสี"
+                                        title="ไม่เติมสี (โปร่งใส)"
+                                    />
+                                </div>
                                 {selectedItem.fillColor ? (
                                     <div className="flex items-center justify-between mt-2">
                                         <span className="text-[11px] font-mono text-gray-400 dark:text-slate-500 uppercase">{selectedItem.fillColor}</span>
-                                        <input type="color" value={selectedItem.fillColor} onChange={e => handleUpdateItem(selectedItemId, { fillColor: e.target.value })} className="w-8 h-8 rounded-lg border border-gray-200 dark:border-slate-700 cursor-pointer p-0.5 bg-transparent" aria-label="เลือกสีพื้นกล่อง" />
+                                        <label className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-slate-500 cursor-pointer">
+                                            สีเอง
+                                            <input type="color" value={selectedItem.fillColor} onChange={e => handleUpdateItem(selectedItemId, { fillColor: e.target.value })} className="w-8 h-8 rounded-lg border border-gray-200 dark:border-slate-700 cursor-pointer p-0.5 bg-transparent" aria-label="เลือกสีพื้นกล่องเอง" />
+                                        </label>
                                     </div>
                                 ) : (
                                     <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">ค่าเริ่มต้น: ไม่เติมสี (โปร่งใส)</p>

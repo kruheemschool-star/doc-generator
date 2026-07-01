@@ -4,8 +4,9 @@
  *
  * Fields live on the item (borderStyle / borderWidth / borderColor / borderRadius
  * / fillColor) so they save with the document. buildFrameStyle() turns them into
- * an inline style object applied on the item's container when it is not selected
- * (the blue selection outline takes over while selected).
+ * an inline style object applied on the item's container (shown even while the
+ * item is selected, so colour changes preview instantly; the selection ring
+ * layers on top).
  */
 
 export const FRAME_STYLE_OPTIONS = [
@@ -25,6 +26,19 @@ export const DEFAULT_FRAME = {
 // Starting fill when the user first turns "สีพื้นกล่อง" on (cream, like a note box).
 // Default state is NO fill — fillColor stays unset until the user enables it.
 export const DEFAULT_FILL = '#fff7d6';
+
+// One-click background swatches for the fill picker — soft pastels that read well
+// under black text and print acceptably. Users can still pick any custom colour.
+export const FILL_PRESETS = [
+    '#fff7d6', // cream
+    '#eaf0dd', // sage
+    '#dbeafe', // sky
+    '#fce7f3', // pink
+    '#ede9fe', // lavender
+    '#ffedd5', // peach
+    '#d1fae5', // mint
+    '#f1f5f9', // gray
+];
 
 // Inline style for the frame (border and/or fill), or null when neither is set.
 export const buildFrameStyle = (item) => {

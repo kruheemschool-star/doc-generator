@@ -83,7 +83,7 @@ const ColumnsItem = memo(({ id, index, left, right, onUpdate, onDelete, onMove, 
                                 ? 'bg-blue-50/10 border-blue-400 ring-2 ring-blue-50 py-3 px-4'
                                 : 'bg-transparent border-transparent hover:border-gray-200 hover:bg-gray-50/50 py-3 px-4'
                             }`}
-                        style={!isEditing && !isSelected && frameStyle ? frameStyle : undefined}
+                        style={!isEditing && frameStyle ? frameStyle : undefined}
                         onDoubleClick={beginEdit}
                     >
                         {isEditing ? (
