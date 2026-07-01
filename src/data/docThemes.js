@@ -18,7 +18,7 @@ export const DEFAULT_DOC_THEME = {
     subhead: '#3a5ba0',     // h3 sub-heading text
     highlight: '#ffe27a',   // marker-pen highlight under h2
     paper: '#ffffff',       // sheet background
-    gridOn: true,           // notebook grid on/off
+    gridOn: false,          // notebook grid on/off
     gridAlpha: 0.07,        // grid line opacity (0–0.2)
     gridSize: 26,           // grid cell size in px
     headerRule: 'single',   // page-header divider: 'single' or 'double' (Editorial)
