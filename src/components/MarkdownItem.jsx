@@ -4,6 +4,7 @@ import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeO
 import MarkdownRenderer from './MarkdownRenderer';
 import ErrorBoundary from './ErrorBoundary';
 import { SIZE_TO_PX } from '../data/documentFonts';
+import { splitSolution } from '../utils/solutionMarkers';
 
 // Safe wrapper: a bad Markdown string renders a compact inline error instead of
 // crashing the whole item. Reuses the shared ErrorBoundary.
@@ -18,17 +19,6 @@ const SafeMarkdownPreview = ({ content, baseFontPx }) => (
     </ErrorBoundary>
 );
 
-const splitAnswerContent = (content) => {
-    if (!content) return { mainContent: content, answerContent: null };
-    const lines = content.split('\n');
-    const answerIdx = lines.findIndex(line => /^\s*\d+\.\s*\*{0,2}ตอบ/.test(line) || /^\s*\*{0,2}ตอบ/.test(line));
-    if (answerIdx === -1) return { mainContent: content, answerContent: null };
-    return {
-        mainContent: lines.slice(0, answerIdx).join('\n'),
-        answerContent: lines.slice(answerIdx).join('\n')
-    };
-};
-
 const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditStart, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
@@ -38,11 +28,13 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
     const answerRef = useRef(null);
     const [answerHeight, setAnswerHeight] = useState(0);
 
+    // Measure the solution block while it's shown so that, once hidden, we can
+    // leave an equal amount of blank writing space (student version keeps layout).
     useLayoutEffect(() => {
         if (showSolution && answerRef.current) {
             setAnswerHeight(answerRef.current.offsetHeight);
         }
-    }, [showSolution, content]);
+    }, [showSolution, content, text]);
 
     const EDUCATION_ICONS = [
         '📚', '📖', '✏️', '📝', '📐', '📏', '🎒', '🎓', '💡', '🧠',
@@ -336,19 +328,27 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                                 </div>
                             </div>
                         ) : (() => {
-                            const { mainContent, answerContent } = splitAnswerContent(text);
+                            const { problem, solution } = splitSolution(text);
                             // Effective base size: per-item slider wins, else map from size, else 16
                             const baseFontPx = typeof fontScale === 'number' ? fontScale : (SIZE_TO_PX[size] || 16);
                             return (
                                 <div className="prose max-w-none">
-                                    <SafeMarkdownPreview content={mainContent || '> *Empty Markdown Content*'} baseFontPx={baseFontPx} />
-                                    {answerContent && (
+                                    <SafeMarkdownPreview content={problem || '> *Empty Markdown Content*'} baseFontPx={baseFontPx} />
+                                    {solution && (
                                         <div className="relative transition-all">
                                             {showSolution ? (
-                                                <div ref={answerRef}>
-                                                    <SafeMarkdownPreview content={answerContent} baseFontPx={baseFontPx} />
+                                                // Tinted "เฉลย" block (matches QuestionItem) so the teacher can see
+                                                // exactly what the ซ่อนเฉลย toggle will hide for the student copy.
+                                                <div
+                                                    ref={answerRef}
+                                                    className="mt-3 rounded-lg border px-3 py-2 print:rounded-none print:border-y-0 print:border-r-0 print:border-l-2 print:pl-3"
+                                                    style={{ backgroundColor: '#eaf0dd80', borderColor: '#3d5a2c33' }}
+                                                >
+                                                    <div className="text-[10px] font-bold uppercase tracking-wide mb-1 print:hidden" style={{ color: '#3d5a2c' }}>เฉลย</div>
+                                                    <SafeMarkdownPreview content={solution} baseFontPx={baseFontPx} />
                                                 </div>
                                             ) : (
+                                                // Hidden: leave equal blank space so students have room to solve.
                                                 <div style={{ minHeight: answerHeight > 0 ? answerHeight : undefined }} />
                                             )}
                                         </div>

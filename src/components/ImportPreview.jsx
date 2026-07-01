@@ -3,6 +3,7 @@ import MarkdownRenderer from './MarkdownRenderer';
 import SvgRenderer from './SvgRenderer';
 import { Eye, AlertCircle, FileQuestion, BookOpen, FileText } from 'lucide-react';
 import { tryParseImportJSON, classifyImport, splitMarkdownByHeading } from '../utils/importParser';
+import { hasSolution } from '../utils/solutionMarkers';
 
 // AI sometimes prefixes options with ก./ข./ค./ง. — strip so numbering isn't doubled.
 const stripOptionPrefix = (text) => (text ? text.replace(/^[ก-ง]\.\s*/, '').trim() : text);
@@ -157,13 +158,22 @@ const ImportPreview = ({ text }) => {
         if (!result.blocks || result.blocks.length === 0) {
             return <Placeholder icon={FileText} title="ยังไม่มีเนื้อหา" sub="พิมพ์หรือวาง Markdown ด้านซ้าย" />;
         }
+        const withSolution = result.blocks.filter(hasSolution).length;
         return (
             <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">
                     <FileText size={14} /> ตัวอย่าง Markdown • แยกเป็น {result.blocks.length} กล่อง
+                    {withSolution > 0 && (
+                        <span className="normal-case px-2 py-0.5 rounded-md text-[11px] font-bold" style={{ backgroundColor: '#eaf0dd', color: '#3d5a2c' }}>
+                            มีเฉลย {withSolution} กล่อง · ซ่อนได้ด้วยปุ่มเฉลย
+                        </span>
+                    )}
                 </div>
                 {result.blocks.map((content, i) => (
-                    <div key={i} className="rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm text-sm text-gray-800 dark:text-slate-200 leading-relaxed">
+                    <div key={i} className="relative rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm text-sm text-gray-800 dark:text-slate-200 leading-relaxed">
+                        {hasSolution(content) && (
+                            <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: '#eaf0dd', color: '#3d5a2c' }}>เฉลย</span>
+                        )}
                         <MarkdownRenderer content={content} />
                     </div>
                 ))}
