@@ -45,7 +45,7 @@ const PreviewQuestion = ({ q, no }) => (
 
                 {q.solution && (
                     <div className="mt-3 rounded-lg border px-3 py-2 text-sm text-gray-700 dark:text-slate-300" style={{ backgroundColor: '#eaf0dd80', borderColor: '#3d5a2c33' }}>
-                        <MarkdownRenderer content={q.solution} />
+                        <MarkdownRenderer content={q.solution} plainBlockquote />
                     </div>
                 )}
             </div>

@@ -356,17 +356,17 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData, addToast })
                                         <h4 className="font-bold text-green-700 mb-2">เฉลยละเอียด</h4>
                                         {isSolutionString ? (
                                             <div className="text-gray-700">
-                                                <MarkdownRenderer content={formData.solution || 'ยังไม่มีเฉลย...'} />
+                                                <MarkdownRenderer content={formData.solution || 'ยังไม่มีเฉลย...'} plainBlockquote />
                                             </div>
                                         ) : (
                                             <>
                                                 <div className="space-y-2">
                                                     {formData.solution.answer && <div><span className="font-semibold text-green-800">คำตอบ: </span><Latex>{formData.solution.answer}</Latex></div>}
-                                                    {formData.solution.principle && <div className="text-gray-700"><span className="font-semibold text-green-800">หลักการ:</span><MarkdownRenderer content={formData.solution.principle} /></div>}
+                                                    {formData.solution.principle && <div className="text-gray-700"><span className="font-semibold text-green-800">หลักการ:</span><MarkdownRenderer content={formData.solution.principle} plainBlockquote /></div>}
                                                     {formData.solution.steps?.length > 0 && (
                                                         <ol className="list-decimal list-inside pl-2 space-y-1 mt-1 text-gray-700">
                                                             {formData.solution.steps.map((step, i) => (
-                                                                <li key={i}><MarkdownRenderer content={step || ''} /></li>
+                                                                <li key={i}><MarkdownRenderer content={step || ''} plainBlockquote /></li>
                                                             ))}
                                                         </ol>
                                                     )}

@@ -256,7 +256,7 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
             showSolution ? (
               <div ref={solutionRef} className="mt-4 ml-9 relative z-10 rounded-lg transition-all border print:bg-white print:border-l-2 print:border-y-0 print:border-r-0 print:rounded-none print:pl-3" style={{ backgroundColor: '#eaf0dd80', borderColor: '#3d5a2c33' }}>
                 <div className={`p-4 print:p-0 print:pl-2 ${getSizeClass()}`}>
-                  <MarkdownRenderer content={solution} />
+                  <MarkdownRenderer content={solution} plainBlockquote />
                 </div>
               </div>
             ) : (
