@@ -296,6 +296,60 @@ const MarkdownRenderer = ({ content, baseFontPx, plainBlockquote = false }) => {
                         <hr className="my-3" style={{ borderColor: PALETTE.rule }} />
                     ),
 
+                    // ```topic fenced block → grade badge + highlighted title + subtitle
+                    // "chapter header" bar. Bypass the default <pre> wrapper (its
+                    // monospace/white-space:pre styling would break the custom layout)
+                    // and let the `code` override below render the real markup.
+                    pre: ({ node, children, ...props }) => {
+                        const codeClassName = children?.props?.className || '';
+                        if (codeClassName.includes('language-topic')) return <>{children}</>;
+                        return <pre {...props}>{children}</pre>;
+                    },
+                    code: ({ node, className, children, ...props }) => {
+                        if (!className?.includes('language-topic')) {
+                            return <code className={className} {...props}>{children}</code>;
+                        }
+                        const lines = String(children).replace(/\n$/, '').split('\n').map(l => l.trim()).filter(Boolean);
+                        const [grade = '', titleLine = '', subtitleLine = ''] = lines;
+                        const dotIdx = titleLine.indexOf(' · ');
+                        const highlightPart = dotIdx === -1 ? titleLine : titleLine.slice(0, dotIdx);
+                        const restPart = dotIdx === -1 ? '' : titleLine.slice(dotIdx + 3);
+                        return (
+                            <div className="flex items-stretch rounded-2xl border-2 overflow-hidden my-3 print:rounded-lg" style={{ borderColor: PALETTE.accent }}>
+                                {grade && (
+                                    <div
+                                        className="flex-shrink-0 w-[92px] flex items-center justify-center text-center font-bold text-xl px-2 border-r-2 text-white print:text-[#e2574c]"
+                                        style={{ backgroundColor: PALETTE.accent, borderColor: PALETTE.accent }}
+                                    >
+                                        {grade}
+                                    </div>
+                                )}
+                                <div className="flex-1 min-w-0 px-5 py-3 flex flex-col justify-center gap-0.5">
+                                    {titleLine && (
+                                        <div className="font-bold text-[1.15em] leading-snug" style={{ color: PALETTE.ink }}>
+                                            <span
+                                                style={{
+                                                    backgroundImage: `linear-gradient(transparent 62%, ${PALETTE.highlight} 62%)`,
+                                                    boxDecorationBreak: 'clone',
+                                                    WebkitBoxDecorationBreak: 'clone',
+                                                    padding: '0 0.12em',
+                                                }}
+                                            >
+                                                {highlightPart}
+                                            </span>
+                                            {restPart && <> · {restPart}</>}
+                                        </div>
+                                    )}
+                                    {subtitleLine && (
+                                        <div className="text-[0.8em]" style={{ color: PALETTE.inkSoft }}>
+                                            {subtitleLine}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    },
+
                     // Markdown images are always small inline icons here (content
                     // photos/diagrams use the dedicated Image block instead) — size
                     // relative to the surrounding text so one icon reads right next

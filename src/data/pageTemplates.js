@@ -177,6 +177,16 @@ const A_TEMPLATES = [
             { type: 'spacer', height: 200, paperStyle: 'scratch' },
         ],
     },
+    {
+        id: 'a11-topic-header',
+        category: 'section',
+        templateName: 'หัวข้อหลัก (ป้ายชั้น + ชื่อบท)',
+        icon: '🏷️',
+        description: 'แถบหัวข้อหลัก: ป้ายระดับชั้นสีปะการัง + ชื่อบทไฮไลต์เหลือง + คำค้นภาษาอังกฤษ',
+        items: [
+            { type: 'markdown', content: '```topic\nม.1\nจำนวนเต็ม · รู้จัก เปรียบเทียบ ไม่หลงเครื่องหมาย\nIntegers · Comparing · Number Patterns · kruheemmath.com\n```', size: 'medium' },
+        ],
+    },
 ];
 
 // ============================================================
