@@ -1,10 +1,31 @@
 import React, { memo, useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { Trash2, GripVertical, MoveVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, GripVertical, MoveVertical, ChevronUp, ChevronDown, PenTool } from 'lucide-react';
 import { Resizable } from 're-resizable';
 
-const SpacerItem = memo(({ id, index, height, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
+// Grid line colour is a hardcoded stroke (not `color`), so it survives both the
+// print stylesheet's `background-image: none !important` (it's real SVG, not a
+// CSS background) and the black-and-white print toggle (which only forces text
+// `color`, not `stroke`) — the faint grid keeps printing exactly like real graph paper.
+const SCRATCH_GRID_COLOR = '#9fb3c8';
+
+const ScratchGrid = ({ patternId }) => (
+    <svg
+        className="absolute inset-0 w-full h-full pointer-events-none rounded-lg"
+        preserveAspectRatio="none"
+    >
+        <defs>
+            <pattern id={patternId} width="22" height="22" patternUnits="userSpaceOnUse">
+                <path d="M 22 0 L 0 0 0 22" fill="none" stroke={SCRATCH_GRID_COLOR} strokeWidth="1" opacity="0.5" />
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+    </svg>
+);
+
+const SpacerItem = memo(({ id, index, height, paperStyle, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
     const [currentHeight, setCurrentHeight] = useState(height || 50);
+    const isScratchPaper = paperStyle === 'scratch';
 
     const handleResizeStop = (e, direction, ref, d) => {
         const newHeight = currentHeight + d.height;
@@ -73,16 +94,27 @@ const SpacerItem = memo(({ id, index, height, onDelete, onUpdate, onMove, isSele
                         }}
                     >
                         <div
-                            className={`w-full h-full border-2 border-dashed rounded-lg flex items-center justify-center transition-colors print:border-transparent ${isSelected
-                                ? 'border-blue-400 bg-blue-50/20'
-                                : 'border-gray-300 bg-gray-50/30 group-hover:bg-gray-50 group-hover:border-gray-400'
+                            className={`relative w-full h-full rounded-lg flex items-center justify-center transition-colors ${isScratchPaper
+                                ? `border-2 border-solid ${isSelected ? 'border-blue-400' : 'border-slate-400'}`
+                                : `border-2 border-dashed print:border-transparent ${isSelected
+                                    ? 'border-blue-400 bg-blue-50/20'
+                                    : 'border-gray-300 bg-gray-50/30 group-hover:bg-gray-50 group-hover:border-gray-400'
+                                }`
                                 }`}
                             style={{ height: '100%' }}
                         >
-                            <span className="text-gray-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity select-none flex items-center gap-2">
-                                <MoveVertical size={14} />
-                                พื้นที่ว่าง (Spacer)
-                            </span>
+                            {isScratchPaper && <ScratchGrid patternId={`scratch-grid-${id}`} />}
+                            {isScratchPaper ? (
+                                <span className="absolute top-2 left-2.5 text-slate-400 text-[11px] font-medium select-none flex items-center gap-1 print:text-slate-400">
+                                    <PenTool size={11} />
+                                    กระดาษทดเลข
+                                </span>
+                            ) : (
+                                <span className="text-gray-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity select-none flex items-center gap-2">
+                                    <MoveVertical size={14} />
+                                    พื้นที่ว่าง (Spacer)
+                                </span>
+                            )}
                         </div>
                     </Resizable>
                 </div>

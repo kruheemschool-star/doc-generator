@@ -172,10 +172,9 @@ const A_TEMPLATES = [
         category: 'section',
         templateName: 'กล่องทดเลข',
         icon: '✏️',
-        description: 'พื้นที่ว่างมีกรอบ สำหรับให้นักเรียนทดเลข/แสดงวิธีทำ',
+        description: 'กล่องลายตารางกระดาษทดเลข สำหรับให้นักเรียนทดเลข/แสดงวิธีทำ',
         items: [
-            { type: 'markdown', content: '✏️ **ทดเลข / แสดงวิธีทำ**', size: 'small' },
-            { type: 'spacer', height: 170 },
+            { type: 'spacer', height: 200, paperStyle: 'scratch' },
         ],
     },
 ];
