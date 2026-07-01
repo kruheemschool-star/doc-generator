@@ -396,6 +396,12 @@
     margin: 0 !important;
     padding: 0 !important;
   }
+  /* The content wrapper carries an inline margin-left:72px (space for the fixed
+     nav rail). An inline style beats Tailwind's print:ml-0 utility, so the sheet
+     printed 72px right of centre. Force it flush so the page centres. */
+  .print\:ml-0 {
+    margin-left: 0 !important;
+  }
   .sheet-paper {
     margin-left: auto !important;
     margin-right: auto !important;
