@@ -25,6 +25,10 @@ const useAutoPagination = (pages, setPages, replacePages, isPaused = false) => {
     const resizeTimerRef = useRef(null);
     const observerRef = useRef(null);
     const recheckTimerRef = useRef(null);
+    // Last observed height per page-content element, so we can ignore resize
+    // callbacks that don't actually change height (width-only reflows, sub-pixel
+    // jitter, transitions) and skip a needless full re-measure of every item.
+    const lastHeightsRef = useRef(new WeakMap());
 
     // Unmount-only cleanup: clear any pending re-check timer so setIsChecking()
     // can't fire on an unmounted component. Deliberately NOT cleared on every
@@ -35,7 +39,20 @@ const useAutoPagination = (pages, setPages, replacePages, isPaused = false) => {
     // --- ResizeObserver: re-paginate when content grows asynchronously
     // (image loads, KaTeX rendering, font swap, solution toggle, typing) ---
     useEffect(() => {
-        const handleResize = () => {
+        const handleResize = (entries) => {
+            // Only re-paginate when a page's content height truly changed (> 1px).
+            // Filters out spurious resize events so large docs don't re-measure
+            // every item on width tweaks / transition frames.
+            let heightChanged = false;
+            for (const entry of entries) {
+                const h = Math.round(entry.contentRect.height);
+                const prev = lastHeightsRef.current.get(entry.target);
+                if (prev === undefined || Math.abs(prev - h) > 1) {
+                    lastHeightsRef.current.set(entry.target, h);
+                    heightChanged = true;
+                }
+            }
+            if (!heightChanged) return;
             if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current);
             resizeTimerRef.current = setTimeout(() => setResizeTick(t => t + 1), 150);
         };
