@@ -331,9 +331,17 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                             const { problem, solution } = splitSolution(text);
                             // Effective base size: per-item slider wins, else map from size, else 16
                             const baseFontPx = typeof fontScale === 'number' ? fontScale : (SIZE_TO_PX[size] || 16);
+                            const hasProblem = !!(problem && problem.trim());
+                            const isEmpty = !hasProblem && !solution;
                             return (
                                 <div className="prose max-w-none">
-                                    <SafeMarkdownPreview content={problem || '> *Empty Markdown Content*'} baseFontPx={baseFontPx} />
+                                    {hasProblem && (
+                                        <SafeMarkdownPreview content={problem} baseFontPx={baseFontPx} />
+                                    )}
+                                    {/* Empty box: friendly hint on screen only — never leaks into print. */}
+                                    {isEmpty && (
+                                        <p className="text-gray-400 italic text-sm m-0 print:hidden">คลิก “แก้ไข” เพื่อเพิ่มเนื้อหา…</p>
+                                    )}
                                     {solution && (
                                         <div className="relative transition-all">
                                             {showSolution ? (
