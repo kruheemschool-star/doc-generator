@@ -74,6 +74,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // --- Manual Save State ---
     const [saveStatus, setSaveStatus] = useState('saved');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    // Synchronous in-flight guard: state updates are async, so a state check alone
+    // lets rapid Ctrl+S / double-clicks slip a second write through before re-render.
+    const savingRef = useRef(false);
 
     // Track unsaved changes (documentTitle + docTheme included so renaming or a
     // design tweak alone is also tracked).
@@ -86,7 +89,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         if (!onSave || !pages) return;
         // Guard against concurrent saves: rapid clicks / repeated Ctrl+S while a write
         // is in flight would otherwise fire overlapping onSave calls and race in Firestore.
-        if (saveStatus === 'saving') return;
+        // A ref (not saveStatus state) blocks synchronously — before the re-render.
+        if (savingRef.current) return;
+        savingRef.current = true;
         setSaveStatus('saving');
         try {
             // Awaits the real Firestore write so success/failure is reported accurately.
@@ -98,8 +103,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             console.error('Manual save failed:', e);
             setSaveStatus('error');
             addToast(e?.message || 'บันทึกไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 5000);
+        } finally {
+            savingRef.current = false;
         }
-    }, [onSave, pages, documentTitle, fontId, docTheme, saveStatus, addToast]);
+    }, [onSave, pages, documentTitle, fontId, docTheme, addToast]);
 
     const handleBackWithConfirmation = () => {
         if (hasUnsavedChanges) {
@@ -493,6 +500,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     //     hides undo/redo). Guarded so they never hijack typing inside editors. ---
     useEffect(() => {
         const onKeyDown = (e) => {
+            // Escape closes any open transient popover/panel (keyboard a11y).
+            if (e.key === 'Escape') {
+                setShowBorderPopover(false);
+                setShowAddMenu(false);
+                setShowWatermarkPanel(false);
+                return;
+            }
             const mod = e.metaKey || e.ctrlKey;
             if (!mod) return;
             const k = e.key.toLowerCase();
