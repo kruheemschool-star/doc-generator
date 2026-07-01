@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2, Contrast } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2, Contrast, Grid3x3, GalleryThumbnails, Sticker, BookmarkPlus } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -16,6 +16,9 @@ import TemplatePicker from './TemplatePicker';
 import FontPicker from './FontPicker';
 import ImportPreview from './ImportPreview';
 import TweaksPanel from './TweaksPanel';
+import PageThumbnailPanel from './PageThumbnailPanel';
+import IconLibraryModal from './IconLibraryModal';
+import { saveIcon } from '../firebase';
 import { DEFAULT_DOC_THEME, normalizeTheme, themeToCssVars } from '../data/docThemes';
 import { buildFrameStyle, DEFAULT_FRAME, DEFAULT_FILL, FILL_PRESETS, FRAME_STYLE_OPTIONS } from '../utils/itemFrame';
 import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions, isSolutionOnlyExport, solutionsToMarkdownBlocks, splitMarkdownByHeading } from '../utils/importParser';
@@ -62,9 +65,27 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // --- Document Theme (Tweaks panel — colors, head font, paper grid) ---
     const [docTheme, setDocTheme] = useState(() => normalizeTheme(activeDocument?.theme));
     const [showTweaks, setShowTweaks] = useState(false);
+    const [showThumbnails, setShowThumbnails] = useState(false);
+    const [showIconLibrary, setShowIconLibrary] = useState(false);
+    const [iconJustSaved, setIconJustSaved] = useState(false);
+    const [currentPageId, setCurrentPageId] = useState(null);
+    const mainScrollRef = useRef(null);
 
     // --- Toast notifications ---
     const { toasts, addToast, removeToast } = useToast();
+
+    const handleSaveSelectedToLibrary = useCallback(async (item) => {
+        if (!item?.src) return;
+        const name = window.prompt('ตั้งชื่อไอคอนนี้ (สำหรับค้นหาในคลังทีหลัง):', 'ไอคอนของฉัน');
+        if (name === null) return; // cancelled
+        try {
+            await saveIcon({ id: uuidv4(), name: name.trim() || 'ไอคอนของฉัน', src: item.src });
+            setIconJustSaved(true);
+            setTimeout(() => setIconJustSaved(false), 1800);
+        } catch {
+            addToast('บันทึกลงคลังไอคอนไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 4000);
+        }
+    }, [addToast]);
 
     // --- Document Title State (Subtitle) ---
     // Declared before the unsaved-changes effect / handleManualSave below, which
@@ -197,6 +218,38 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // --- Pagination Hook ---
     const { pageRefs, overflowPages, isPageOverflow } = useAutoPagination(pages, setPages, replacePages, editingItemId !== null);
 
+    // --- Current-page tracking (drives the thumbnail rail's highlight) ---
+    // Watches every page against the scroll container and keeps whichever page
+    // occupies the most viewport area — cheap, and correct even when a short
+    // page and a tall page are both partly visible at once.
+    useEffect(() => {
+        const root = mainScrollRef.current;
+        if (!root || !Array.isArray(pages) || pages.length === 0) return;
+        const ratios = new Map();
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => ratios.set(entry.target.dataset.pageId, entry.intersectionRatio));
+            let bestId = null;
+            let bestRatio = 0;
+            ratios.forEach((ratio, id) => {
+                if (ratio > bestRatio) { bestRatio = ratio; bestId = id; }
+            });
+            if (bestId) setCurrentPageId(bestId);
+        }, { root, threshold: [0, 0.1, 0.25, 0.5, 0.75, 1] });
+
+        pages.forEach(page => {
+            const el = pageRefs.current[page.id];
+            if (el) {
+                el.dataset.pageId = page.id;
+                observer.observe(el);
+            }
+        });
+        return () => observer.disconnect();
+    }, [pages, pageRefs]);
+
+    const handleJumpToPage = useCallback((pageId) => {
+        pageRefs.current[pageId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [pageRefs]);
+
     // --- State Cleanup & Recovery ---
     const handleTrimEmptyPages = useCallback(() => {
         replacePages(prev => {
@@ -269,6 +322,14 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     };
     const handleAddSpacer = () => {
         const newItem = { id: uuidv4(), type: 'spacer', height: 100 };
+        if (selectedItemId) {
+            handleAddQuestionBelow(selectedItemId, newItem);
+        } else {
+            handleAddQuestion(newItem);
+        }
+    };
+    const handleAddScratchPaper = () => {
+        const newItem = { id: uuidv4(), type: 'spacer', height: 220, paperStyle: 'scratch' };
         if (selectedItemId) {
             handleAddQuestionBelow(selectedItemId, newItem);
         } else {
@@ -505,6 +566,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 setShowBorderPopover(false);
                 setShowAddMenu(false);
                 setShowWatermarkPanel(false);
+                setShowThumbnails(false);
                 return;
             }
             const mod = e.metaKey || e.ctrlKey;
@@ -796,7 +858,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         );
         if (q.type === 'spacer') return (
             <ErrorBoundary key={q.id}>
-                <SpacerItem {...commonProps} height={q.height} />
+                <SpacerItem {...commonProps} height={q.height} paperStyle={q.paperStyle} />
             </ErrorBoundary>
         );
         if (q.type === 'divider') return (
@@ -882,6 +944,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         { key: 'image', label: 'รูปภาพ', desc: 'อัปโหลดรูป', icon: ImageIcon, color: 'text-purple-600', onClick: handleAddImage },
         { key: 'divider', label: 'เส้นคั่น', desc: 'แบ่งส่วนเนื้อหา', icon: Minus, color: 'text-rose-600', onClick: handleAddDivider },
         { key: 'spacer', label: 'ช่องว่าง', desc: 'เว้นที่ให้นักเรียนเขียน', icon: MoveVertical, color: 'text-amber-600', onClick: handleAddSpacer },
+        { key: 'scratch', label: 'กระดาษทดเลข', desc: 'กล่องลายตาราง ให้นักเรียนทดเลข', icon: Grid3x3, color: 'text-slate-600', onClick: handleAddScratchPaper },
         { key: 'template', label: 'เทมเพลต', desc: 'แทรกชุดสำเร็จรูป', icon: LayoutTemplate, color: 'text-green-700', onClick: () => setShowTemplatePicker(true) },
         { key: 'import', label: 'นำเข้าด้วย AI', desc: 'วางจาก Gemini / JSON', icon: Sparkles, color: 'text-blue-600', onClick: () => setShowImportModal(true) },
     ];
@@ -958,7 +1021,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             </header>
 
             <div className="flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
-                <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 lg:p-12 custom-scrollbar print:p-0 print:overflow-visible print:bg-white" style={{ backgroundColor: 'var(--canvas-3)' }} onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); setShowAddMenu(false); setShowBorderPopover(false); }}>
+                <main ref={mainScrollRef} className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 lg:p-12 custom-scrollbar print:p-0 print:overflow-visible print:bg-white" style={{ backgroundColor: 'var(--canvas-3)' }} onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); setShowAddMenu(false); setShowBorderPopover(false); }}>
                     <div className={`max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top ${bwPrint ? 'bw-print' : ''}`} style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack, ...themeToCssVars(docTheme) }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
@@ -1289,6 +1352,15 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                     </div>
                                 </div>
                             </div>
+                            {/* Corner shape — affects the border AND the fill, so it's not gated
+                                behind "border style" like width/color above. */}
+                            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-medium text-gray-500 dark:text-slate-400">มุมกรอบ (ความโค้ง)</span>
+                                    <span className="text-[11px] font-mono text-gray-400 dark:text-slate-500">{selectedItem.borderRadius ?? DEFAULT_FRAME.borderRadius}px</span>
+                                </div>
+                                <input type="range" min="0" max="32" step="2" value={selectedItem.borderRadius ?? DEFAULT_FRAME.borderRadius} onChange={e => handleUpdateItem(selectedItemId, { borderRadius: parseInt(e.target.value, 10) })} className="w-full accent-teal-600" aria-label="ความโค้งมุมกรอบ" />
+                            </div>
                             {/* Fill (background) — default off = no fill */}
                             <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
                                 <div className="flex items-center justify-between">
@@ -1379,6 +1451,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 {tDivider}
 
+                                <button onClick={(e) => { e.stopPropagation(); setShowThumbnails(s => !s); }} className={showThumbnails ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ภาพรวมหน้า (ดูทุกหน้า/กระโดดไปหน้าที่ต้องการ)" title="ภาพรวมหน้า"><GalleryThumbnails size={18} /></button>
+
+                                {tDivider}
+
                                 <button onClick={() => setZoomLevel(z => Math.max(50, z - 10))} className={tbtn} aria-label="ซูมออก" title="ซูมออก"><ZoomOut size={18} /></button>
                                 <span className="text-xs text-[#a39a8c] font-semibold min-w-[42px] text-center select-none tabular-nums" style={{ fontFamily: "'Sora', sans-serif" }}>{zoomLevel}%</span>
                                 <button onClick={() => setZoomLevel(z => Math.min(150, z + 10))} className={tbtn} aria-label="ซูมเข้า" title="ซูมเข้า"><ZoomIn size={18} /></button>
@@ -1437,6 +1513,14 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 <button onClick={() => handleDuplicateItem(selectedItemId)} className={tbtn} aria-label="ทำสำเนา" title="ทำสำเนา (Duplicate)"><Copy size={18} /></button>
                                 <button onClick={(e) => { e.stopPropagation(); setShowBorderPopover(s => !s); }} className={(selectedItem && ((selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || selectedItem.fillColor)) || showBorderPopover ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="กรอบและสีพื้นกล่อง" title="กรอบและสีพื้นกล่อง"><Square size={18} /></button>
+                                {selectedItem?.type === 'image' && (
+                                    <button onClick={(e) => { e.stopPropagation(); setShowIconLibrary(true); }} className={showIconLibrary ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="เลือกไอคอนจากคลัง" title="เลือกไอคอนจากคลัง"><Sticker size={18} /></button>
+                                )}
+                                {selectedItem?.type === 'image' && selectedItem?.src && (
+                                    <button onClick={(e) => { e.stopPropagation(); handleSaveSelectedToLibrary(selectedItem); }} className={tbtn} aria-label="บันทึกรูปนี้ลงคลังไอคอน" title="บันทึกรูปนี้ลงคลังไอคอน (ใช้ซ้ำได้ทุกเอกสาร)">
+                                        {iconJustSaved ? <Check size={18} className="text-emerald-400" /> : <BookmarkPlus size={18} />}
+                                    </button>
+                                )}
 
                                 {tDivider}
 
@@ -1599,6 +1683,25 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     onChange={setDocTheme}
                     fontId={fontId}
                     onFontIdChange={setFontId}
+                />
+
+                {/* Page Thumbnail Panel — jump-to-page overview */}
+                <PageThumbnailPanel
+                    open={showThumbnails}
+                    onClose={() => setShowThumbnails(false)}
+                    pages={pages}
+                    currentPageId={currentPageId}
+                    onJumpToPage={handleJumpToPage}
+                />
+
+                {/* Icon Library — reachable from the selected-item toolbar (no hover needed) */}
+                <IconLibraryModal
+                    isOpen={showIconLibrary}
+                    onClose={() => setShowIconLibrary(false)}
+                    onSelect={(iconSrc) => {
+                        if (selectedItemId) handleUpdateItem(selectedItemId, { src: iconSrc });
+                        setShowIconLibrary(false);
+                    }}
                 />
 
                 {/* Toast Notifications */}
