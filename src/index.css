@@ -387,6 +387,20 @@
     background-color: white;
   }
 
+  /* Centre the A4 sheet on the page: drop the flex row / sidebar gap / canvas
+     padding so the sheet isn't pushed off-centre, then auto-margin it. */
+  #root > div,
+  main {
+    display: block !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .sheet-paper {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
   /* Hide scrollbars and UI elements */
   ::-webkit-scrollbar {
     display: none;
