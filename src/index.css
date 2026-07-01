@@ -424,6 +424,15 @@
     transform: none !important;
   }
 
+  /* Black-and-white print mode (toggled in the toolbar): all text prints black
+     and images print in grayscale, to save colour toner. Screen is untouched. */
+  .bw-print, .bw-print * {
+    color: #000 !important;
+  }
+  .bw-print img {
+    filter: grayscale(100%) !important;
+  }
+
   /* Preserve watermark transforms in print */
   .watermark-overlay,
   .watermark-overlay * {

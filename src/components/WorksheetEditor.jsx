@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2 } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2, Contrast } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -113,6 +113,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
     // View Mode & Zoom
     const [showSolution, setShowSolution] = useState(true);
+    // Black-and-white print: forces all text to black + images to grayscale on
+    // print only (screen stays in colour) to save colour toner.
+    const [bwPrint, setBwPrint] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(() => {
         // Auto-fit on mobile: A4 = 210mm ≈ 793px. On viewport < 800px, scale down.
         if (typeof window === 'undefined') return 100;
@@ -942,7 +945,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
             <div className="flex h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] overflow-hidden print:h-auto print:block print:overflow-visible">
                 <main className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 lg:p-12 custom-scrollbar print:p-0 print:overflow-visible print:bg-white" style={{ backgroundColor: 'var(--canvas-3)' }} onClick={() => { setSelectedItemId(null); setShowWatermarkPanel(false); setShowAddMenu(false); setShowBorderPopover(false); }}>
-                    <div className="max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top" style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack, ...themeToCssVars(docTheme) }}>
+                    <div className={`max-w-[210mm] mx-auto space-y-10 print:space-y-0 zoom-container origin-top ${bwPrint ? 'bw-print' : ''}`} style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', fontFamily: fontStack, ...themeToCssVars(docTheme) }}>
                         <DragDropContext onDragEnd={handleOnDragEnd}>
                             {Array.isArray(pages) && pages.map((page, pIdx) => (
                                 <div key={page.id} ref={el => pageRefs.current[page.id] = el} className={`sheet-paper w-[210mm] min-h-[297mm] shadow-xl relative print:shadow-none ${pIdx < pages.length - 1 ? 'print:break-after-page' : ''} m-auto print:m-0 print:h-[297mm] print:overflow-hidden`}>
@@ -1378,6 +1381,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <button onClick={() => setShowSolution(!showSolution)} className={showSolution ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : `${tbtnActive} bg-amber-500/25 text-amber-300`} aria-label="ซ่อน/แสดงเฉลย" title={showSolution ? "กำลังแสดงเฉลย — คลิกเพื่อซ่อน (ฉบับนักเรียน)" : "ซ่อนเฉลยอยู่ (ฉบับนักเรียน) — คลิกเพื่อแสดง"}>{showSolution ? <Eye size={18} /> : <EyeOff size={18} />}</button>
                                 <button onClick={(e) => { e.stopPropagation(); setShowWatermarkPanel(!showWatermarkPanel); }} className={watermark.enabled ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ลายน้ำ" title="ลายน้ำ"><Droplets size={18} /></button>
                                 <button onClick={(e) => { e.stopPropagation(); setShowTweaks(s => !s); }} className={showTweaks ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="ปรับดีไซน์ (สี/ฟอนต์/ช่องตาราง)" title="ปรับดีไซน์ (สี/ฟอนต์/ช่องตาราง)"><SlidersHorizontal size={18} /></button>
+                                <button onClick={() => setBwPrint(b => !b)} className={bwPrint ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="พิมพ์ขาว-ดำ (ประหยัดหมึกสี)" title={bwPrint ? "โหมดพิมพ์ขาว-ดำ: เปิด (ตัวอักษรดำ, รูปเทา) — จอยังสีปกติ" : "พิมพ์ขาว-ดำ (ประหยัดหมึกสี)"}><Contrast size={18} /></button>
                                 <button onClick={() => window.print()} className={tbtn} aria-label="พิมพ์" title="พิมพ์"><Printer size={18} /></button>
                             </>
                         ) : (
