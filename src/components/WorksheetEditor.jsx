@@ -928,7 +928,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
         return (
             <ErrorBoundary key={q.id}>
-                <QuestionItem {...commonProps} no={qCountSinceReset + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} svg={q.svg} questionImage={q.questionImage} spaceNeeded={q.spaceNeeded} layoutColumn={q.layoutColumn} fontSize={globalFontSize} showSolution={showSolution} onEdit={handleEditQuestion} />
+                <QuestionItem {...commonProps} no={qCountSinceReset + 1} question={q.question} type={q.type} options={q.options} solution={q.solution} svg={q.svg} questionImage={q.questionImage} spaceNeeded={q.spaceNeeded} solutionMinHeight={q.solutionMinHeight} layoutColumn={q.layoutColumn} fontSize={globalFontSize} showSolution={showSolution} onEdit={handleEditQuestion} />
             </ErrorBoundary>
         );
     };

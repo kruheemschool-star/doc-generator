@@ -2,7 +2,7 @@ import React, { memo, useMemo, useRef, useState, useEffect, useLayoutEffect } fr
 import { Draggable } from '@hello-pangea/dnd';
 import MarkdownRenderer from './MarkdownRenderer';
 import SvgRenderer from './SvgRenderer';
-import { Trash2, GripVertical, ChevronUp, ChevronDown, X, ImagePlus, Pencil } from 'lucide-react';
+import { Trash2, GripVertical, ChevronUp, ChevronDown, X, ImagePlus, Pencil, MoveVertical } from 'lucide-react';
 import { fileToCompressedDataURL } from '../utils/imageCompression';
 
 // Estimate visible character length of an option (strip LaTeX/Markdown markers)
@@ -38,18 +38,40 @@ const cleanQuestionText = (text) => {
   return cleaned;
 };
 
-const QuestionItem = React.memo(({ id, index, no, question, options, solution, type, svg, questionImage, spaceNeeded, layoutColumn, isSelected, onSelect, onMove, canMoveUp, canMoveDown, onUpdate, onEdit, isViewOnly, fontSize, showSolution, onDelete, frameStyle }) => {
+const QuestionItem = React.memo(({ id, index, no, question, options, solution, type, svg, questionImage, spaceNeeded, solutionMinHeight, layoutColumn, isSelected, onSelect, onMove, canMoveUp, canMoveDown, onUpdate, onEdit, isViewOnly, fontSize, showSolution, onDelete, frameStyle }) => {
   const imageInputRef = useRef(null);
   const solutionRef = useRef(null);
   const [solutionHeight, setSolutionHeight] = useState(0);
   const [uploadError, setUploadError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  // Live drag preview — only set while actively dragging the solution-box
+  // resize handle; committed to onUpdate (and cleared) on release.
+  const [dragMinHeight, setDragMinHeight] = useState(null);
 
   useLayoutEffect(() => {
     if (showSolution && solutionRef.current) {
       setSolutionHeight(solutionRef.current.offsetHeight);
     }
-  }, [showSolution, solution]);
+  }, [showSolution, solution, solutionMinHeight]);
+
+  const handleSolutionResizeStart = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = solutionRef.current?.offsetHeight || 0;
+    const handleMouseMove = (moveEvent) => {
+      setDragMinHeight(Math.max(60, startHeight + (moveEvent.clientY - startY)));
+    };
+    const handleMouseUp = (upEvent) => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      const finalHeight = Math.max(60, startHeight + (upEvent.clientY - startY));
+      setDragMinHeight(null);
+      onUpdate && onUpdate(id, { solutionMinHeight: finalHeight });
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -258,10 +280,27 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
           {/* Solution Section - preserve height when hidden for print spacing */}
           {solution && (
             showSolution ? (
-              <div ref={solutionRef} className="mt-4 ml-9 relative z-10 rounded-lg transition-all border print:bg-white print:border-l-2 print:border-y-0 print:border-r-0 print:rounded-none print:pl-3" style={{ backgroundColor: '#eaf0dd80', borderColor: '#3d5a2c33' }}>
+              <div
+                ref={solutionRef}
+                className="mt-4 ml-9 relative z-10 rounded-lg transition-all border print:bg-white print:border-l-2 print:border-y-0 print:border-r-0 print:rounded-none print:pl-3"
+                style={{ backgroundColor: '#eaf0dd80', borderColor: '#3d5a2c33', minHeight: dragMinHeight ?? solutionMinHeight ?? undefined }}
+              >
                 <div className={`p-4 print:p-0 print:pl-2 ${getSizeClass()}`}>
                   <MarkdownRenderer content={solution} plainBlockquote />
                 </div>
+                {/* Drag to grow the box — gives extra blank room under the
+                    solution text (e.g. for students to copy/work through it). */}
+                {!isViewOnly && (
+                  <div
+                    onMouseDown={handleSolutionResizeStart}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={(e) => { e.stopPropagation(); onUpdate && onUpdate(id, { solutionMinHeight: null }); }}
+                    className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-12 h-4 bg-white border border-[#3d5a2c33] rounded-full flex items-center justify-center cursor-row-resize hover:bg-emerald-50 shadow-sm print:hidden"
+                    title="ลากเพื่อเพิ่มพื้นที่กล่องวิธีทำ (ดับเบิลคลิกเพื่อรีเซ็ต)"
+                  >
+                    <MoveVertical size={12} className="text-emerald-700" />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="mt-4 ml-9" style={{ minHeight: solutionHeight > 0 ? solutionHeight : undefined }} />
