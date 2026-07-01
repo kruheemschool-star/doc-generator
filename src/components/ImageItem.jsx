@@ -1,13 +1,31 @@
 import React, { memo, useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { Trash2, GripVertical, Image as ImageIcon, Upload, ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { Trash2, GripVertical, Image as ImageIcon, Upload, ChevronUp, ChevronDown, AlertCircle, Sticker, BookmarkPlus, Check } from 'lucide-react';
 import { fileToCompressedDataURL } from '../utils/imageCompression';
+import { saveIcon } from '../firebase';
+import IconLibraryModal from './IconLibraryModal';
 
 const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     // content can be used for caption if needed, src is the image source
     const [isHovered, setIsHovered] = useState(false);
     const [uploadError, setUploadError] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+    const [showLibrary, setShowLibrary] = useState(false);
+    const [justSaved, setJustSaved] = useState(false);
+
+    const handleSaveToLibrary = async () => {
+        if (!src) return;
+        const name = window.prompt('ตั้งชื่อไอคอนนี้ (สำหรับค้นหาในคลังทีหลัง):', 'ไอคอนของฉัน');
+        if (name === null) return; // cancelled
+        try {
+            await saveIcon({ id: uuidv4(), name: name.trim() || 'ไอคอนของฉัน', src });
+            setJustSaved(true);
+            setTimeout(() => setJustSaved(false), 1800);
+        } catch {
+            setUploadError('บันทึกลงคลังไอคอนไม่สำเร็จ — โปรดลองอีกครั้ง');
+        }
+    };
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
@@ -101,12 +119,17 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                                     alt="Content"
                                     className={`rounded-md shadow-sm object-contain mx-auto ${getSizeClass()}`}
                                 />
-                                {/* Resize Controls Overlay */}
+                                {/* Resize + library controls overlay */}
                                 {!isViewOnly && (
                                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm p-1 rounded-lg flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity print:hidden">
                                         <button onClick={() => handleResize('small')} className={`p-1 hover:text-white ${size === 'small' ? 'text-white' : 'text-gray-400'}`} title="Small"><ImageIcon size={14} /></button>
                                         <button onClick={() => handleResize('medium')} className={`p-1 hover:text-white ${size === 'medium' ? 'text-white' : 'text-gray-400'}`} title="Medium"><ImageIcon size={18} /></button>
                                         <button onClick={() => handleResize('large')} className={`p-1 hover:text-white ${size === 'large' ? 'text-white' : 'text-gray-400'}`} title="Large"><ImageIcon size={22} /></button>
+                                        <span className="w-px bg-white/20 mx-0.5" />
+                                        <button onClick={() => setShowLibrary(true)} className="p-1 text-gray-400 hover:text-white" title="เลือกรูปอื่นจากคลังไอคอน"><Sticker size={16} /></button>
+                                        <button onClick={handleSaveToLibrary} className="p-1 text-gray-400 hover:text-white" title="บันทึกรูปนี้ลงคลังไอคอน (ใช้ซ้ำได้ทุกเอกสาร)">
+                                            {justSaved ? <Check size={16} className="text-emerald-400" /> : <BookmarkPlus size={16} />}
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -122,6 +145,12 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                                         <Upload size={32} className="mb-2" />
                                         <span className="text-sm font-medium">คลิกอัปโหลดรูปภาพ</span>
                                         <span className="text-xs text-gray-400 mt-1">(สูงสุด 5MB)</span>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setShowLibrary(true); }}
+                                            className="mt-3 flex items-center gap-1.5 text-xs font-bold text-teal-600 hover:text-teal-700"
+                                        >
+                                            <Sticker size={13} /> หรือเลือกจากคลังไอคอน
+                                        </button>
                                     </>
                                 )}
                                 <input
@@ -143,6 +172,12 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                             </div>
                         )}
                     </div>
+
+                    <IconLibraryModal
+                        isOpen={showLibrary}
+                        onClose={() => setShowLibrary(false)}
+                        onSelect={(iconSrc) => { onUpdate(id, { src: iconSrc }); setShowLibrary(false); }}
+                    />
                 </div>
             )}
         </Draggable>

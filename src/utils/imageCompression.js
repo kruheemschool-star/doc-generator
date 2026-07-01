@@ -10,7 +10,7 @@ export const MAX_BASE64_BYTES = 800000;            // ~800 KB per-image base64 c
  * Downscales to `maxWidth` (preserving aspect ratio) and applies JPEG `quality`.
  * @returns {Promise<Blob>}
  */
-export const compressImage = (file, maxWidth = 800, quality = 0.7) =>
+export const compressImage = (file, maxWidth = 800, quality = 0.7, mimeType = 'image/jpeg') =>
     new Promise((resolve, reject) => {
         const url = URL.createObjectURL(file);
         const img = new Image();
@@ -32,7 +32,7 @@ export const compressImage = (file, maxWidth = 800, quality = 0.7) =>
             ctx.drawImage(img, 0, 0, width, height);
             canvas.toBlob(
                 (blob) => (blob ? resolve(blob) : reject(new Error('ไม่สามารถบีบอัดรูปภาพได้'))),
-                'image/jpeg',
+                mimeType,
                 quality
             );
         };
@@ -65,6 +65,24 @@ export const fileToCompressedDataURL = async (file, { maxWidth = 800, quality = 
     const dataUrl = await blobToDataURL(blob);
     if (dataUrl.length > MAX_BASE64_BYTES) {
         throw new Error('รูปภาพยังใหญ่เกินไปหลังบีบอัด ลองใช้รูปที่เล็กกว่า');
+    }
+    return dataUrl;
+};
+
+/**
+ * Icon-library uploads keep PNG (not JPEG) so logos/stamps with a transparent
+ * background don't get a black/white fill baked in. Icons are small graphics,
+ * so a smaller max width keeps the base64 payload well under the Firestore cap.
+ * @returns {Promise<string>} a base64 data URL safe to store in a Firestore doc
+ */
+export const fileToIconDataURL = async (file, { maxWidth = 512 } = {}) => {
+    if (file.size > MAX_UPLOAD_BYTES) {
+        throw new Error('ไฟล์ไอคอนใหญ่เกินไป (สูงสุด 5MB)');
+    }
+    const blob = await compressImage(file, maxWidth, 0.92, 'image/png');
+    const dataUrl = await blobToDataURL(blob);
+    if (dataUrl.length > MAX_BASE64_BYTES) {
+        throw new Error('ไอคอนยังใหญ่เกินไปหลังบีบอัด ลองใช้รูปที่เรียบง่ายกว่านี้');
     }
     return dataUrl;
 };

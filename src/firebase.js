@@ -235,4 +235,41 @@ export const deletePromptTemplate = async (templateId) => {
   }
 };
 
+// --- Icon Library CRUD ---
+// Personal, reusable icon/logo/stamp collection — separate from the one-off
+// images embedded directly inside a document's pages/questions.
+export const saveIcon = async (icon) => {
+  try {
+    await ensureAuth();
+    await setDoc(doc(db, "iconLibrary", icon.id), {
+      ...icon,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Error saving icon:", error);
+    throw error;
+  }
+};
+
+export const loadIconLibrary = async () => {
+  try {
+    await ensureAuth();
+    const snapshot = await getDocs(collection(db, "iconLibrary"));
+    return snapshot.docs.map(d => d.data());
+  } catch (error) {
+    console.error("Error loading icon library:", error);
+    return [];
+  }
+};
+
+export const deleteIcon = async (iconId) => {
+  try {
+    await ensureAuth();
+    await deleteDoc(doc(db, "iconLibrary", iconId));
+  } catch (error) {
+    console.error("Error deleting icon:", error);
+    throw error;
+  }
+};
+
 export { db, auth, ensureAuth };

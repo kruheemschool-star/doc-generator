@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -115,7 +115,15 @@ const getCalloutStyle = (text) => {
     return fallback;
 };
 
-const MarkdownRenderer = ({ content, baseFontPx }) => {
+// react-markdown blocks `data:` URLs by default (XSS hardening aimed at
+// `javascript:`/`data:text/html` links) — but the icon-library feature embeds
+// icons as `data:image/...` base64 straight in the Markdown. Let image data
+// URLs through; everything else still goes through the default allowlist
+// (http/https/mailto/xmpp), so that protection is otherwise untouched.
+const allowIconDataUrls = (url, key) =>
+    key === 'src' && /^data:image\//i.test(url) ? url : defaultUrlTransform(url);
+
+const MarkdownRenderer = ({ content, baseFontPx, plainBlockquote = false }) => {
     const safeContent = typeof content === 'string' ? preprocessMarkdown(content) : '';
 
     // When a per-item font size is set, drive the whole subtree from it.
@@ -132,6 +140,7 @@ const MarkdownRenderer = ({ content, baseFontPx }) => {
             <ReactMarkdown
                 remarkPlugins={[remarkMath, remarkGfm]}
                 rehypePlugins={[[rehypeKatex, { strict: false }]]}
+                urlTransform={allowIconDataUrls}
                 components={{
                     h1: ({ node, ...props }) => (
                         <h1
@@ -188,6 +197,20 @@ const MarkdownRenderer = ({ content, baseFontPx }) => {
                     ),
 
                     blockquote: ({ node, children }) => {
+                        // Inside a box that's already tinted (e.g. the green "เฉลย" solution
+                        // box), skip the colored callout so it doesn't nest box-in-box —
+                        // render as plain quoted text instead.
+                        if (plainBlockquote) {
+                            return (
+                                <div
+                                    className="pl-3 my-2 border-l-2"
+                                    style={{ borderColor: PALETTE.rule, color: PALETTE.ink }}
+                                >
+                                    {children}
+                                </div>
+                            );
+                        }
+
                         let textContent = "";
                         try {
                             if (node && node.children && node.children.length > 0) {
@@ -271,6 +294,18 @@ const MarkdownRenderer = ({ content, baseFontPx }) => {
 
                     hr: () => (
                         <hr className="my-3" style={{ borderColor: PALETTE.rule }} />
+                    ),
+
+                    // Markdown images are always small inline icons here (content
+                    // photos/diagrams use the dedicated Image block instead) — size
+                    // relative to the surrounding text so one icon reads right next
+                    // to a heading and another next to body copy without extra markup.
+                    img: ({ node, alt, ...props }) => (
+                        <img
+                            alt={alt || ''}
+                            style={{ height: '1.3em', width: 'auto', display: 'inline', verticalAlign: 'middle', margin: '0 0.15em' }}
+                            {...props}
+                        />
                     ),
                 }}
             >

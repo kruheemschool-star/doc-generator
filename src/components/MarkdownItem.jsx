@@ -1,8 +1,9 @@
 import React, { memo, useState, useEffect, useLayoutEffect, useCallback, useRef, useId } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeOff, Bold, Italic, Heading2, Heading3, List, ListOrdered, Quote, Sigma, Link2 } from 'lucide-react';
+import { Trash2, GripVertical, Check, Edit, X, ChevronUp, ChevronDown, Eye, EyeOff, Bold, Italic, Heading2, Heading3, List, ListOrdered, Quote, Sigma, Link2, Sticker } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import ErrorBoundary from './ErrorBoundary';
+import IconLibraryModal from './IconLibraryModal';
 import { SIZE_TO_PX } from '../data/documentFonts';
 import { splitSolution } from '../utils/solutionMarkers';
 
@@ -13,9 +14,9 @@ const markdownFallback = (
         ⚠️ ไม่สามารถแสดงผลเนื้อหาได้ ลองแก้ไข Markdown อีกครั้ง
     </div>
 );
-const SafeMarkdownPreview = ({ content, baseFontPx }) => (
+const SafeMarkdownPreview = ({ content, baseFontPx, plainBlockquote }) => (
     <ErrorBoundary fallback={markdownFallback}>
-        <MarkdownRenderer content={content} baseFontPx={baseFontPx} />
+        <MarkdownRenderer content={content} baseFontPx={baseFontPx} plainBlockquote={plainBlockquote} />
     </ErrorBoundary>
 );
 
@@ -23,6 +24,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [showPreview, setShowPreview] = useState(true);
+    const [showIconLibrary, setShowIconLibrary] = useState(false);
     const textAreaRef = useRef(null);
     const textareaId = useId();
     const answerRef = useRef(null);
@@ -280,6 +282,14 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                                         </div>
                                         {/* Icon Toolbar */}
                                         <div className="flex flex-wrap gap-1 p-2 bg-gray-50 rounded-lg border border-gray-200 shadow-inner max-h-[100px] overflow-y-auto custom-scrollbar">
+                                            <button
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={(e) => { e.stopPropagation(); setShowIconLibrary(true); }}
+                                                className="h-7 px-2 flex items-center gap-1 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded transition-all"
+                                                title="แทรกไอคอนของฉันจากคลัง"
+                                            >
+                                                <Sticker size={13} /> จากคลังไอคอน
+                                            </button>
                                             {EDUCATION_ICONS.map((icon, idx) => (
                                                 <button
                                                     key={idx}
@@ -353,7 +363,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                                                     style={{ backgroundColor: '#eaf0dd80', borderColor: '#3d5a2c33' }}
                                                 >
                                                     <div className="text-[10px] font-bold uppercase tracking-wide mb-1 print:hidden" style={{ color: '#3d5a2c' }}>เฉลย</div>
-                                                    <SafeMarkdownPreview content={solution} baseFontPx={baseFontPx} />
+                                                    <SafeMarkdownPreview content={solution} baseFontPx={baseFontPx} plainBlockquote />
                                                 </div>
                                             ) : (
                                                 // Hidden: leave equal blank space so students have room to solve.
@@ -378,6 +388,12 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                             </div>
                         )}
                     </div>
+
+                    <IconLibraryModal
+                        isOpen={showIconLibrary}
+                        onClose={() => setShowIconLibrary(false)}
+                        onSelect={(iconSrc) => { handleInsertIcon(`![](${iconSrc})`); setShowIconLibrary(false); }}
+                    />
                 </div>
             )}
         </Draggable>
