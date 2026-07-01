@@ -78,10 +78,16 @@ const App = () => {
                     loadActiveDocId(),
                     loadTrash()
                 ]);
-                setDocuments(docs.length > 0 ? docs.map(migrateDocument) : MOCK_DOCS);
+                const loadedDocs = docs.length > 0 ? docs.map(migrateDocument) : MOCK_DOCS;
+                setDocuments(loadedDocs);
                 setFolders(flds || []);
                 setTrashedDocs((trash || []).map(migrateDocument));
-                if (activeId) setActiveDocumentId(activeId);
+                // Restore the last open document on refresh so we don't bounce back to
+                // the dashboard. Only if it still exists (deleted → fall back to list).
+                if (activeId && loadedDocs.some(d => d.id === activeId)) {
+                    setActiveDocumentId(activeId);
+                    setCurrentView('editor');
+                }
             } catch (error) {
                 console.error('Failed to load from Firestore:', error);
                 setDocuments(MOCK_DOCS);
