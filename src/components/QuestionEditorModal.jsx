@@ -224,7 +224,7 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData, addToast })
                                                         ariaLabel={`ตัวเลือกที่ ${idx + 1}`}
                                                     />
                                                 </div>
-                                                <button onClick={() => removeOption(idx)} className="p-2 text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                                                <button onClick={() => removeOption(idx)} aria-label={`ลบตัวเลือกที่ ${idx + 1}`} className="p-2 text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
@@ -301,7 +301,7 @@ const QuestionEditorModal = ({ isOpen, onClose, onSave, initialData, addToast })
                                                                     ariaLabel={`ขั้นตอนที่ ${idx + 1}`}
                                                                 />
                                                             </div>
-                                                            <button onClick={() => removeStep(idx)} className="p-2 text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 mt-2">
+                                                            <button onClick={() => removeStep(idx)} aria-label={`ลบขั้นตอนที่ ${idx + 1}`} className="p-2 text-gray-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all mt-2">
                                                                 <Trash2 size={16} />
                                                             </button>
                                                         </div>

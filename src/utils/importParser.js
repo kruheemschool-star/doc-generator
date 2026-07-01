@@ -37,17 +37,26 @@ export const tryParseImportJSON = (rawText) => {
  * Coerce a raw question object into the internal question shape.
  * AI output uses "explanation" + "correctIndex"; keep "solution" for older pastes.
  */
-export const normalizeImportedQuestion = (q) => ({
-    question: typeof q.question === 'string' ? q.question : '*(Question)*',
-    options: Array.isArray(q.options) ? q.options.filter(o => typeof o === 'string') : [],
-    solution: typeof q.solution === 'string'
-        ? q.solution
-        : (typeof q.explanation === 'string' ? q.explanation : ''),
-    answer: typeof q.answer === 'string' ? q.answer : '',
-    correctIndex: typeof q.correctIndex === 'number' ? q.correctIndex : undefined,
-    svg: typeof q.svg === 'string' ? q.svg : '',
-    spaceNeeded: q.space || 'medium',
-});
+export const normalizeImportedQuestion = (q) => {
+    const options = Array.isArray(q.options) ? q.options.filter(o => typeof o === 'string' && o.trim()) : [];
+    // An out-of-range or non-integer index (AI miscounts, or options got filtered
+    // above) would otherwise mark no option as correct — silently, with no clue
+    // why. Drop it instead of passing it through, so the gap is visible at a glance.
+    const correctIndex = typeof q.correctIndex === 'number' && Number.isInteger(q.correctIndex) && q.correctIndex >= 0 && q.correctIndex < options.length
+        ? q.correctIndex
+        : undefined;
+    return {
+        question: typeof q.question === 'string' ? q.question : '*(Question)*',
+        options,
+        solution: typeof q.solution === 'string'
+            ? q.solution
+            : (typeof q.explanation === 'string' ? q.explanation : ''),
+        answer: typeof q.answer === 'string' ? q.answer : '',
+        correctIndex,
+        svg: typeof q.svg === 'string' ? q.svg : '',
+        spaceNeeded: q.space || 'medium',
+    };
+};
 
 /**
  * Detect the kruheemmath.com export shape: { meta, problems[], solutions[] }.

@@ -6,7 +6,7 @@ import { fileToCompressedDataURL } from '../utils/imageCompression';
 import { saveIcon } from '../firebase';
 import IconLibraryModal from './IconLibraryModal';
 
-const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
+const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly, frameStyle, addToast }) => {
     // content can be used for caption if needed, src is the image source
     const [isHovered, setIsHovered] = useState(false);
     const [uploadError, setUploadError] = useState('');
@@ -23,7 +23,9 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
             setJustSaved(true);
             setTimeout(() => setJustSaved(false), 1800);
         } catch {
-            setUploadError('บันทึกลงคลังไอคอนไม่สำเร็จ — โปรดลองอีกครั้ง');
+            const msg = 'บันทึกลงคลังไอคอนไม่สำเร็จ — โปรดลองอีกครั้ง';
+            setUploadError(msg);
+            addToast?.(msg, 'error', 4000);
         }
     };
 
@@ -39,7 +41,9 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
             onUpdate(id, { src: dataUrl });
         } catch (error) {
             console.error('Image processing error:', error);
-            setUploadError(error.message || 'ไม่สามารถประมวลผลรูปภาพได้');
+            const msg = error.message || 'ไม่สามารถประมวลผลรูปภาพได้';
+            setUploadError(msg);
+            addToast?.(msg, 'error', 4000);
         } finally {
             setIsUploading(false);
         }
@@ -75,7 +79,7 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                 >
                     {/* Hover Controls */}
                     {!isViewOnly && (
-                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
+                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 print:hidden">
                             <div
                                 {...provided.dragHandleProps}
                                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
@@ -121,7 +125,7 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                                 />
                                 {/* Resize + library controls overlay */}
                                 {!isViewOnly && (
-                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm p-1 rounded-lg flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity print:hidden">
+                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm p-1 rounded-lg flex gap-1 print:hidden">
                                         <button onClick={() => handleResize('small')} className={`p-1 hover:text-white ${size === 'small' ? 'text-white' : 'text-gray-400'}`} title="Small"><ImageIcon size={14} /></button>
                                         <button onClick={() => handleResize('medium')} className={`p-1 hover:text-white ${size === 'medium' ? 'text-white' : 'text-gray-400'}`} title="Medium"><ImageIcon size={18} /></button>
                                         <button onClick={() => handleResize('large')} className={`p-1 hover:text-white ${size === 'large' ? 'text-white' : 'text-gray-400'}`} title="Large"><ImageIcon size={22} /></button>
@@ -176,6 +180,7 @@ const ImageItem = memo(({ id, index, src, content, size = 'medium', onDelete, on
                     <IconLibraryModal
                         isOpen={showLibrary}
                         onClose={() => setShowLibrary(false)}
+                        addToast={addToast}
                         onSelect={(iconSrc) => { onUpdate(id, { src: iconSrc }); setShowLibrary(false); }}
                     />
                 </div>

@@ -22,6 +22,23 @@ export const DEFAULT_DOC_THEME = {
     gridAlpha: 0.07,        // grid line opacity (0–0.2)
     gridSize: 26,           // grid cell size in px
     headerRule: 'single',   // page-header divider: 'single' or 'double' (Editorial)
+
+    // --- Page header content (logo/brand text reuse the fonts/colors above) ---
+    headerLogoSrc: null,             // custom logo data URL; null = default /kruheem-logo.png
+    headerBrandText: 'คณิตศาสตร์ครูฮีม',
+    headerShowSocial: true,          // show the Facebook/LINE/website row
+    headerFacebookText: 'คณิตครูฮีม',
+    headerLineText: '@kruheem',
+    headerWebsiteText: 'www.kruheemmath.com',
+
+    // --- Page footer (off by default — existing documents keep their old
+    // layout untouched until a teacher turns it on) ---
+    footerEnabled: false,
+    footerLogoSrc: null,
+    footerText: '',
+    footerFontId: 'sarabun',
+    footerColor: '#6b7280',
+    footerHeightMm: 18,      // band height in mm — the "make the footer taller" control
 };
 
 // Selectable presets shown at the top of the Tweaks panel. Picking one applies the

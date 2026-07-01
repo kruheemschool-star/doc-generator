@@ -2,7 +2,7 @@ import React, { memo, useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { GripVertical, MoveVertical, ChevronUp, ChevronDown, Check, X, Edit, Minus } from 'lucide-react';
 
-const DividerItem = memo(({ id, index, style = 'solid', thickness = 2, color = '#e5e7eb', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
+const DividerItem = memo(({ id, index, style = 'solid', thickness = 2, color = '#e5e7eb', onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [tempStyle, setTempStyle] = useState(style);
     const [tempThickness, setTempThickness] = useState(thickness);
@@ -38,7 +38,7 @@ const DividerItem = memo(({ id, index, style = 'solid', thickness = 2, color = '
                 >
                     {/* Hover Controls (Only when not editing) */}
                     {!isEditing && !isViewOnly && (
-                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
+                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 print:hidden">
                             <div
                                 {...provided.dragHandleProps}
                                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
@@ -74,6 +74,7 @@ const DividerItem = memo(({ id, index, style = 'solid', thickness = 2, color = '
                                 ? 'bg-blue-50/10 border-blue-400 ring-2 ring-blue-50'
                                 : 'bg-transparent border-transparent hover:border-gray-200 hover:bg-gray-50/50'
                             }`}
+                        style={!isEditing && !isSelected && frameStyle ? frameStyle : undefined}
                     >
                         {isEditing ? (
                             <div className="w-full flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
@@ -154,7 +155,7 @@ const DividerItem = memo(({ id, index, style = 'solid', thickness = 2, color = '
 
                         {/* Edit Button Overlay */}
                         {!isEditing && !isViewOnly && (
-                            <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+                            <div className="absolute top-1 right-1 print:hidden">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
                                     className="bg-white/95 backdrop-blur border border-gray-200 shadow-sm rounded-lg px-2 py-1 text-xs text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center gap-1.5"

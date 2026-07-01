@@ -1,7 +1,8 @@
-import React from 'react';
-import { SlidersHorizontal, X, RotateCcw, Type, Palette, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { SlidersHorizontal, X, RotateCcw, Type, Palette, FileText, PanelTop, PanelBottom } from 'lucide-react';
 import { DOCUMENT_FONTS, FONT_CATEGORIES } from '../data/documentFonts';
 import { DEFAULT_DOC_THEME, DOC_THEME_PRESETS } from '../data/docThemes';
+import IconLibraryModal from './IconLibraryModal';
 
 /**
  * Tweaks panel — live, per-document design controls (colors, fonts, paper grid).
@@ -59,7 +60,67 @@ const Section = ({ icon, title, children }) => (
     </div>
 );
 
-const TweaksPanel = ({ open, onClose, theme, onChange, fontId, onFontIdChange }) => {
+const TextRow = ({ label, value, onChange, placeholder }) => (
+    <div className="flex flex-col gap-1 py-1.5">
+        <FieldLabel>{label}</FieldLabel>
+        <input
+            type="text"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="w-full text-sm border border-gray-200 dark:border-slate-700 rounded-lg p-2 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-teal-500"
+        />
+    </div>
+);
+
+const ToggleRow = ({ label, checked, onChange, ariaLabel }) => (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+        <FieldLabel>{label}</FieldLabel>
+        <button
+            onClick={() => onChange(!checked)}
+            role="switch"
+            aria-checked={checked}
+            aria-label={ariaLabel || label}
+            className={`relative w-10 h-5 rounded-full transition-colors ${checked ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'}`}
+        >
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : ''}`} />
+        </button>
+    </div>
+);
+
+// Logo preview + "choose from icon library" / "reset to default" pair, shared
+// by the header and footer sections. `src` is a data URL or null (= default).
+const LogoRow = ({ label, src, defaultSrc, onPick, onReset }) => (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+        <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-lg border border-gray-200 dark:border-slate-700 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
+                <img src={src || defaultSrc} alt="" className="max-w-full max-h-full object-contain" />
+            </div>
+            <FieldLabel>{label}</FieldLabel>
+        </div>
+        <div className="flex items-center gap-1">
+            <button
+                onClick={onPick}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 transition"
+            >
+                เลือกไอคอน
+            </button>
+            {src && (
+                <button
+                    onClick={onReset}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+                    aria-label={`ใช้${label}เริ่มต้น`}
+                    title={`ใช้${label}เริ่มต้น`}
+                >
+                    <RotateCcw size={13} />
+                </button>
+            )}
+        </div>
+    </div>
+);
+
+const TweaksPanel = ({ open, onClose, theme, onChange, fontId, onFontIdChange, addToast }) => {
+    const [logoPickerTarget, setLogoPickerTarget] = useState(null); // 'header' | 'footer' | null
     const set = (key, val) => onChange({ ...theme, [key]: val });
 
     const handleReset = () => {
@@ -161,6 +222,55 @@ const TweaksPanel = ({ open, onClose, theme, onChange, fontId, onFontIdChange })
                         />
                     </div>
                 </Section>
+
+                <Section icon={<PanelTop size={15} className="text-indigo-500" />} title="หัวกระดาษ">
+                    <LogoRow
+                        label="โลโก้"
+                        src={theme.headerLogoSrc}
+                        defaultSrc="/kruheem-logo.png"
+                        onPick={() => setLogoPickerTarget('header')}
+                        onReset={() => set('headerLogoSrc', null)}
+                    />
+                    <TextRow label="ชื่อแบรนด์" value={theme.headerBrandText} onChange={v => set('headerBrandText', v)} placeholder="คณิตศาสตร์ครูฮีม" />
+                    <ToggleRow label="แสดงแถบ Facebook/LINE/เว็บไซต์" checked={theme.headerShowSocial} onChange={v => set('headerShowSocial', v)} />
+                    {theme.headerShowSocial && (
+                        <div className="pl-3 border-l-2 border-gray-100 dark:border-slate-800 ml-1">
+                            <TextRow label="Facebook" value={theme.headerFacebookText} onChange={v => set('headerFacebookText', v)} placeholder="คณิตครูฮีม" />
+                            <TextRow label="LINE" value={theme.headerLineText} onChange={v => set('headerLineText', v)} placeholder="@kruheem" />
+                            <TextRow label="เว็บไซต์" value={theme.headerWebsiteText} onChange={v => set('headerWebsiteText', v)} placeholder="www.kruheemmath.com" />
+                        </div>
+                    )}
+                    <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">ฟอนต์/สีของชื่อแบรนด์ใช้ค่าเดียวกับ "ฟอนต์หัวข้อ" และ "สีหลัก/แบรนด์" ด้านบน</p>
+                </Section>
+
+                <Section icon={<PanelBottom size={15} className="text-amber-600" />} title="ท้ายกระดาษ">
+                    <ToggleRow label="แสดงท้ายกระดาษ" checked={theme.footerEnabled} onChange={v => set('footerEnabled', v)} />
+                    <div className={`transition-opacity ${theme.footerEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
+                        <LogoRow
+                            label="โลโก้ (ไม่บังคับ)"
+                            src={theme.footerLogoSrc}
+                            defaultSrc="/kruheem-logo.png"
+                            onPick={() => setLogoPickerTarget('footer')}
+                            onReset={() => set('footerLogoSrc', null)}
+                        />
+                        <TextRow label="ข้อความท้ายกระดาษ" value={theme.footerText} onChange={v => set('footerText', v)} placeholder="เช่น สงวนสิทธิ์ © คณิตศาสตร์ครูฮีม" />
+                        <FontSelect label="ฟอนต์" value={theme.footerFontId} onChange={v => set('footerFontId', v)} />
+                        <ColorRow label="สีตัวอักษร" value={theme.footerColor} onChange={v => set('footerColor', v)} />
+                        <div className="flex flex-col gap-1 py-1.5">
+                            <div className="flex items-center justify-between">
+                                <FieldLabel>ความสูงพื้นที่ท้ายกระดาษ</FieldLabel>
+                                <span className="text-[11px] font-mono text-gray-400 dark:text-slate-500">{theme.footerHeightMm}mm</span>
+                            </div>
+                            <input
+                                type="range" min="10" max="40" step="1"
+                                value={theme.footerHeightMm}
+                                onChange={e => set('footerHeightMm', parseInt(e.target.value, 10))}
+                                className="w-full accent-teal-600"
+                                aria-label="ความสูงพื้นที่ท้ายกระดาษ"
+                            />
+                        </div>
+                    </div>
+                </Section>
             </div>
 
             {/* Footer */}
@@ -172,6 +282,16 @@ const TweaksPanel = ({ open, onClose, theme, onChange, fontId, onFontIdChange })
                     <RotateCcw size={15} /> คืนค่าเริ่มต้น
                 </button>
             </div>
+
+            <IconLibraryModal
+                isOpen={!!logoPickerTarget}
+                onClose={() => setLogoPickerTarget(null)}
+                addToast={addToast}
+                onSelect={(src) => {
+                    set(logoPickerTarget === 'header' ? 'headerLogoSrc' : 'footerLogoSrc', src);
+                    setLogoPickerTarget(null);
+                }}
+            />
         </div>
     );
 };

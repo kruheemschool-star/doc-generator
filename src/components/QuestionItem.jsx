@@ -108,7 +108,7 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
         >
           {/* Hover Controls (Standardized on Left) */}
           {!isViewOnly && (
-            <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
+            <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-4 print:hidden">
               <div
                 {...provided.dragHandleProps}
                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
@@ -167,8 +167,12 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
             <div className="flex gap-3">
               <span className={`font-bold min-w-[24px] flex-shrink-0 select-none ${getSizeClass()}`}>{no}.</span>
               <div className={`flex-1 min-w-0 overflow-hidden relative ${getSizeClass()}`}>
-                {/* Question text */}
-                <MarkdownRenderer content={cleanQuestionText(question)} />
+                {/* Question text — right-padded when the insert-image button (always
+                    visible now, not hover-only) is present, so its top-right icon
+                    can't sit on top of the first line's tail. */}
+                <div className={!isViewOnly && !svg && !questionImage && onUpdate ? 'pr-6' : ''}>
+                  <MarkdownRenderer content={cleanQuestionText(question)} />
+                </div>
 
                 {/* SVG Image - below question, above options */}
                 {svg && (
@@ -178,7 +182,7 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
                     </div>
                     {/* Image action buttons */}
                     {!isViewOnly && onUpdate && (
-                      <div className="absolute -top-2 right-0 flex gap-1 opacity-0 group-hover/svg:opacity-100 transition-opacity print:hidden">
+                      <div className="absolute -top-2 right-0 flex gap-1 print:hidden">
                         <button
                           onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
                           className="w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-blue-600"
@@ -203,7 +207,7 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
                   <div className="relative mt-3 mb-3 flex justify-center group/img">
                     <img src={questionImage} alt="รูปประกอบโจทย์" className="max-w-full max-h-[300px] object-contain rounded-lg border border-gray-100" />
                     {!isViewOnly && onUpdate && (
-                      <div className="absolute -top-2 right-0 flex gap-1 opacity-0 group-hover/img:opacity-100 transition-opacity print:hidden">
+                      <div className="absolute -top-2 right-0 flex gap-1 print:hidden">
                         <button
                           onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
                           className="w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-blue-600"
@@ -227,7 +231,7 @@ const QuestionItem = React.memo(({ id, index, no, question, options, solution, t
                 {!isViewOnly && !svg && !questionImage && onUpdate && (
                   <button
                     onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
-                    className="absolute top-0 right-0 p-1 cursor-pointer text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors opacity-0 group-hover:opacity-100 print:hidden"
+                    className="absolute top-0 right-0 p-1 cursor-pointer text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors print:hidden"
                     title="แทรกรูปภาพ"
                   >
                     <ImagePlus size={14} />

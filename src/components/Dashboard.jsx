@@ -466,7 +466,7 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onViewChange, on
                                             <h4 className="font-thai font-bold text-[15px] truncate" style={{ color: 'var(--text-2)' }}>{doc.title}</h4>
                                             <p className="font-thai text-[11.5px]" style={{ color: 'var(--text-4)' }}>{doc.topic} · ลบเมื่อ {new Date(doc.deletedAt).toLocaleDateString('th-TH')}</p>
                                         </div>
-                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                        <div className="flex items-center gap-2 transition-all">
                                             <button onClick={() => onRestoreDocument && onRestoreDocument(doc.id)} className="flex items-center gap-1 font-thai" style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', border: '1px solid var(--line)', borderRadius: 8, padding: '5px 11px' }}><RotateCcw size={12} /> กู้คืน</button>
                                             {pendingDeleteId === doc.id ? (
                                                 <>
@@ -551,7 +551,8 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onViewChange, on
                                                 {/* More button */}
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setContextMenuFolder(contextMenuFolder === folder.id ? null : folder.id); }}
-                                                    className="absolute opacity-0 group-hover:opacity-100 transition-all"
+                                                    className="absolute transition-all"
+                                                    aria-label="ตัวเลือกโฟลเดอร์เพิ่มเติม"
                                                     style={{ bottom: 12, right: 10, padding: 4, borderRadius: 6, color: dark ? '#cabfac' : 'var(--text-4)' }}
                                                 >
                                                     <MoreVertical size={15} />
@@ -746,8 +747,8 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onViewChange, on
                                                 <div className="flex items-center gap-1.5 flex-shrink-0" style={{ color: 'var(--text-4)', fontSize: 12, fontFamily: 'Sora, sans-serif', width: 96, justifyContent: 'flex-end' }}>
                                                     <Calendar size={11} />{doc.date}
                                                 </div>
-                                                {/* Hover actions */}
-                                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                                                {/* Row actions */}
+                                                <div className="flex items-center gap-0.5 transition-all flex-shrink-0">
                                                     {[
                                                         { icon: Pencil, title: 'เปลี่ยนชื่อ', onClick: (e) => { e.stopPropagation(); startEditDoc(doc); }, hover: 'var(--accent)' },
                                                         { icon: Copy, title: 'ทำสำเนา', onClick: (e) => { e.stopPropagation(); onDuplicateDocument && onDuplicateDocument(doc.id); }, hover: 'var(--accent)' },
@@ -821,9 +822,9 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onViewChange, on
                                                 <div className="flex items-center justify-center" style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: 'var(--paper-2)', color: 'var(--text-3)' }}><FileText size={18} /></div>
                                                 <div className="flex items-center gap-1">
                                                     <span className="font-thai" style={{ fontSize: 11, fontWeight: 700, color: tag.color }}>{tag.label}</span>
-                                                    <button onClick={(e) => { e.stopPropagation(); startEditDoc(doc); }} className="flex items-center justify-center rounded-lg transition-colors opacity-0 group-hover:opacity-100" style={{ width: 26, height: 26, color: 'var(--text-5)' }} onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.backgroundColor = 'var(--paper-2)'; }} onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-5)'; e.currentTarget.style.backgroundColor = 'transparent'; }} title="เปลี่ยนชื่อ"><Pencil size={13} /></button>
-                                                    <button onClick={(e) => { e.stopPropagation(); onDuplicateDocument && onDuplicateDocument(doc.id); }} className="flex items-center justify-center rounded-lg transition-colors opacity-0 group-hover:opacity-100" style={{ width: 26, height: 26, color: 'var(--text-5)' }} onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.backgroundColor = 'var(--paper-2)'; }} onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-5)'; e.currentTarget.style.backgroundColor = 'transparent'; }} title="ทำสำเนา"><Copy size={13} /></button>
-                                                    <button onClick={(e) => { e.stopPropagation(); onDeleteDocument && onDeleteDocument(doc.id); }} className="flex items-center justify-center rounded-lg transition-colors opacity-0 group-hover:opacity-100" style={{ width: 26, height: 26, color: 'var(--text-5)' }} onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.backgroundColor = 'var(--danger-bg)'; }} onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-5)'; e.currentTarget.style.backgroundColor = 'transparent'; }} title="ลบ"><Trash2 size={13} /></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); startEditDoc(doc); }} className="flex items-center justify-center rounded-lg transition-colors" style={{ width: 26, height: 26, color: 'var(--text-5)' }} onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.backgroundColor = 'var(--paper-2)'; }} onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-5)'; e.currentTarget.style.backgroundColor = 'transparent'; }} title="เปลี่ยนชื่อ"><Pencil size={13} /></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); onDuplicateDocument && onDuplicateDocument(doc.id); }} className="flex items-center justify-center rounded-lg transition-colors" style={{ width: 26, height: 26, color: 'var(--text-5)' }} onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.backgroundColor = 'var(--paper-2)'; }} onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-5)'; e.currentTarget.style.backgroundColor = 'transparent'; }} title="ทำสำเนา"><Copy size={13} /></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); onDeleteDocument && onDeleteDocument(doc.id); }} className="flex items-center justify-center rounded-lg transition-colors" style={{ width: 26, height: 26, color: 'var(--text-5)' }} onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.backgroundColor = 'var(--danger-bg)'; }} onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-5)'; e.currentTarget.style.backgroundColor = 'transparent'; }} title="ลบ"><Trash2 size={13} /></button>
                                                 </div>
                                             </div>
                                             <div className="mb-auto">
@@ -847,7 +848,7 @@ const Dashboard = ({ documents, folders = [], trashedDocs = [], onViewChange, on
                                             <div className="flex items-center justify-between pt-3 mt-3" style={{ borderTop: '1px solid var(--line)' }}>
                                                 <div className="flex items-center gap-1.5 text-[12px]" style={{ color: 'var(--text-4)', fontFamily: 'Sora, sans-serif' }}><Calendar size={12} />{doc.date}</div>
                                                 <button onClick={() => onOpenDocument && onOpenDocument(doc)}
-                                                    className="font-thai transition-all opacity-0 group-hover:opacity-100"
+                                                    className="font-thai transition-all"
                                                     style={{ fontSize: 12, fontWeight: 700, color: '#fff', backgroundColor: 'var(--ink)', borderRadius: 8, padding: '5px 12px' }}>เปิด</button>
                                             </div>
                                         </div>

@@ -20,7 +20,7 @@ const SafeMarkdownPreview = ({ content, baseFontPx, plainBlockquote }) => (
     </ErrorBoundary>
 );
 
-const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditStart, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
+const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, showSolution = true, onDelete, onUpdate, onMove, isSelected, onSelect, isExplicitEditing, onEditStart, onEditEnd, canMoveUp, canMoveDown, isViewOnly, frameStyle, addToast }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(content || '');
     const [showPreview, setShowPreview] = useState(true);
@@ -199,7 +199,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                 >
                     {/* Hover Controls — drag handle stays mounted (dnd needs it); move buttons hide while editing */}
                     {!isViewOnly && (
-                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
+                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 print:hidden">
                             <div
                                 {...provided.dragHandleProps}
                                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
@@ -377,7 +377,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
 
                         {/* Edit Button Overlay */}
                         {!isEditing && !isViewOnly && (
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+                            <div className="absolute top-2 right-2 print:hidden">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); beginEdit(); }}
                                     className="bg-white/95 backdrop-blur border border-gray-200 shadow-sm rounded-lg px-2.5 py-1.5 text-xs text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center gap-1.5"
@@ -392,6 +392,7 @@ const MarkdownItem = memo(({ id, index, content, size = 'medium', fontScale, sho
                     <IconLibraryModal
                         isOpen={showIconLibrary}
                         onClose={() => setShowIconLibrary(false)}
+                        addToast={addToast}
                         onSelect={(iconSrc) => { handleInsertIcon(`![](${iconSrc})`); setShowIconLibrary(false); }}
                     />
                 </div>

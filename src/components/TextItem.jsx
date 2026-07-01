@@ -147,7 +147,7 @@ const TextItem = memo(({ id, index, content, size = 'medium', fontScale, onDelet
                 >
                     {/* Hover Controls — drag handle stays mounted (dnd needs it); move buttons hide while editing */}
                     {!isViewOnly && (
-                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
+                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 print:hidden">
                             <div
                                 {...provided.dragHandleProps}
                                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"

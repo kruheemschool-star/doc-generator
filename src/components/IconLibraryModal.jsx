@@ -12,7 +12,7 @@ import { useModalA11y } from '../hooks/useModalA11y';
  * of any one document. Icons load once per modal-open and are cached in
  * local state; upload/delete write straight through to Firestore.
  */
-const IconLibraryModal = ({ isOpen, onClose, onSelect }) => {
+const IconLibraryModal = ({ isOpen, onClose, onSelect, addToast }) => {
     const [icons, setIcons] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
@@ -54,19 +54,24 @@ const IconLibraryModal = ({ isOpen, onClose, onSelect }) => {
         }
 
         if (failed.length > 0) {
-            setError(`อัปโหลดไม่สำเร็จ ${failed.length} จาก ${files.length} ไฟล์ — ${failed.join(', ')}`);
+            const msg = `อัปโหลดไม่สำเร็จ ${failed.length} จาก ${files.length} ไฟล์ — ${failed.join(', ')}`;
+            setError(msg);
+            addToast?.(msg, 'error', 5000);
         }
         setIsUploading(false);
         setUploadProgress(null);
-    }, []);
+    }, [addToast]);
 
     const handleRename = useCallback((iconId, name) => {
         setIcons(prev => prev.map(ic => ic.id === iconId ? { ...ic, name } : ic));
     }, []);
 
     const handleRenameCommit = useCallback((icon) => {
-        saveIcon(icon).catch(() => setError('บันทึกชื่อไม่สำเร็จ'));
-    }, []);
+        saveIcon(icon).catch(() => {
+            setError('บันทึกชื่อไม่สำเร็จ');
+            addToast?.('บันทึกชื่อไอคอนไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 4000);
+        });
+    }, [addToast]);
 
     const handleDelete = useCallback(async (iconId) => {
         if (!window.confirm('ลบไอคอนนี้จากคลังหรือไม่? (ไอคอนที่ใช้ในเอกสารเดิมจะไม่หายไป)')) return;
@@ -75,8 +80,9 @@ const IconLibraryModal = ({ isOpen, onClose, onSelect }) => {
             await deleteIcon(iconId);
         } catch {
             setError('ลบไอคอนไม่สำเร็จ — โปรดลองอีกครั้ง');
+            addToast?.('ลบไอคอนไม่สำเร็จ — โปรดลองอีกครั้ง', 'error', 4000);
         }
-    }, []);
+    }, [addToast]);
 
     if (!isOpen) return null;
 
@@ -149,7 +155,7 @@ const IconLibraryModal = ({ isOpen, onClose, onSelect }) => {
                                     </button>
                                     <button
                                         onClick={() => handleDelete(icon.id)}
-                                        className="absolute top-1 right-1 p-1 rounded-lg bg-white/90 dark:bg-slate-900/90 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                                        className="absolute top-1 right-1 p-1 rounded-lg bg-white/90 dark:bg-slate-900/90 text-gray-400 hover:text-red-600 transition-opacity shadow-sm"
                                         aria-label={`ลบไอคอน ${icon.name}`}
                                         title="ลบจากคลัง"
                                     >

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
 import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2, Contrast, Grid3x3, GalleryThumbnails, Sticker, BookmarkPlus } from 'lucide-react';
@@ -18,7 +18,7 @@ import ImportPreview from './ImportPreview';
 import TweaksPanel from './TweaksPanel';
 import PageThumbnailPanel from './PageThumbnailPanel';
 import IconLibraryModal from './IconLibraryModal';
-import { saveIcon } from '../firebase';
+import { saveIcon, estimateDocSize, SAFE_DOC_SIZE } from '../firebase';
 import { DEFAULT_DOC_THEME, normalizeTheme, themeToCssVars } from '../data/docThemes';
 import { buildFrameStyle, DEFAULT_FRAME, DEFAULT_FILL, FILL_PRESETS, FRAME_STYLE_OPTIONS } from '../utils/itemFrame';
 import { tryParseImportJSON, normalizeImportedQuestion, isProblemSolutionExport, mergeProblemsAndSolutions, isSolutionOnlyExport, solutionsToMarkdownBlocks, splitMarkdownByHeading } from '../utils/importParser';
@@ -106,6 +106,26 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         setSaveStatus('unsaved');
     }, [pages, fontId, documentTitle, docTheme]);
 
+    // Closing the tab or reloading otherwise silently drops any unsaved work —
+    // this is the browser's own confirmation prompt (the custom string is
+    // ignored by modern browsers, which show a generic message instead).
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (!hasUnsavedChanges) return;
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges]);
+
+    // Same shape as the actual save payload, so this tracks the real write size —
+    // warns before the user hits Save and is surprised by DocumentTooLargeError.
+    const docSizeInfo = useMemo(() => {
+        const size = estimateDocSize({ pages, documentTitle, fontId, theme: docTheme });
+        return { size, percent: Math.round((size / SAFE_DOC_SIZE) * 100) };
+    }, [pages, documentTitle, fontId, docTheme]);
+
     const handleManualSave = useCallback(async () => {
         if (!onSave || !pages) return;
         // Guard against concurrent saves: rapid clicks / repeated Ctrl+S while a write
@@ -144,14 +164,26 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     // Black-and-white print: forces all text to black + images to grayscale on
     // print only (screen stays in colour) to save colour toner.
     const [bwPrint, setBwPrint] = useState(false);
-    const [zoomLevel, setZoomLevel] = useState(() => {
-        // Auto-fit on mobile: A4 = 210mm ≈ 793px. On viewport < 800px, scale down.
+    // Auto-fit on mobile: A4 = 210mm ≈ 793px. On viewport < 800px, scale down.
+    const computeAutoFitZoom = () => {
         if (typeof window === 'undefined') return 100;
         const vw = window.innerWidth;
         if (vw < 480) return Math.max(50, Math.round((vw - 32) / 793 * 100));
         if (vw < 800) return Math.max(60, Math.round((vw - 64) / 793 * 100));
         return 100;
-    });
+    };
+    const [zoomLevel, setZoomLevel] = useState(computeAutoFitZoom);
+    // Once the user touches the zoom +/- buttons, their choice wins — auto-fit
+    // only keeps adjusting on resize/rotate until they've picked their own level.
+    const hasManualZoomRef = useRef(false);
+    useEffect(() => {
+        const handleResize = () => {
+            if (hasManualZoomRef.current) return;
+            setZoomLevel(computeAutoFitZoom());
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
     const [globalFontSize, setGlobalFontSize] = useState('medium');
     const [showDebug, setShowDebug] = useState(false);
     const [isViewOnly, setIsViewOnly] = useState(false);
@@ -834,6 +866,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             canMoveDown: !isLastItem,
             isViewOnly,
             frameStyle: buildFrameStyle(q),
+            addToast,
         };
 
         if (q.type === 'text') return (
@@ -930,6 +963,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         return null;
     })();
     const isTextLikeSelected = selectedItem && (selectedItem.type === 'text' || selectedItem.type === 'markdown');
+    // Scratch-paper spacers always render their own fixed grid border — a
+    // custom frame would silently do nothing, so the control is disabled
+    // instead of accepting settings that never take effect.
+    const isScratchPaperSelected = selectedItem?.type === 'spacer' && selectedItem?.paperStyle === 'scratch';
+    // Enabled-but-empty (no logo/text set yet) shouldn't cost every page a
+    // blank reserved strip — treat it like disabled until there's something to show.
+    const hasFooterContent = docTheme.footerEnabled && !!(docTheme.footerLogoSrc || docTheme.footerText);
 
     // Friendly label for the selected item's type (shown in the toolbar).
     const ITEM_TYPE_LABELS = { text: 'ข้อความ', markdown: 'Markdown', columns: '2 คอลัมน์', image: 'รูปภาพ', divider: 'เส้นคั่น', spacer: 'ช่องว่าง' };
@@ -1081,25 +1121,27 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                         <div className="flex items-start justify-between">
                                             {/* Left: logo + brand */}
                                             <div className="flex items-center gap-2.5">
-                                                <img src="/kruheem-logo.png" alt="คณิตศาสตร์ครูฮีม" className="w-[38px] h-[38px] object-contain" />
-                                                <span className="text-[17px] font-bold tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--doc-head-font, 'Itim', 'Sarabun', sans-serif)", color: "var(--doc-accent, #0f766e)" }}>คณิตศาสตร์ครูฮีม</span>
+                                                <img src={docTheme.headerLogoSrc || "/kruheem-logo.png"} alt={docTheme.headerBrandText || 'คณิตศาสตร์ครูฮีม'} className="w-[38px] h-[38px] object-contain" />
+                                                <span className="text-[17px] font-bold tracking-wide whitespace-nowrap" style={{ fontFamily: "var(--doc-head-font, 'Itim', 'Sarabun', sans-serif)", color: "var(--doc-accent, #0f766e)" }}>{docTheme.headerBrandText || 'คณิตศาสตร์ครูฮีม'}</span>
                                             </div>
                                             {/* Right: contact channels + page chrome */}
                                             <div className="flex flex-col items-end gap-1">
-                                                <div className="flex items-center gap-3 text-[9px] font-medium text-black/70" style={{ fontFamily: "'Kanit', 'Noto Sans Thai', sans-serif" }}>
-                                                    <span className="flex items-center gap-1">
-                                                        <span className="inline-flex items-center justify-center w-[13px] h-[13px] rounded-[3px] text-white text-[9px] font-bold leading-none" style={{ backgroundColor: '#1877f2' }}>f</span>
-                                                        คณิตครูฮีม
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <span className="inline-flex items-center justify-center px-1 h-[13px] rounded-[3px] text-white text-[7px] font-bold leading-none" style={{ backgroundColor: '#06c755' }}>LINE</span>
-                                                        @kruheem
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Globe size={11} style={{ color: '#0f766e' }} />
-                                                        www.kruheemmath.com
-                                                    </span>
-                                                </div>
+                                                {docTheme.headerShowSocial && (
+                                                    <div className="flex items-center gap-3 text-[9px] font-medium text-black/70" style={{ fontFamily: "'Kanit', 'Noto Sans Thai', sans-serif" }}>
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="inline-flex items-center justify-center w-[13px] h-[13px] rounded-[3px] text-white text-[9px] font-bold leading-none" style={{ backgroundColor: '#1877f2' }}>f</span>
+                                                            {docTheme.headerFacebookText}
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="inline-flex items-center justify-center px-1 h-[13px] rounded-[3px] text-white text-[7px] font-bold leading-none" style={{ backgroundColor: '#06c755' }}>LINE</span>
+                                                            {docTheme.headerLineText}
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Globe size={11} style={{ color: '#0f766e' }} />
+                                                            {docTheme.headerWebsiteText}
+                                                        </span>
+                                                    </div>
+                                                )}
                                                 <div className="flex items-center gap-2 pointer-events-auto">
                                                     <input
                                                         type="text"
@@ -1131,7 +1173,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             <div className="mt-1.5 h-[3px] w-full rounded-full" style={{ backgroundColor: "var(--doc-accent, #0f766e)" }} />
                                         )}
                                     </div>
-                                    <div className="px-[18mm] pt-[22mm] pb-[12mm]" data-page-content>
+                                    <div
+                                        className="px-[18mm] pt-[22mm]"
+                                        style={{ paddingBottom: hasFooterContent ? `${docTheme.footerHeightMm + 8}mm` : '12mm' }}
+                                        data-page-content
+                                    >
                                         <Droppable droppableId={page.id}>
                                             {(provided, snapshot) => (
                                                 <div {...provided.droppableProps} ref={provided.innerRef} className={`min-h-[200px] rounded-xl transition-all ${snapshot.isDraggingOver ? 'bg-blue-50/50 ring-2 ring-blue-200 ring-dashed' : ''}`}>
@@ -1148,6 +1194,25 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             )}
                                         </Droppable>
                                     </div>
+                                    {/* Page Footer — off by default; height/content set in Tweaks → ท้ายกระดาษ */}
+                                    {hasFooterContent && (
+                                        <div
+                                            className="absolute bottom-[8mm] left-[16mm] right-[16mm] flex items-center justify-center gap-2.5 pointer-events-none select-none"
+                                            style={{ height: `${docTheme.footerHeightMm}mm` }}
+                                        >
+                                            {docTheme.footerLogoSrc && (
+                                                <img src={docTheme.footerLogoSrc} alt="" className="h-[24px] w-auto object-contain flex-shrink-0" />
+                                            )}
+                                            {docTheme.footerText && (
+                                                <span
+                                                    className="text-[10px] text-center leading-snug"
+                                                    style={{ fontFamily: getFontStack(docTheme.footerFontId), color: docTheme.footerColor }}
+                                                >
+                                                    {docTheme.footerText}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </DragDropContext>
@@ -1308,7 +1373,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                 <div className="fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden floating-toolbar max-w-[calc(100vw-1rem)]">
                     {/* Per-item border (frame) popover */}
-                    {showBorderPopover && selectedItem && (
+                    {showBorderPopover && selectedItem && !isScratchPaperSelected && (
                         <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[300px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2 text-gray-800 dark:text-slate-100"><Square size={16} className="text-teal-600" /><span className="font-bold text-sm">กรอบกล่อง</span></div>
@@ -1446,8 +1511,8 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 {tDivider}
 
-                                <button onClick={undo} disabled={!canUndo} className={canUndo ? tbtn : `${tbtn} opacity-30 cursor-not-allowed`} aria-label="ย้อนกลับ (Undo)" title="ย้อนกลับ (Undo)"><RotateCcw size={18} /></button>
-                                <button onClick={redo} disabled={!canRedo} className={canRedo ? tbtn : `${tbtn} opacity-30 cursor-not-allowed`} aria-label="ทำซ้ำ (Redo)" title="ทำซ้ำ (Redo)"><RotateCw size={18} /></button>
+                                <button onClick={undo} disabled={!canUndo} className={canUndo ? tbtn : `${tbtn} opacity-30 cursor-not-allowed`} aria-label="ย้อนกลับ (Undo)" title="ย้อนกลับ (Undo) — Ctrl/⌘+Z"><RotateCcw size={18} /></button>
+                                <button onClick={redo} disabled={!canRedo} className={canRedo ? tbtn : `${tbtn} opacity-30 cursor-not-allowed`} aria-label="ทำซ้ำ (Redo)" title="ทำซ้ำ (Redo) — Ctrl/⌘+Y หรือ Shift+Ctrl/⌘+Z"><RotateCw size={18} /></button>
 
                                 {tDivider}
 
@@ -1455,9 +1520,9 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 {tDivider}
 
-                                <button onClick={() => setZoomLevel(z => Math.max(50, z - 10))} className={tbtn} aria-label="ซูมออก" title="ซูมออก"><ZoomOut size={18} /></button>
+                                <button onClick={() => { hasManualZoomRef.current = true; setZoomLevel(z => Math.max(50, z - 10)); }} className={tbtn} aria-label="ซูมออก" title="ซูมออก"><ZoomOut size={18} /></button>
                                 <span className="text-xs text-[#a39a8c] font-semibold min-w-[42px] text-center select-none tabular-nums" style={{ fontFamily: "'Sora', sans-serif" }}>{zoomLevel}%</span>
-                                <button onClick={() => setZoomLevel(z => Math.min(150, z + 10))} className={tbtn} aria-label="ซูมเข้า" title="ซูมเข้า"><ZoomIn size={18} /></button>
+                                <button onClick={() => { hasManualZoomRef.current = true; setZoomLevel(z => Math.min(150, z + 10)); }} className={tbtn} aria-label="ซูมเข้า" title="ซูมเข้า"><ZoomIn size={18} /></button>
 
                                 {tDivider}
 
@@ -1511,8 +1576,16 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 <button onClick={(e) => { e.stopPropagation(); setShowAddMenu(s => !s); }} className="editor-add-btn h-10 pl-2.5 pr-3 rounded-xl text-sm font-bold flex items-center gap-1.5 text-white transition-all active:scale-95 flex-shrink-0" style={{ backgroundColor: showAddMenu ? 'var(--accent-press)' : 'var(--accent)' }} aria-label="แทรกเนื้อหา" title="แทรกถัดจากกล่องนี้"><Plus size={18} strokeWidth={2.4} /> แทรก <ChevronDown size={14} className={`transition-transform ${showAddMenu ? 'rotate-180' : ''}`} /></button>
 
-                                <button onClick={() => handleDuplicateItem(selectedItemId)} className={tbtn} aria-label="ทำสำเนา" title="ทำสำเนา (Duplicate)"><Copy size={18} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); setShowBorderPopover(s => !s); }} className={(selectedItem && ((selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || selectedItem.fillColor)) || showBorderPopover ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="กรอบและสีพื้นกล่อง" title="กรอบและสีพื้นกล่อง"><Square size={18} /></button>
+                                <button onClick={() => handleDuplicateItem(selectedItemId)} className={tbtn} aria-label="ทำสำเนา" title="ทำสำเนา (Duplicate) — Ctrl/⌘+D"><Copy size={18} /></button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); if (!isScratchPaperSelected) setShowBorderPopover(s => !s); }}
+                                    disabled={isScratchPaperSelected}
+                                    className={isScratchPaperSelected
+                                        ? `${tbtn} opacity-40 cursor-not-allowed`
+                                        : ((selectedItem && ((selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || selectedItem.fillColor)) || showBorderPopover ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn)}
+                                    aria-label="กรอบและสีพื้นกล่อง"
+                                    title={isScratchPaperSelected ? 'กระดาษทดเลขมีกรอบตายตัว ปรับแต่งกรอบไม่ได้' : 'กรอบและสีพื้นกล่อง'}
+                                ><Square size={18} /></button>
                                 {selectedItem?.type === 'image' && (
                                     <button onClick={(e) => { e.stopPropagation(); setShowIconLibrary(true); }} className={showIconLibrary ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="เลือกไอคอนจากคลัง" title="เลือกไอคอนจากคลัง"><Sticker size={18} /></button>
                                 )}
@@ -1530,6 +1603,21 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                         {tDivider}
 
+                        {/* Warn before Save throws DocumentTooLargeError — most documents
+                            never get near this, so it only shows once it's actually relevant. */}
+                        {docSizeInfo.percent >= 70 && (
+                            <div
+                                className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg flex-shrink-0"
+                                style={docSizeInfo.percent >= 95
+                                    ? { backgroundColor: 'rgba(239,68,68,0.15)', color: '#f87171' }
+                                    : { backgroundColor: 'rgba(224,184,122,0.15)', color: '#e0b87a' }}
+                                title={`ขนาดเอกสารประมาณ ${Math.round(docSizeInfo.size / 1024)} KB จาก ${Math.round(SAFE_DOC_SIZE / 1024)} KB ที่บันทึกได้ — ${docSizeInfo.percent >= 95 ? 'ใกล้เต็มมาก ลองลดจำนวน/ขนาดรูปภาพก่อนบันทึก' : 'ใกล้เต็มแล้ว ลองลดจำนวน/ขนาดรูปภาพถ้าจะเพิ่มเนื้อหาอีกมาก'}`}
+                            >
+                                <AlertTriangle size={14} />
+                                <span className="text-[11px] font-bold whitespace-nowrap">เอกสารใกล้เต็ม {docSizeInfo.percent}%</span>
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-2 pr-0.5 flex-shrink-0">
                             <button
                                 onClick={handleManualSave}
@@ -1538,7 +1626,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 style={hasUnsavedChanges && saveStatus !== 'saving'
                                     ? { backgroundColor: 'var(--ink-soft)' }
                                     : { backgroundColor: '#201b15', color: '#6b6357', cursor: 'not-allowed' }}
-                                aria-label="บันทึกการเปลี่ยนแปลง" title="บันทึกการเปลี่ยนแปลง"
+                                aria-label="บันทึกการเปลี่ยนแปลง" title="บันทึกการเปลี่ยนแปลง — Ctrl/⌘+S"
                             >
                                 <Save size={18} />
                                 บันทึก
@@ -1683,6 +1771,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                     onChange={setDocTheme}
                     fontId={fontId}
                     onFontIdChange={setFontId}
+                    addToast={addToast}
                 />
 
                 {/* Page Thumbnail Panel — jump-to-page overview */}
@@ -1698,6 +1787,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                 <IconLibraryModal
                     isOpen={showIconLibrary}
                     onClose={() => setShowIconLibrary(false)}
+                    addToast={addToast}
                     onSelect={(iconSrc) => {
                         if (selectedItemId) handleUpdateItem(selectedItemId, { src: iconSrc });
                         setShowIconLibrary(false);

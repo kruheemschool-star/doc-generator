@@ -23,7 +23,7 @@ const ScratchGrid = ({ patternId }) => (
     </svg>
 );
 
-const SpacerItem = memo(({ id, index, height, paperStyle, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly }) => {
+const SpacerItem = memo(({ id, index, height, paperStyle, onDelete, onUpdate, onMove, isSelected, onSelect, canMoveUp, canMoveDown, isViewOnly, frameStyle }) => {
     const [currentHeight, setCurrentHeight] = useState(height || 50);
     const isScratchPaper = paperStyle === 'scratch';
 
@@ -49,7 +49,7 @@ const SpacerItem = memo(({ id, index, height, paperStyle, onDelete, onUpdate, on
                 >
                     {/* Hover Controls */}
                     {!isViewOnly && (
-                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto print:hidden">
+                        <div className="absolute right-full top-0 w-10 flex flex-col gap-1 items-center pt-2 print:hidden">
                             <div
                                 {...provided.dragHandleProps}
                                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab"
@@ -87,7 +87,7 @@ const SpacerItem = memo(({ id, index, height, paperStyle, onDelete, onUpdate, on
                         className="relative mx-auto"
                         handleComponent={{
                             bottom: (
-                                <div className="w-12 h-4 bg-gray-200 rounded-full mx-auto -mb-2 flex items-center justify-center cursor-row-resize opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-200">
+                                <div className="w-12 h-4 bg-gray-200 rounded-full mx-auto -mb-2 flex items-center justify-center cursor-row-resize hover:bg-blue-200">
                                     <MoveVertical size={12} className="text-gray-500" />
                                 </div>
                             )
@@ -101,7 +101,7 @@ const SpacerItem = memo(({ id, index, height, paperStyle, onDelete, onUpdate, on
                                     : 'border-gray-300 bg-gray-50/30 group-hover:bg-gray-50 group-hover:border-gray-400'
                                 }`
                                 }`}
-                            style={{ height: '100%' }}
+                            style={{ height: '100%', ...(!isScratchPaper && !isSelected ? frameStyle : undefined) }}
                         >
                             {isScratchPaper && <ScratchGrid patternId={`scratch-grid-${id}`} />}
                             {isScratchPaper ? (

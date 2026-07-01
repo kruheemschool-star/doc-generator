@@ -67,7 +67,9 @@ export class DocumentTooLargeError extends Error {
 }
 
 // Byte length of the JSON payload (Blob handles multibyte Thai/base64 correctly).
-const estimateDocSize = (obj) => {
+// Exported so the editor can show a live "document size" indicator before the
+// user hits Save and is surprised by DocumentTooLargeError.
+export const estimateDocSize = (obj) => {
   try {
     return new Blob([JSON.stringify(obj)]).size;
   } catch (_) {

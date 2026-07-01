@@ -48,6 +48,13 @@ const PreviewQuestion = ({ q, no }) => (
                         <MarkdownRenderer content={q.solution} plainBlockquote />
                     </div>
                 )}
+
+                {q.options && q.options.length > 0 && typeof q.correctIndex !== 'number' && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-600">
+                        <AlertCircle size={13} />
+                        ไม่มีตัวเลือกไหนถูกระบุว่าใช่คำตอบ (correctIndex หายไปหรือชี้เกินจำนวนตัวเลือก) — ตรวจสอบก่อนนำเข้า
+                    </div>
+                )}
             </div>
         </div>
     </div>
