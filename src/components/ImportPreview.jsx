@@ -92,15 +92,22 @@ const Placeholder = ({ icon: Icon, title, sub }) => (
     </div>
 );
 
-const ImportPreview = ({ text }) => {
+const ImportPreview = ({ text, forceMarkdown = false }) => {
     const result = useMemo(() => {
         if (!text || !text.trim()) return { state: 'empty' };
+        // An explicitly-picked .md/.markdown file skips the JSON attempt in
+        // handleImport() entirely (see WorksheetEditor.jsx) — mirror that here
+        // too, otherwise content that *happens* to parse as valid JSON (e.g. a
+        // markdown file that opens with a fenced ```{...}``` example) would
+        // preview as parsed questions/answers while the real import silently
+        // does something else, splitting into markdown boxes instead.
+        if (forceMarkdown) return { state: 'ok', kind: 'markdown', blocks: splitMarkdownByHeading(text) };
         const parsedRes = tryParseImportJSON(text);
         // Not JSON → treat the paste as Markdown and split it into section boxes,
         // mirroring exactly what handleImport() will create on "นำเข้า".
         if (!parsedRes.ok) return { state: 'ok', kind: 'markdown', blocks: splitMarkdownByHeading(text) };
         return { state: 'ok', ...classifyImport(parsedRes.parsed) };
-    }, [text]);
+    }, [text, forceMarkdown]);
 
     if (result.state === 'empty') {
         return <Placeholder icon={Eye} title="ตัวอย่างจะแสดงที่นี่" sub="วาง JSON หรือข้อความด้านซ้าย แล้วดูผลลัพธ์ก่อนนำเข้า" />;

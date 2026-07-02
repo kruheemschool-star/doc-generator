@@ -759,6 +759,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         insertItemsIntoPages([sectionHeaderItem, ...markdownItems]);
         setShowImportModal(false);
         setImportText('');
+        setImportIsExplicitMarkdown(false);
     };
 
     const handleImport = () => {
@@ -1738,7 +1739,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
                                     <div className="flex-1 min-h-0 flex flex-col">
                                         <div className="flex items-center justify-between mb-1.5 pl-1 gap-2">
-                                            {importIsExplicitMarkdown ? (
+                                            {importIsExplicitMarkdown && importText.trim() ? (
                                                 <span className="flex items-center gap-1.5 text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
                                                     <FileText size={12} /> ไฟล์ Markdown พร้อมนำเข้า
                                                 </span>
@@ -1762,7 +1763,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                     <div className="flex-1 min-h-0 flex flex-col">
                                         <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 pl-1">ตัวอย่างก่อนนำเข้า</span>
                                         <div className="flex-1 min-h-0 overflow-auto custom-scrollbar rounded-2xl border-2 border-gray-100 dark:border-slate-800 bg-gray-50/40 dark:bg-slate-900/40 p-4">
-                                            <ImportPreview text={importText} />
+                                            <ImportPreview text={importText} forceMarkdown={importIsExplicitMarkdown} />
                                         </div>
                                     </div>
                                 </div>
