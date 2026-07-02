@@ -123,22 +123,42 @@ export const mergeProblemsAndSolutions = (parsed) => {
 
 /**
  * Split a raw Markdown string into section blocks, breaking at ATX headings
- * (`#` … up to `maxLevel`). Each block keeps its heading together with the body
+ * (`#` … up to `maxLevel`), at thematic breaks (`---`/`***`/`___` on their own
+ * line), and at bold-numbered exercise markers (`**1.**`, `**2.**`, … at the
+ * very start of a line). Each block keeps a heading together with the body
  * that follows it; text before the first heading becomes its own leading block.
  *
  * Designed for the "นำเข้าเป็น Markdown แยกกล่องตามหัวข้อ" flow — each returned
  * block becomes one `markdown` content item, which lets the pagination hook
- * bin-pack the sections onto A4 pages by their measured height.
+ * bin-pack the sections onto A4 pages by their measured height. The two extra
+ * split signals matter in practice: lesson/exercise sheets often use bold
+ * pseudo-headers instead of nested headings — "**ตัวอย่างที่ 1**" separated by
+ * `---`, or "**1.**"/"**2.**" exercise numbers with no separator at all — and
+ * heading-only splitting left those glued into one oversized item that
+ * silently overflowed a page (never split, per useAutoPagination's rule that
+ * a single item can't be broken across pages).
  *
- * Fenced code blocks (``` / ~~~) are respected so a `#` comment inside code is
- * never mistaken for a heading. Consecutive headings (e.g. `##` then `###` with
- * no body between) stay grouped rather than producing empty stub boxes.
+ * Fenced code blocks (``` / ~~~) are respected so a `#`/`---`/`**N.**` inside
+ * code is never mistaken for a split point. Consecutive headings (e.g. `##`
+ * then `###` with no body between) stay grouped rather than producing empty
+ * stub boxes. A thematic-break line is itself dropped (not carried into
+ * either side) since it's a pure separator, not content.
  */
 export const splitMarkdownByHeading = (md, maxLevel = 3) => {
     if (!md || !md.trim()) return [];
     const lines = md.replace(/\r\n/g, '\n').split('\n');
     const splitRe = new RegExp(`^#{1,${maxLevel}}\\s+\\S`);
     const anyHeadingRe = /^#{1,6}\s+\S/;
+    // CommonMark thematic break: 3+ of the same -, _ or * on their own line,
+    // optionally spaced out. Requires the ENTIRE line to be just that — a
+    // markdown table separator row (`|---|---|`) has pipes in it and never
+    // matches, so table syntax is never mistaken for a section break.
+    const thematicBreakRe = /^[ \t]*([-_*])(?:[ \t]*\1){2,}[ \t]*$/;
+    // Deliberately narrow: bold content that's ONLY digits + a dot ("**1.**"),
+    // immediately followed by whitespace or end of line. Won't match a bold
+    // measurement or price ("**1.5 กก.**", "**100 บาท**") since those have
+    // more than a bare number inside the bold span.
+    const boldNumberRe = /^\*\*\d+\.\*\*(?:\s|$)/;
     const blocks = [];
     let current = [];
     let inFence = false;
@@ -152,7 +172,11 @@ export const splitMarkdownByHeading = (md, maxLevel = 3) => {
     };
     for (const line of lines) {
         if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
-        if (!inFence && splitRe.test(line) && hasBody()) flush();
+        if (!inFence && thematicBreakRe.test(line) && hasBody()) {
+            flush();
+            continue; // drop the --- itself, don't carry it into the next block
+        }
+        if (!inFence && (splitRe.test(line) || boldNumberRe.test(line)) && hasBody()) flush();
         current.push(line);
     }
     flush();

@@ -4,7 +4,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import 'katex/dist/katex.min.css';
-import { AlertTriangle, BookOpen, Lightbulb, Info, FileText, Ruler, Target } from 'lucide-react';
+import { AlertTriangle, BookOpen, Lightbulb, Info, FileText, Ruler, Target, MessageCircle } from 'lucide-react';
 
 // Print-friendly palette — single source of truth in src/data/pageTemplates.js
 import { PALETTE, LESSON_BOX_TYPES } from '../data/pageTemplates';
@@ -269,6 +269,16 @@ const getCalloutStyle = (text) => {
         bg: PALETTE.greenTint,
         border: PALETTE.greenDeep,
     };
+    // "Explain your reasoning to me" reflection prompts — a distinct pattern
+    // from tip/warn/example (asks the student to answer, not the teacher to
+    // state something), so it gets its own colour rather than falling to the
+    // generic note style.
+    if (text.includes('💭')) return {
+        type: 'discuss',
+        icon: <MessageCircle className="w-5 h-5" style={{ color: PALETTE.subhead }} />,
+        bg: '#eef2fb',
+        border: PALETTE.subhead,
+    };
     return fallback;
 };
 
@@ -368,25 +378,20 @@ const MarkdownRenderer = ({ content, baseFontPx, plainBlockquote = false }) => {
                             );
                         }
 
-                        let textContent = "";
-                        try {
-                            if (node && node.children && node.children.length > 0) {
-                                const firstChild = node.children[0];
-                                if (firstChild && firstChild.children && firstChild.children.length > 0) {
-                                    const firstDeepChild = firstChild.children[0];
-                                    if (firstDeepChild && firstDeepChild.value) {
-                                        textContent = firstDeepChild.value;
-                                    } else if (firstDeepChild && firstDeepChild.type === 'strong') {
-                                        if (firstDeepChild.children && firstDeepChild.children[0]) {
-                                            textContent = firstDeepChild.children[0].value || "";
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("Error parsing blockquote content", e);
-                        }
-
+                        // `node` here is a hast (HTML AST) node, not the markdown AST —
+                        // react-markdown hands components the post-mdast-to-hast tree, where
+                        // block-level children are interspersed with whitespace-only text
+                        // nodes (e.g. "\n" between the <blockquote> tag and its first <p>).
+                        // Indexing straight into node.children[0] grabs that whitespace node
+                        // instead of the real paragraph, so walk the whole subtree instead —
+                        // robust to however many wrapper/whitespace nodes sit in between.
+                        const extractText = (n) => {
+                            if (!n) return '';
+                            if (n.type === 'text') return n.value || '';
+                            if (Array.isArray(n.children)) return n.children.map(extractText).join('');
+                            return '';
+                        };
+                        const textContent = extractText(node).slice(0, 200);
                         const style = getCalloutStyle(textContent);
 
                         return (
