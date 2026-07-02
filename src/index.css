@@ -433,6 +433,18 @@
     filter: grayscale(100%) !important;
   }
 
+  /* Lesson-box header bars (MarkdownRenderer's ```box:TYPE blocks) fill with a
+     solid brand colour + white text on screen. The universal background-strip
+     rule above turns that fill transparent on paper, which would leave white
+     text invisible on a now-white bar — so print swaps the text to the same
+     brand colour instead. Set per-instance via the --box-print-color custom
+     property (colour varies by box type, so this can't be a static Tailwind
+     print: class). Beats the inline `color: #fff` because !important always
+     wins over a plain inline style, regardless of source order. */
+  .lesson-box-bar-text {
+    color: var(--box-print-color, #000) !important;
+  }
+
   /* Preserve watermark transforms in print */
   .watermark-overlay,
   .watermark-overlay * {

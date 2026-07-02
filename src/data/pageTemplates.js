@@ -49,6 +49,36 @@ export const PALETTE = {
 };
 
 // ============================================================
+// LESSON BOX TYPES — "header-bar" note cards (```box:TYPE blocks, see
+// MarkdownRenderer.jsx). Distinct from the older left-border+tint callouts
+// above (still used by the `> emoji` blockquote convention) — this is a
+// separate, newer visual language: a solid-colour title bar + white body.
+// `note`/`realworld` colours are this app's own pick (not fully visible in
+// the reference design the set was modelled on).
+// ============================================================
+export const LESSON_BOX_TYPES = {
+    objective: { label: 'จุดประสงค์การเรียนรู้', bar: '#2563eb', mode: 'numbered' },
+    definition: { label: 'บทนิยาม', bar: '#6d28d9', mode: 'text' },
+    concept: { label: 'สรุปสำคัญ', bar: '#2563eb', mode: 'text' },
+    formula: { label: 'สูตรสำคัญ', bar: '#a8790f', mode: 'center' },
+    note: { label: 'ข้อสังเกต', bar: '#0284c7', mode: 'text' },
+    insight: { label: 'ครูชวนคิด', bar: '#c2560c', mode: 'text' },
+    tip: { label: 'เคล็ดลับ', bar: '#0f766e', mode: 'text' },
+    warning: { label: 'ข้อควรระวัง', bar: '#be123c', mode: 'text' },
+    example: { label: 'ตัวอย่างที่ 1', bar: '#6d28d9', mode: 'text' },
+    check: { label: 'เช็คความเข้าใจ', bar: '#7c3aed', mode: 'choices' },
+    practice: { label: 'แบบฝึกหัด', bar: '#059669', mode: 'numbered-blank' },
+    challenge: { label: 'โจทย์ท้าทาย ★', bar: '#c2560c', mode: 'text' },
+    answer: { label: 'เฉลย', bar: '#0f766e', mode: 'text' },
+    funfact: { label: 'รู้หรือไม่?', bar: '#be185d', mode: 'text' },
+    realworld: { label: 'นำไปใช้จริง', bar: '#0891b2', mode: 'text' },
+    vocab: { label: 'คำศัพท์น่ารู้', bar: '#475569', mode: 'vocab' },
+    recap: { label: 'สรุปท้ายบท', bar: '#2563eb', mode: 'arrow-list' },
+    reflection: { label: 'ชวนคิดต่อ', bar: '#c2560c', mode: 'italic' },
+    table: { label: 'ตาราง', bar: '#2563eb', mode: 'table' },
+};
+
+// ============================================================
 // A. SECTION TEMPLATES
 // ============================================================
 
@@ -187,6 +217,231 @@ const A_TEMPLATES = [
             { type: 'markdown', content: '```topic\nม.X\nชื่อหัวข้อบทเรียน · คำอธิบายสั้นๆ ของบทนี้\nคำค้นภาษาอังกฤษ · เว็บไซต์ของคุณ\n```', size: 'medium' },
         ],
     },
+
+    // --- "Lesson note" header-bar cards (LESSON_BOX_TYPES) — a newer, separate
+    // visual language from a1-a10 above: solid colour title bar + white body,
+    // instead of left-border + tint. Content is instructional placeholder text
+    // (what to type), not a filled example — matches every template above.
+    {
+        id: 'a12-objective',
+        category: 'section',
+        templateName: 'จุดประสงค์การเรียนรู้',
+        icon: '🎯',
+        description: 'แถบสีน้ำเงิน + รายการเป้าหมายเป็นวงกลมเลข 1 2 3',
+        items: [
+            { type: 'markdown', content: '```box:objective\nจบบทนี้ นักเรียนจะ\nระบุจุดประสงค์ข้อที่ 1\nระบุจุดประสงค์ข้อที่ 2\nระบุจุดประสงค์ข้อที่ 3\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a13-definition-bar',
+        category: 'section',
+        templateName: 'บทนิยาม (แถบสี)',
+        icon: '🔷',
+        description: 'แถบสีม่วง — ใช้กับคำนิยาม/ความหมายของคำศัพท์',
+        items: [
+            { type: 'markdown', content: '```box:definition\nบทนิยาม\nพิมพ์คำนิยามหรือความหมายของคำศัพท์ที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a14-concept',
+        category: 'section',
+        templateName: 'สรุปสำคัญ',
+        icon: '🔑',
+        description: 'แถบสีน้ำเงิน — ใช้เน้นใจความสำคัญสั้นๆ',
+        items: [
+            { type: 'markdown', content: '```box:concept\nสรุปสำคัญ\nพิมพ์ใจความสำคัญที่ต้องการเน้นย้ำที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a15-formula-bar',
+        category: 'section',
+        templateName: 'สูตรสำคัญ (แถบสี)',
+        icon: '📐',
+        description: 'แถบสีทอง + สูตรจัดกึ่งกลาง (อีกสไตล์หนึ่งของ "สูตรสำคัญ")',
+        items: [
+            { type: 'markdown', content: '```box:formula\nสูตรสำคัญ\n$$y = ax + b$$\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a16-note',
+        category: 'section',
+        templateName: 'ข้อสังเกต',
+        icon: '👁️',
+        description: 'แถบสีฟ้า — ใช้ตั้งข้อสังเกตเพิ่มเติมจากเนื้อหาหลัก',
+        items: [
+            { type: 'markdown', content: '```box:note\nข้อสังเกต\nพิมพ์ข้อสังเกตเพิ่มเติมที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a17-insight',
+        category: 'section',
+        templateName: 'ครูชวนคิด',
+        icon: '🧑‍🏫',
+        description: 'แถบสีส้ม — มุมมองหรือเทคนิคช่วยจำแบบครู',
+        items: [
+            { type: 'markdown', content: '```box:insight\nครูชวนคิด\nพิมพ์มุมมองหรือเทคนิคช่วยจำที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a18-tip-bar',
+        category: 'section',
+        templateName: 'เคล็ดลับ (แถบสี)',
+        icon: '💡',
+        description: 'แถบสีเขียวมิ้นต์ (อีกสไตล์หนึ่งของ "เคล็ดลับ")',
+        items: [
+            { type: 'markdown', content: '```box:tip\nเคล็ดลับ\nพิมพ์เคล็ดลับที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a19-warning-bar',
+        category: 'section',
+        templateName: 'ข้อควรระวัง (แถบสี)',
+        icon: '⚠️',
+        description: 'แถบสีแดงเข้ม (อีกสไตล์หนึ่งของ "ข้อควรระวัง")',
+        items: [
+            { type: 'markdown', content: '```box:warning\nข้อควรระวัง\nพิมพ์ข้อผิดพลาดที่พบบ่อยที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a20-example-bar',
+        category: 'section',
+        templateName: 'ตัวอย่างพร้อมวิธีทำ (แถบสี)',
+        icon: '📝',
+        description: 'แถบสีม่วง — โจทย์ตัวอย่าง + ขั้นตอนวิธีทำ',
+        items: [
+            { type: 'markdown', content: '```box:example\nตัวอย่างที่ 1\nพิมพ์โจทย์ที่นี่...\nวิธีทำ = พิมพ์ขั้นตอนที่นี่\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a21-check',
+        category: 'section',
+        templateName: 'เช็คความเข้าใจ',
+        icon: '❓',
+        description: 'แถบสีม่วงคราม + คำถามพร้อมตัวเลือกแบบปุ่มกลม',
+        items: [
+            { type: 'markdown', content: '```box:check\nเช็คความเข้าใจ\nพิมพ์คำถามที่นี่...\nก. ตัวเลือก 1 | ข. ตัวเลือก 2 | ค. ตัวเลือก 3 | ง. ตัวเลือก 4\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a22-practice-bar',
+        category: 'section',
+        templateName: 'แบบฝึกหัด + ช่องเติมคำตอบ',
+        icon: '✍️',
+        description: 'แถบสีเขียว + โจทย์เป็นวงกลมเลข พร้อมเส้นประให้เติมคำตอบ',
+        items: [
+            { type: 'markdown', content: '```box:practice\nแบบฝึกหัด 1.1\nพิมพ์โจทย์ข้อที่ 1\nพิมพ์โจทย์ข้อที่ 2\nพิมพ์โจทย์ข้อที่ 3\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a23-challenge',
+        category: 'section',
+        templateName: 'โจทย์ท้าทาย',
+        icon: '⭐',
+        description: 'แถบสีส้ม + ป้าย "ระดับยาก" มุมขวาบน',
+        items: [
+            { type: 'markdown', content: '```box:challenge\nโจทย์ท้าทาย ★ | ระดับยาก\nพิมพ์โจทย์ท้าทายที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a24-answer-bar',
+        category: 'section',
+        templateName: 'เฉลย (แถบสี)',
+        icon: '✅',
+        description: 'แถบสีเขียวมิ้นต์ — สรุปเฉลยแบบฝึกหัดรวม',
+        items: [
+            { type: 'markdown', content: '```box:answer\nเฉลยแบบฝึกหัด 1.1\n1\\) พิมพ์คำตอบข้อ 1   2\\) พิมพ์คำตอบข้อ 2   3\\) พิมพ์คำตอบข้อ 3\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a25-funfact',
+        category: 'section',
+        templateName: 'รู้หรือไม่',
+        icon: '❔',
+        description: 'แถบสีชมพูบานเย็น — ข้อมูลน่าสนใจเสริมความรู้',
+        items: [
+            { type: 'markdown', content: '```box:funfact\nรู้หรือไม่?\nพิมพ์ข้อมูลน่าสนใจที่เกี่ยวข้องที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a26-realworld',
+        category: 'section',
+        templateName: 'นำไปใช้จริง',
+        icon: '🌍',
+        description: 'แถบสีฟ้าเข้ม — ตัวอย่างการใช้เนื้อหาในชีวิตจริง',
+        items: [
+            { type: 'markdown', content: '```box:realworld\nนำไปใช้จริง\nพิมพ์ตัวอย่างการใช้ในชีวิตจริงที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a27-vocab-bar',
+        category: 'section',
+        templateName: 'คำศัพท์น่ารู้ (แถบสี)',
+        icon: '🗣️',
+        description: 'แถบสีเทาเข้ม + รายการคำศัพท์ 2 คอลัมน์ (อังกฤษ-ไทย) มีเส้นคั่น',
+        items: [
+            { type: 'markdown', content: '```box:vocab\nคำศัพท์น่ารู้\nEnglish term | คำแปลภาษาไทย\nEnglish term | คำแปลภาษาไทย\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a28-recap-bar',
+        category: 'section',
+        templateName: 'สรุปท้ายบท (แถบสี)',
+        icon: '🏁',
+        description: 'แถบสีน้ำเงิน + รายการสรุปแบบลูกศร ▸ (อีกสไตล์หนึ่งของ "สรุปท้ายบท")',
+        items: [
+            { type: 'markdown', content: '```box:recap\nสรุปท้ายบท\nพิมพ์ประเด็นสรุปที่ 1\nพิมพ์ประเด็นสรุปที่ 2\nพิมพ์ประเด็นสรุปที่ 3\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a29-reflection',
+        category: 'section',
+        templateName: 'ชวนคิดต่อ',
+        icon: '🤔',
+        description: 'แถบสีส้ม + คำถามชวนคิดตัวเอียงท้ายบท',
+        items: [
+            { type: 'markdown', content: '```box:reflection\nชวนคิดต่อ\nพิมพ์คำถามชวนคิดต่อท้ายบทที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a30-section-divider',
+        category: 'section',
+        templateName: 'แถบหมวดหัวข้อ',
+        icon: '📂',
+        description: 'แถบพื้นเทาอ่อน คั่นระหว่างหมวดใหญ่ในหน้าเดียวกัน',
+        items: [
+            { type: 'markdown', content: '```section\nหมวด X · ชื่อหมวด\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a31-dodont',
+        category: 'section',
+        templateName: 'ทำถูก VS ทำผิด',
+        icon: '⚖️',
+        description: 'สองกล่องคู่กัน: ✓ ทำแบบนี้ (เขียว) กับ ✗ อย่าทำ (แดง)',
+        items: [
+            { type: 'markdown', content: '```dodont\nทำแบบนี้\nพิมพ์ตัวอย่างที่ถูกต้องที่นี่...\n---\nอย่าทำ\nพิมพ์ข้อผิดพลาดที่พบบ่อยที่นี่...\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a32-chips',
+        category: 'section',
+        templateName: 'ป้าย / เลขกำกับ',
+        icon: '🎫',
+        description: 'แถวป้ายเล็กๆ: เลขวงกลม หรือ สี:ข้อความ สำหรับกำกับ/ไล่โทนสี',
+        items: [
+            { type: 'markdown', content: '```chips\n1|2|3|green:ข้อความ|red:ข้อความ|slate:ข้อความ\n```', size: 'medium' },
+        ],
+    },
+    {
+        id: 'a33-table-bar',
+        category: 'section',
+        templateName: 'ตาราง (แถบสี)',
+        icon: '📊',
+        description: 'แถบสีน้ำเงิน + ตารางข้อมูล รองรับตัวอักษรสี {เขียว:ข้อความ}/{แดง:ข้อความ}',
+        items: [
+            { type: 'markdown', content: '```box:table\nชื่อตาราง\n| หัวข้อ 1 | หัวข้อ 2 | ผลลัพธ์ |\n|---|---|---|\n| ค่า | ค่า | {green:ข้อความ} |\n| ค่า | ค่า | {red:ข้อความ} |\n```', size: 'medium' },
+        ],
+    },
 ];
 
 // ============================================================
@@ -194,6 +449,45 @@ const A_TEMPLATES = [
 // ============================================================
 
 const B_TEMPLATES = [
+    {
+        id: 'b0-lesson-notes-full',
+        category: 'page',
+        templateName: 'บันทึกการสอนแบบเต็ม (5 หมวด)',
+        icon: '🗂️',
+        description: 'รวมการ์ดหัวข้อหลักทั้งหมด (แถบสี) เรียงเป็น 5 หมวด — เปิดบท / เนื้อหา / ตัวอย่าง / ฝึก / เสริม (ยาวหลายหน้า จัดหน้าอัตโนมัติ)',
+        items: [
+            { type: 'markdown', content: '```topic\nม.X\nชื่อหัวข้อบทเรียน · คำอธิบายสั้นๆ ของบทนี้\nคำค้นภาษาอังกฤษ · เว็บไซต์ของคุณ\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:objective\nจบบทนี้ นักเรียนจะ\nระบุจุดประสงค์ข้อที่ 1\nระบุจุดประสงค์ข้อที่ 2\nระบุจุดประสงค์ข้อที่ 3\n```', size: 'medium' },
+
+            { type: 'markdown', content: '```section\nหมวด 2 · เนื้อหา & นิยาม\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:definition\nบทนิยาม\nพิมพ์คำนิยามหรือความหมายของคำศัพท์ที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:concept\nสรุปสำคัญ\nพิมพ์ใจความสำคัญที่ต้องการเน้นย้ำที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:formula\nสูตรสำคัญ\n$$y = ax + b$$\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:note\nข้อสังเกต\nพิมพ์ข้อสังเกตเพิ่มเติมที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:insight\nครูชวนคิด\nพิมพ์มุมมองหรือเทคนิคช่วยจำที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:table\nชื่อตาราง\n| หัวข้อ 1 | หัวข้อ 2 | ผลลัพธ์ |\n|---|---|---|\n| ค่า | ค่า | {green:ข้อความ} |\n| ค่า | ค่า | {red:ข้อความ} |\n```', size: 'medium' },
+
+            { type: 'markdown', content: '```section\nหมวด 3 · ตัวอย่าง & วิธีทำ\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:example\nตัวอย่างที่ 1\nพิมพ์โจทย์ที่นี่...\nวิธีทำ = พิมพ์ขั้นตอนที่นี่\n```', size: 'medium' },
+            { type: 'markdown', content: '```dodont\nทำแบบนี้\nพิมพ์ตัวอย่างที่ถูกต้องที่นี่...\n---\nอย่าทำ\nพิมพ์ข้อผิดพลาดที่พบบ่อยที่นี่...\n```', size: 'medium' },
+
+            { type: 'markdown', content: '```section\nหมวด 4 · ฝึก & ประเมิน\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:tip\nเคล็ดลับ\nพิมพ์เคล็ดลับที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:warning\nข้อควรระวัง\nพิมพ์ข้อผิดพลาดที่พบบ่อยที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:check\nเช็คความเข้าใจ\nพิมพ์คำถามที่นี่...\nก. ตัวเลือก 1 | ข. ตัวเลือก 2 | ค. ตัวเลือก 3 | ง. ตัวเลือก 4\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:practice\nแบบฝึกหัด 1.1\nพิมพ์โจทย์ข้อที่ 1\nพิมพ์โจทย์ข้อที่ 2\nพิมพ์โจทย์ข้อที่ 3\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:challenge\nโจทย์ท้าทาย ★ | ระดับยาก\nพิมพ์โจทย์ท้าทายที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:answer\nเฉลยแบบฝึกหัด 1.1\n1\\) พิมพ์คำตอบข้อ 1   2\\) พิมพ์คำตอบข้อ 2   3\\) พิมพ์คำตอบข้อ 3\n```', size: 'medium' },
+
+            { type: 'markdown', content: '```section\nหมวด 5 · เสริม & ปิดบท\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:funfact\nรู้หรือไม่?\nพิมพ์ข้อมูลน่าสนใจที่เกี่ยวข้องที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:realworld\nนำไปใช้จริง\nพิมพ์ตัวอย่างการใช้ในชีวิตจริงที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:vocab\nคำศัพท์น่ารู้\nEnglish term | คำแปลภาษาไทย\nEnglish term | คำแปลภาษาไทย\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:recap\nสรุปท้ายบท\nพิมพ์ประเด็นสรุปที่ 1\nพิมพ์ประเด็นสรุปที่ 2\nพิมพ์ประเด็นสรุปที่ 3\n```', size: 'medium' },
+            { type: 'markdown', content: '```box:reflection\nชวนคิดต่อ\nพิมพ์คำถามชวนคิดต่อท้ายบทที่นี่...\n```', size: 'medium' },
+            { type: 'markdown', content: '```chips\n1|2|3|green:ข้อความ|red:ข้อความ|slate:ข้อความ\n```', size: 'medium' },
+        ],
+    },
     {
         id: 'b1-chapter-open',
         category: 'page',
