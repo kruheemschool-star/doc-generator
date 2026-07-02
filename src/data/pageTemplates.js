@@ -184,7 +184,7 @@ const A_TEMPLATES = [
         icon: '🏷️',
         description: 'แถบหัวข้อหลัก: ป้ายระดับชั้นสีปะการัง + ชื่อบทไฮไลต์เหลือง + คำค้นภาษาอังกฤษ',
         items: [
-            { type: 'markdown', content: '```topic\nม.1\nจำนวนเต็ม · รู้จัก เปรียบเทียบ ไม่หลงเครื่องหมาย\nIntegers · Comparing · Number Patterns · kruheemmath.com\n```', size: 'medium' },
+            { type: 'markdown', content: '```topic\nม.X\nชื่อหัวข้อบทเรียน · คำอธิบายสั้นๆ ของบทนี้\nคำค้นภาษาอังกฤษ · เว็บไซต์ของคุณ\n```', size: 'medium' },
         ],
     },
 ];
