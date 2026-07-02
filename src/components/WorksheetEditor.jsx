@@ -237,6 +237,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const [importText, setImportText] = useState('');
     const [importSectionType, setImportSectionType] = useState('content');
     const [importQuestionType, setImportQuestionType] = useState('objective');
+    // True only right after picking a .md/.markdown file — an explicit signal
+    // that skips the JSON-parse attempt (and its confirm-dialog fallback)
+    // entirely, since there's no ambiguity to resolve. Cleared on any manual
+    // edit to the paste box, so it never lingers and mis-classifies pasted text.
+    const [importIsExplicitMarkdown, setImportIsExplicitMarkdown] = useState(false);
 
     // --- Import Modal A11y (must come after showImportModal is declared) ---
     const importModalRef = useModalA11y(showImportModal, () => setShowImportModal(false));
@@ -722,15 +727,50 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     const handleImportFile = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const isMarkdownFile = /\.(md|markdown)$/i.test(file.name);
         const reader = new FileReader();
-        reader.onload = (ev) => setImportText(String(ev.target?.result || ''));
+        reader.onload = (ev) => {
+            setImportText(String(ev.target?.result || ''));
+            setImportIsExplicitMarkdown(isMarkdownFile);
+        };
         reader.onerror = () => window.alert('อ่านไฟล์ไม่สำเร็จ กรุณาลองใหม่');
         reader.readAsText(file);
         e.target.value = ''; // allow re-picking the same file
     };
 
+    // Split into one markdown box per heading (bin-packs across A4 pages via
+    // the pagination hook, matching the live preview) and insert. Shared by
+    // the explicit "picked a .md file" path and the "pasted text turned out
+    // not to be JSON" fallback below.
+    const importAsMarkdown = () => {
+        const sectionHeaderItem = {
+            id: uuidv4(),
+            type: 'markdown',
+            content: buildSectionHeader(importSectionType, importQuestionType),
+            size: 'medium'
+        };
+        const blocks = splitMarkdownByHeading(importText);
+        const markdownItems = (blocks.length > 0 ? blocks : [importText]).map(content => ({
+            id: uuidv4(),
+            type: 'markdown',
+            content,
+            size: 'medium'
+        }));
+        insertItemsIntoPages([sectionHeaderItem, ...markdownItems]);
+        setShowImportModal(false);
+        setImportText('');
+    };
+
     const handleImport = () => {
         if (!importText.trim()) return;
+
+        // Explicit .md/.markdown file upload — no JSON to try, no ambiguity to
+        // confirm. Import straight away instead of round-tripping through a
+        // JSON-parse attempt that only exists to detect ambiguous pasted text.
+        if (importIsExplicitMarkdown) {
+            importAsMarkdown();
+            return;
+        }
 
         try {
             const parseResult = tryParseImportJSON(importText);
@@ -811,25 +851,11 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
             setImportText('');
 
         } catch (err) {
-            // Not JSON → import as Markdown, split into one box per heading so the
-            // sections bin-pack across A4 pages (matches the live preview).
+            // Pasted text wasn't JSON — could still be intentional Markdown, but
+            // unlike an explicit .md upload this is ambiguous (might just be a
+            // JSON typo), so confirm before reinterpreting it.
             if (window.confirm("ไม่พบรูปแบบ JSON — นำเข้าเป็น Markdown โดยแยกเป็นกล่องตามหัวข้อ ใช่หรือไม่?")) {
-                const sectionHeaderItem = {
-                    id: uuidv4(),
-                    type: 'markdown',
-                    content: buildSectionHeader(importSectionType, importQuestionType),
-                    size: 'medium'
-                };
-                const blocks = splitMarkdownByHeading(importText);
-                const markdownItems = (blocks.length > 0 ? blocks : [importText]).map(content => ({
-                    id: uuidv4(),
-                    type: 'markdown',
-                    content,
-                    size: 'medium'
-                }));
-                insertItemsIntoPages([sectionHeaderItem, ...markdownItems]);
-                setShowImportModal(false);
-                setImportText('');
+                importAsMarkdown();
             }
         }
     };
@@ -995,7 +1021,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         { key: 'scratch', label: 'กระดาษทดเลข', desc: 'กล่องลายตาราง ให้นักเรียนทดเลข', icon: Grid3x3, color: 'text-slate-600', onClick: handleAddScratchPaper },
         { key: 'lined', label: 'จดบันทึก', desc: 'กล่องเส้นบรรทัด ให้นักเรียนเขียนข้อความ', icon: NotebookPen, color: 'text-green-700', onClick: handleAddLinedNotes },
         { key: 'template', label: 'เทมเพลต', desc: 'แทรกชุดสำเร็จรูป', icon: LayoutTemplate, color: 'text-green-700', onClick: () => setShowTemplatePicker(true) },
-        { key: 'import', label: 'นำเข้าด้วย AI', desc: 'วางจาก Gemini / JSON', icon: Sparkles, color: 'text-blue-600', onClick: () => setShowImportModal(true) },
+        { key: 'import', label: 'นำเข้าเนื้อหา', desc: 'ไฟล์ Markdown (.md), JSON, หรือวางจาก Gemini', icon: Sparkles, color: 'text-blue-600', onClick: () => setShowImportModal(true) },
     ];
 
     // Shared toolbar styling — dark pill (Editorial Bold §8.4): idle icons #a39a8c,
@@ -1658,7 +1684,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                             ref={importModalRef}
                             role="dialog"
                             aria-modal="true"
-                            aria-label="นำเข้าเนื้อหาจาก Gemini"
+                            aria-label="นำเข้าเนื้อหา (Markdown, JSON, หรือ Gemini)"
                             tabIndex={-1}
                             className="bg-white dark:bg-slate-900 w-full max-w-[1700px] h-[96vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in duration-200"
                         >
@@ -1712,7 +1738,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                 <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
                                     <div className="flex-1 min-h-0 flex flex-col">
                                         <div className="flex items-center justify-between mb-1.5 pl-1 gap-2">
-                                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">วางข้อมูล (JSON / Markdown)</span>
+                                            {importIsExplicitMarkdown ? (
+                                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
+                                                    <FileText size={12} /> ไฟล์ Markdown พร้อมนำเข้า
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">วางข้อมูล (JSON / Markdown)</span>
+                                            )}
                                             <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[11px] font-bold cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all active:scale-95">
                                                 <Upload size={13} />
                                                 เลือกไฟล์ (JSON / .md)
@@ -1723,7 +1755,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
                                             className="w-full flex-1 min-h-0 p-4 bg-gray-50 dark:bg-slate-900 border-2 border-gray-100 dark:border-slate-800 focus:border-blue-500 rounded-2xl font-mono text-sm outline-none resize-none transition-all placeholder:text-gray-300"
                                             placeholder="วาง JSON จาก Gemini หรือวาง Markdown (เช่น # หัวข้อ, **ตัวหนา**, - ลิสต์, $สมการ$) ที่นี่ — หรือกด 'เลือกไฟล์' ด้านบน"
                                             value={importText}
-                                            onChange={e => setImportText(e.target.value)}
+                                            onChange={e => { setImportText(e.target.value); setImportIsExplicitMarkdown(false); }}
                                             autoFocus
                                         />
                                     </div>
