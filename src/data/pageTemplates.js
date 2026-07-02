@@ -202,9 +202,19 @@ const A_TEMPLATES = [
         category: 'section',
         templateName: 'กล่องทดเลข',
         icon: '✏️',
-        description: 'กล่องลายตารางกระดาษทดเลข สำหรับให้นักเรียนทดเลข/แสดงวิธีทำ',
+        description: 'แถบหัวสีเทา "พื้นที่ทดเลข" + พื้นตารางกริดสำหรับคำนวณ',
         items: [
-            { type: 'spacer', height: 200, paperStyle: 'scratch' },
+            { type: 'spacer', height: 220, paperStyle: 'scratch' },
+        ],
+    },
+    {
+        id: 'a10b-lined-notes',
+        category: 'section',
+        templateName: 'กล่องจดบันทึก (เส้นบรรทัด)',
+        icon: '📓',
+        description: 'แถบหัวสีเขียว "จดบันทึกเพิ่มเติม" + เส้นบรรทัดสำหรับเขียนข้อความ',
+        items: [
+            { type: 'spacer', height: 220, paperStyle: 'lined' },
         ],
     },
     {

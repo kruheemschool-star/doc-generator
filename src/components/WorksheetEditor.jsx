@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2, Contrast, Grid3x3, GalleryThumbnails, Sticker, BookmarkPlus } from 'lucide-react';
+import { Plus, Minus, Trash2, FilePlus, ArrowLeft, Printer, Layout, StickyNote, Eye, EyeOff, Type, Image as ImageIcon, RotateCcw, RotateCw, Cloud, Check, Save, X, Edit, Maximize, ArrowDownToLine, FileJson, RefreshCw, Eraser, ChevronUp, ChevronDown, ZoomIn, ZoomOut, FileText, ALargeSmall, BookOpen, PenTool, Zap, Search, ArrowDown, Sparkles, MoveVertical, FileQuestion, AlertTriangle, Copy, Hand, MousePointer2, Bug, Droplets, Upload, LayoutTemplate, Globe, SlidersHorizontal, Square, Columns2, Contrast, Grid3x3, GalleryThumbnails, Sticker, BookmarkPlus, NotebookPen } from 'lucide-react';
 import QuestionItem from './QuestionItem';
 // import kruheemLogo from '../assets/kruheem-logo.png'; // No longer used, using public path
 import TextItem from './TextItem';
@@ -362,6 +362,14 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
     };
     const handleAddScratchPaper = () => {
         const newItem = { id: uuidv4(), type: 'spacer', height: 220, paperStyle: 'scratch' };
+        if (selectedItemId) {
+            handleAddQuestionBelow(selectedItemId, newItem);
+        } else {
+            handleAddQuestion(newItem);
+        }
+    };
+    const handleAddLinedNotes = () => {
+        const newItem = { id: uuidv4(), type: 'spacer', height: 220, paperStyle: 'lined' };
         if (selectedItemId) {
             handleAddQuestionBelow(selectedItemId, newItem);
         } else {
@@ -963,10 +971,10 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         return null;
     })();
     const isTextLikeSelected = selectedItem && (selectedItem.type === 'text' || selectedItem.type === 'markdown');
-    // Scratch-paper spacers always render their own fixed grid border — a
-    // custom frame would silently do nothing, so the control is disabled
-    // instead of accepting settings that never take effect.
-    const isScratchPaperSelected = selectedItem?.type === 'spacer' && selectedItem?.paperStyle === 'scratch';
+    // Scratch/lined-paper spacers always render their own fixed header-bar +
+    // pattern border — a custom frame would silently do nothing, so the
+    // control is disabled instead of accepting settings that never take effect.
+    const isFixedPaperSelected = selectedItem?.type === 'spacer' && ['scratch', 'lined'].includes(selectedItem?.paperStyle);
     // Enabled-but-empty (no logo/text set yet) shouldn't cost every page a
     // blank reserved strip — treat it like disabled until there's something to show.
     const hasFooterContent = docTheme.footerEnabled && !!(docTheme.footerLogoSrc || docTheme.footerText);
@@ -985,6 +993,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
         { key: 'divider', label: 'เส้นคั่น', desc: 'แบ่งส่วนเนื้อหา', icon: Minus, color: 'text-rose-600', onClick: handleAddDivider },
         { key: 'spacer', label: 'ช่องว่าง', desc: 'เว้นที่ให้นักเรียนเขียน', icon: MoveVertical, color: 'text-amber-600', onClick: handleAddSpacer },
         { key: 'scratch', label: 'กระดาษทดเลข', desc: 'กล่องลายตาราง ให้นักเรียนทดเลข', icon: Grid3x3, color: 'text-slate-600', onClick: handleAddScratchPaper },
+        { key: 'lined', label: 'จดบันทึก', desc: 'กล่องเส้นบรรทัด ให้นักเรียนเขียนข้อความ', icon: NotebookPen, color: 'text-green-700', onClick: handleAddLinedNotes },
         { key: 'template', label: 'เทมเพลต', desc: 'แทรกชุดสำเร็จรูป', icon: LayoutTemplate, color: 'text-green-700', onClick: () => setShowTemplatePicker(true) },
         { key: 'import', label: 'นำเข้าด้วย AI', desc: 'วางจาก Gemini / JSON', icon: Sparkles, color: 'text-blue-600', onClick: () => setShowImportModal(true) },
     ];
@@ -1373,7 +1382,7 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                 <div className="fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden floating-toolbar max-w-[calc(100vw-1rem)]">
                     {/* Per-item border (frame) popover */}
-                    {showBorderPopover && selectedItem && !isScratchPaperSelected && (
+                    {showBorderPopover && selectedItem && !isFixedPaperSelected && (
                         <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[300px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2 text-gray-800 dark:text-slate-100"><Square size={16} className="text-teal-600" /><span className="font-bold text-sm">กรอบกล่อง</span></div>
@@ -1578,13 +1587,13 @@ const WorksheetEditor = ({ activeDocument, initialData, onSave, onBack }) => {
 
                                 <button onClick={() => handleDuplicateItem(selectedItemId)} className={tbtn} aria-label="ทำสำเนา" title="ทำสำเนา (Duplicate) — Ctrl/⌘+D"><Copy size={18} /></button>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); if (!isScratchPaperSelected) setShowBorderPopover(s => !s); }}
-                                    disabled={isScratchPaperSelected}
-                                    className={isScratchPaperSelected
+                                    onClick={(e) => { e.stopPropagation(); if (!isFixedPaperSelected) setShowBorderPopover(s => !s); }}
+                                    disabled={isFixedPaperSelected}
+                                    className={isFixedPaperSelected
                                         ? `${tbtn} opacity-40 cursor-not-allowed`
                                         : ((selectedItem && ((selectedItem.borderStyle && selectedItem.borderStyle !== 'none') || selectedItem.fillColor)) || showBorderPopover ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn)}
                                     aria-label="กรอบและสีพื้นกล่อง"
-                                    title={isScratchPaperSelected ? 'กระดาษทดเลขมีกรอบตายตัว ปรับแต่งกรอบไม่ได้' : 'กรอบและสีพื้นกล่อง'}
+                                    title={isFixedPaperSelected ? 'กระดาษทดเลข/จดบันทึกมีกรอบตายตัว ปรับแต่งกรอบไม่ได้' : 'กรอบและสีพื้นกล่อง'}
                                 ><Square size={18} /></button>
                                 {selectedItem?.type === 'image' && (
                                     <button onClick={(e) => { e.stopPropagation(); setShowIconLibrary(true); }} className={showIconLibrary ? `${tbtnActive} bg-[#26211a] text-[#5eead4]` : tbtn} aria-label="เลือกไอคอนจากคลัง" title="เลือกไอคอนจากคลัง"><Sticker size={18} /></button>
