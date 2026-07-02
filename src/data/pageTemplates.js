@@ -86,6 +86,7 @@ const A_TEMPLATES = [
     {
         id: 'a1-formula',
         category: 'section',
+        group: 'classic',
         templateName: 'สูตรสำคัญ',
         icon: '📐',
         description: 'กล่องสูตรสำคัญ มีเส้นบน-ล่าง คั่น',
@@ -100,6 +101,7 @@ const A_TEMPLATES = [
     {
         id: 'a2-theorem',
         category: 'section',
+        group: 'classic',
         templateName: 'นิยาม / ทฤษฎีบท',
         icon: '📖',
         description: 'กล่องนิยามหรือทฤษฎีบท พื้นครีม border เขียว',
@@ -112,6 +114,7 @@ const A_TEMPLATES = [
     {
         id: 'a3-tip',
         category: 'section',
+        group: 'classic',
         templateName: 'เคล็ดลับ',
         icon: '💡',
         description: 'กล่องเคล็ดลับ พื้นทองอ่อน border ทอง',
@@ -122,6 +125,7 @@ const A_TEMPLATES = [
     {
         id: 'a4-warn',
         category: 'section',
+        group: 'classic',
         templateName: 'ข้อควรระวัง',
         icon: '⚠️',
         description: 'กล่องข้อควรระวัง พื้นแดงอ่อน border แดงเข้ม',
@@ -132,6 +136,7 @@ const A_TEMPLATES = [
     {
         id: 'a5-example',
         category: 'section',
+        group: 'classic',
         templateName: 'ตัวอย่างพร้อมเฉลย',
         icon: '📝',
         description: 'ตัวอย่างโจทย์ + วิธีทำ + คำตอบ',
@@ -145,6 +150,7 @@ const A_TEMPLATES = [
     {
         id: 'a6-vocab',
         category: 'section',
+        group: 'classic',
         templateName: 'คำศัพท์',
         icon: '📚',
         description: 'รายการคำศัพท์ ไทย-อังกฤษ พร้อมคำอธิบาย',
@@ -156,6 +162,7 @@ const A_TEMPLATES = [
     {
         id: 'a7-summary-box',
         category: 'section',
+        group: 'classic',
         templateName: 'สรุปท้ายบท',
         icon: '🎯',
         description: 'สรุปท้ายบท เส้น 2 เส้นบน-ล่าง + ตารางสูตร (ประหยัดหมึก)',
@@ -169,6 +176,7 @@ const A_TEMPLATES = [
     {
         id: 'a8-subhead',
         category: 'section',
+        group: 'classic',
         templateName: 'หัวข้อย่อย',
         icon: '🔖',
         description: 'หัวข้อย่อยพร้อมระยะห่างเหมาะสม',
@@ -181,6 +189,7 @@ const A_TEMPLATES = [
     {
         id: 'a9-note',
         category: 'section',
+        group: 'classic',
         templateName: 'กล่องจดบันทึก',
         icon: '📝',
         description: 'กล่องโน้ตพื้นครีม ขอบมน สำหรับจดบันทึก/สรุป',
@@ -198,28 +207,9 @@ const A_TEMPLATES = [
         ],
     },
     {
-        id: 'a10-scratch',
-        category: 'section',
-        templateName: 'กล่องทดเลข',
-        icon: '✏️',
-        description: 'แถบหัวสีเทา "พื้นที่ทดเลข" + พื้นตารางกริดสำหรับคำนวณ',
-        items: [
-            { type: 'spacer', height: 220, paperStyle: 'scratch' },
-        ],
-    },
-    {
-        id: 'a10b-lined-notes',
-        category: 'section',
-        templateName: 'กล่องจดบันทึก (เส้นบรรทัด)',
-        icon: '📓',
-        description: 'แถบหัวสีเขียว "จดบันทึกเพิ่มเติม" + เส้นบรรทัดสำหรับเขียนข้อความ',
-        items: [
-            { type: 'spacer', height: 220, paperStyle: 'lined' },
-        ],
-    },
-    {
         id: 'a11-topic-header',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'หัวข้อหลัก (ป้ายชั้น + ชื่อบท)',
         icon: '🏷️',
         description: 'แถบหัวข้อหลัก: ป้ายระดับชั้นสีปะการัง + ชื่อบทไฮไลต์เหลือง + คำค้นภาษาอังกฤษ',
@@ -235,6 +225,7 @@ const A_TEMPLATES = [
     {
         id: 'a12-objective',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'จุดประสงค์การเรียนรู้',
         icon: '🎯',
         description: 'แถบสีน้ำเงิน + รายการเป้าหมายเป็นวงกลมเลข 1 2 3',
@@ -245,6 +236,7 @@ const A_TEMPLATES = [
     {
         id: 'a13-definition-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'บทนิยาม (แถบสี)',
         icon: '🔷',
         description: 'แถบสีม่วง — ใช้กับคำนิยาม/ความหมายของคำศัพท์',
@@ -255,6 +247,7 @@ const A_TEMPLATES = [
     {
         id: 'a14-concept',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'สรุปสำคัญ',
         icon: '🔑',
         description: 'แถบสีน้ำเงิน — ใช้เน้นใจความสำคัญสั้นๆ',
@@ -265,6 +258,7 @@ const A_TEMPLATES = [
     {
         id: 'a15-formula-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'สูตรสำคัญ (แถบสี)',
         icon: '📐',
         description: 'แถบสีทอง + สูตรจัดกึ่งกลาง (อีกสไตล์หนึ่งของ "สูตรสำคัญ")',
@@ -275,6 +269,7 @@ const A_TEMPLATES = [
     {
         id: 'a16-note',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'ข้อสังเกต',
         icon: '👁️',
         description: 'แถบสีฟ้า — ใช้ตั้งข้อสังเกตเพิ่มเติมจากเนื้อหาหลัก',
@@ -285,6 +280,7 @@ const A_TEMPLATES = [
     {
         id: 'a17-insight',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'ครูชวนคิด',
         icon: '🧑‍🏫',
         description: 'แถบสีส้ม — มุมมองหรือเทคนิคช่วยจำแบบครู',
@@ -295,6 +291,7 @@ const A_TEMPLATES = [
     {
         id: 'a18-tip-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'เคล็ดลับ (แถบสี)',
         icon: '💡',
         description: 'แถบสีเขียวมิ้นต์ (อีกสไตล์หนึ่งของ "เคล็ดลับ")',
@@ -305,6 +302,7 @@ const A_TEMPLATES = [
     {
         id: 'a19-warning-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'ข้อควรระวัง (แถบสี)',
         icon: '⚠️',
         description: 'แถบสีแดงเข้ม (อีกสไตล์หนึ่งของ "ข้อควรระวัง")',
@@ -315,6 +313,7 @@ const A_TEMPLATES = [
     {
         id: 'a20-example-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'ตัวอย่างพร้อมวิธีทำ (แถบสี)',
         icon: '📝',
         description: 'แถบสีม่วง — โจทย์ตัวอย่าง + ขั้นตอนวิธีทำ',
@@ -325,6 +324,7 @@ const A_TEMPLATES = [
     {
         id: 'a21-check',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'เช็คความเข้าใจ',
         icon: '❓',
         description: 'แถบสีม่วงคราม + คำถามพร้อมตัวเลือกแบบปุ่มกลม',
@@ -335,6 +335,7 @@ const A_TEMPLATES = [
     {
         id: 'a22-practice-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'แบบฝึกหัด + ช่องเติมคำตอบ',
         icon: '✍️',
         description: 'แถบสีเขียว + โจทย์เป็นวงกลมเลข พร้อมเส้นประให้เติมคำตอบ',
@@ -345,6 +346,7 @@ const A_TEMPLATES = [
     {
         id: 'a23-challenge',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'โจทย์ท้าทาย',
         icon: '⭐',
         description: 'แถบสีส้ม + ป้าย "ระดับยาก" มุมขวาบน',
@@ -355,6 +357,7 @@ const A_TEMPLATES = [
     {
         id: 'a24-answer-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'เฉลย (แถบสี)',
         icon: '✅',
         description: 'แถบสีเขียวมิ้นต์ — สรุปเฉลยแบบฝึกหัดรวม',
@@ -365,6 +368,7 @@ const A_TEMPLATES = [
     {
         id: 'a25-funfact',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'รู้หรือไม่',
         icon: '❔',
         description: 'แถบสีชมพูบานเย็น — ข้อมูลน่าสนใจเสริมความรู้',
@@ -375,6 +379,7 @@ const A_TEMPLATES = [
     {
         id: 'a26-realworld',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'นำไปใช้จริง',
         icon: '🌍',
         description: 'แถบสีฟ้าเข้ม — ตัวอย่างการใช้เนื้อหาในชีวิตจริง',
@@ -385,6 +390,7 @@ const A_TEMPLATES = [
     {
         id: 'a27-vocab-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'คำศัพท์น่ารู้ (แถบสี)',
         icon: '🗣️',
         description: 'แถบสีเทาเข้ม + รายการคำศัพท์ 2 คอลัมน์ (อังกฤษ-ไทย) มีเส้นคั่น',
@@ -395,6 +401,7 @@ const A_TEMPLATES = [
     {
         id: 'a28-recap-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'สรุปท้ายบท (แถบสี)',
         icon: '🏁',
         description: 'แถบสีน้ำเงิน + รายการสรุปแบบลูกศร ▸ (อีกสไตล์หนึ่งของ "สรุปท้ายบท")',
@@ -405,6 +412,7 @@ const A_TEMPLATES = [
     {
         id: 'a29-reflection',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'ชวนคิดต่อ',
         icon: '🤔',
         description: 'แถบสีส้ม + คำถามชวนคิดตัวเอียงท้ายบท',
@@ -415,6 +423,7 @@ const A_TEMPLATES = [
     {
         id: 'a30-section-divider',
         category: 'section',
+        group: 'structure',
         templateName: 'แถบหมวดหัวข้อ',
         icon: '📂',
         description: 'แถบพื้นเทาอ่อน คั่นระหว่างหมวดใหญ่ในหน้าเดียวกัน',
@@ -425,6 +434,7 @@ const A_TEMPLATES = [
     {
         id: 'a31-dodont',
         category: 'section',
+        group: 'structure',
         templateName: 'ทำถูก VS ทำผิด',
         icon: '⚖️',
         description: 'สองกล่องคู่กัน: ✓ ทำแบบนี้ (เขียว) กับ ✗ อย่าทำ (แดง)',
@@ -435,6 +445,7 @@ const A_TEMPLATES = [
     {
         id: 'a32-chips',
         category: 'section',
+        group: 'structure',
         templateName: 'ป้าย / เลขกำกับ',
         icon: '🎫',
         description: 'แถวป้ายเล็กๆ: เลขวงกลม หรือ สี:ข้อความ สำหรับกำกับ/ไล่โทนสี',
@@ -445,6 +456,7 @@ const A_TEMPLATES = [
     {
         id: 'a33-table-bar',
         category: 'section',
+        group: 'lesson-card',
         templateName: 'ตาราง (แถบสี)',
         icon: '📊',
         description: 'แถบสีน้ำเงิน + ตารางข้อมูล รองรับตัวอักษรสี {เขียว:ข้อความ}/{แดง:ข้อความ}',

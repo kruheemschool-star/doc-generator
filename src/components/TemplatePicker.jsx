@@ -9,6 +9,16 @@ const CATEGORY_META = {
     document: { Icon: FilePlus, color: PALETTE.warn },
 };
 
+// Section templates carry a `group` field so this long list (30+ items) reads
+// as a few clear clusters instead of one flat scroll — order here is display
+// order. Page/Document templates don't set `group`, so they render as one
+// flat list (small enough — 6 and 3 items — not to need it).
+const GROUP_META = {
+    classic: { label: 'กล่องเนื้อหาคลาสสิก', hint: 'เส้นขอบ + พื้นสีอ่อน' },
+    'lesson-card': { label: 'การ์ดบันทึกการสอน', hint: 'แถบหัวข้อสีทึบ + ตัวอักษรขาว' },
+    structure: { label: 'โครงสร้าง & ป้ายกำกับ', hint: 'แบ่งหมวด, เปรียบเทียบ, ป้ายเล็กๆ' },
+};
+
 const TemplatePicker = ({ isOpen, onClose, onInsertSection, onInsertPage, onInsertDocument }) => {
     const [activeCategory, setActiveCategory] = useState('section');
     const [searchQuery, setSearchQuery] = useState('');
@@ -27,6 +37,22 @@ const TemplatePicker = ({ isOpen, onClose, onInsertSection, onInsertPage, onInse
             (t.description || '').toLowerCase().includes(q)
         );
     }, [activeCategoryObj, searchQuery]);
+
+    // Bucket into GROUP_META's display order; anything without a recognised
+    // `group` (Page/Document templates, or a future section template someone
+    // forgets to tag) falls into one untitled bucket at the end.
+    const groupedTemplates = useMemo(() => {
+        const buckets = new Map();
+        for (const t of filteredTemplates) {
+            const key = t.group && GROUP_META[t.group] ? t.group : '_ungrouped';
+            if (!buckets.has(key)) buckets.set(key, []);
+            buckets.get(key).push(t);
+        }
+        const orderedKeys = [...Object.keys(GROUP_META), '_ungrouped'];
+        return orderedKeys
+            .filter(key => buckets.has(key))
+            .map(key => ({ key, meta: GROUP_META[key], templates: buckets.get(key) }));
+    }, [filteredTemplates]);
 
     if (!isOpen) return null;
 
@@ -128,20 +154,34 @@ const TemplatePicker = ({ isOpen, onClose, onInsertSection, onInsertPage, onInse
                     </div>
                 </div>
 
-                {/* Template Grid */}
+                {/* Template Grid — grouped when templates carry a `group` (Section tab); Page/Document render as one flat block via the "_ungrouped" bucket */}
                 <div className="px-8 py-5 flex-1 overflow-y-auto">
                     {filteredTemplates.length === 0 ? (
                         <div className="text-center py-12 text-gray-400 dark:text-slate-500 text-sm font-medium">
                             ไม่พบเทมเพลตที่ตรงกับคำค้น
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {filteredTemplates.map(template => (
-                                <TemplateCard
-                                    key={template.id}
-                                    template={template}
-                                    onClick={() => handlePick(template)}
-                                />
+                        <div className="space-y-6">
+                            {groupedTemplates.map(({ key, meta, templates }) => (
+                                <div key={key}>
+                                    {meta && (
+                                        <div className="flex items-baseline gap-2 mb-2.5 px-0.5">
+                                            <h5 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wide">
+                                                {meta.label}
+                                            </h5>
+                                            <span className="text-[11px] text-gray-300 dark:text-slate-600">· {meta.hint}</span>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {templates.map(template => (
+                                            <TemplateCard
+                                                key={template.id}
+                                                template={template}
+                                                onClick={() => handlePick(template)}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     )}
