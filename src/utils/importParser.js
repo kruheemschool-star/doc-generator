@@ -124,25 +124,35 @@ export const mergeProblemsAndSolutions = (parsed) => {
 /**
  * Split a raw Markdown string into section blocks, breaking at ATX headings
  * (`#` … up to `maxLevel`), at thematic breaks (`---`/`***`/`___` on their own
- * line), and at bold-numbered exercise markers (`**1.**`, `**2.**`, … at the
- * very start of a line). Each block keeps a heading together with the body
- * that follows it; text before the first heading becomes its own leading block.
+ * line), at bold-numbered exercise markers (`**1.**`, `**2.**`, … at the very
+ * start of a line), and — once a block already contains a table — at a blank
+ * line immediately before a new blockquote. Each block keeps a heading
+ * together with the body that follows it; text before the first heading
+ * becomes its own leading block.
  *
  * Designed for the "นำเข้าเป็น Markdown แยกกล่องตามหัวข้อ" flow — each returned
  * block becomes one `markdown` content item, which lets the pagination hook
- * bin-pack the sections onto A4 pages by their measured height. The two extra
+ * bin-pack the sections onto A4 pages by their measured height. The extra
  * split signals matter in practice: lesson/exercise sheets often use bold
  * pseudo-headers instead of nested headings — "**ตัวอย่างที่ 1**" separated by
  * `---`, or "**1.**"/"**2.**" exercise numbers with no separator at all — and
  * heading-only splitting left those glued into one oversized item that
  * silently overflowed a page (never split, per useAutoPagination's rule that
- * a single item can't be broken across pages).
+ * a single item can't be broken across pages). The table-gated blockquote
+ * split catches the case none of the line-pattern rules can: an exercise
+ * question + a fill-in table, immediately followed by a "> 🎯 เฉลย:" answer
+ * key that itself wraps another table — two tables with no heading or `---`
+ * between them are reliably tall regardless of raw character count (a plain
+ * char-count threshold was tried first and mis-fired: this exact case is
+ * only ~440 characters, well under any threshold generic enough not to
+ * over-split short, well-behaved sections elsewhere in the same file), so
+ * "does this block already contain a table row" is the more direct signal.
  *
- * Fenced code blocks (``` / ~~~) are respected so a `#`/`---`/`**N.**` inside
- * code is never mistaken for a split point. Consecutive headings (e.g. `##`
- * then `###` with no body between) stay grouped rather than producing empty
- * stub boxes. A thematic-break line is itself dropped (not carried into
- * either side) since it's a pure separator, not content.
+ * Fenced code blocks (``` / ~~~) are respected so a `#`/`---`/`**N.**`/`>`
+ * inside code is never mistaken for a split point. Consecutive headings
+ * (e.g. `##` then `###` with no body between) stay grouped rather than
+ * producing empty stub boxes. A thematic-break line is itself dropped (not
+ * carried into either side) since it's a pure separator, not content.
  */
 export const splitMarkdownByHeading = (md, maxLevel = 3) => {
     if (!md || !md.trim()) return [];
@@ -159,12 +169,17 @@ export const splitMarkdownByHeading = (md, maxLevel = 3) => {
     // measurement or price ("**1.5 กก.**", "**100 บาท**") since those have
     // more than a bare number inside the bold span.
     const boldNumberRe = /^\*\*\d+\.\*\*(?:\s|$)/;
+    // A table row, optionally wrapped in a blockquote ("> | a | b |"). Doesn't
+    // need to be the separator row specifically — any pipe-delimited row is
+    // enough to flag "this block already has a table in it".
+    const tableRowRe = /^\s*>?\s*\|/;
     const blocks = [];
     let current = [];
     let inFence = false;
     // Only break when the current block already holds real body text — keeps a
     // run of back-to-back headings attached to the body that eventually follows.
     const hasBody = () => current.some(l => l.trim() && !anyHeadingRe.test(l));
+    const hasTable = () => current.some(l => tableRowRe.test(l));
     const flush = () => {
         const text = current.join('\n').trim();
         if (text) blocks.push(text);
@@ -177,6 +192,10 @@ export const splitMarkdownByHeading = (md, maxLevel = 3) => {
             continue; // drop the --- itself, don't carry it into the next block
         }
         if (!inFence && (splitRe.test(line) || boldNumberRe.test(line)) && hasBody()) flush();
+        if (
+            !inFence && /^>/.test(line) && hasBody() && hasTable() &&
+            current.length > 0 && current[current.length - 1].trim() === ''
+        ) flush();
         current.push(line);
     }
     flush();
